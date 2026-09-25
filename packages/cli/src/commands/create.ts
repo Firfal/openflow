@@ -28,6 +28,17 @@ async function rewritePackageJson(file: string, name: string | undefined, versio
   await writeFile(file, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
+/**
+ * npm package name of the new site. It must differ from every dependency of the starter
+ * (a site named "OpenFlow" would otherwise be called `openflow`, like the CLI it depends on).
+ */
+export async function sitePackageName(name: string, templateDir: string): Promise<string> {
+  const base = slugify(name) || "site-openflow";
+  const pkg = JSON.parse(await readFile(path.join(templateDir, "package.json"), "utf8"));
+  const taken = new Set(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }));
+  return taken.has(base) ? `${base}-site` : base;
+}
+
 /** `openflow create <dir>`: copies the Next.js starter, ready to be customized by Claude Code. */
 export async function create(dir: string, options: { name?: string; project?: string }) {
   const target = path.resolve(dir);
@@ -45,7 +56,7 @@ export async function create(dir: string, options: { name?: string; project?: st
     await rename(path.join(target, "gitignore"), path.join(target, ".gitignore"));
 
   const version = await cliVersion();
-  const packageName = slugify(options.name ?? path.basename(target)) || "site-openflow";
+  const packageName = await sitePackageName(options.name ?? path.basename(target), source);
   await rewritePackageJson(path.join(target, "package.json"), packageName, version);
   await rewritePackageJson(
     path.join(target, "functions", "package.json"),

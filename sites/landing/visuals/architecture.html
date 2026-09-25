@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="fonts.css" />
+<style>
+  body { width: 1200px; height: 700px; background: transparent; font-family: "Plex", sans-serif; color: white; }
+  .canvas { position: relative; width: 1200px; height: 700px; }
+  .frame { position: absolute; left: 190px; top: 30px; width: 840px; height: 600px; border: 1.5px dashed rgb(255 255 255 / 0.28); border-radius: 22px; }
+  .frame-label { position: absolute; left: 22px; top: 16px; font-size: 15px; font-weight: 500; color: rgb(255 255 255 / 0.55); }
+  .node { position: absolute; width: 220px; height: 100px; padding: 16px 18px; border-radius: 14px; background: var(--ink-2); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 24px 40px -24px rgb(0 0 0 / 0.6); }
+  .node h3 { display: flex; align-items: center; gap: 10px; font-family: "Bricolage", sans-serif; font-stretch: 92%; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .node p { margin-top: 8px; font-size: 15px; color: rgb(255 255 255 / 0.66); }
+  .mark { width: 10px; height: 10px; flex: none; }
+  .mark.cobalt { background: var(--cobalt); }
+  .mark.flame { background: var(--flame); }
+  .actor { position: absolute; width: 160px; padding: 16px; border-radius: 14px; background: var(--paper); color: var(--ink); }
+  .actor h3 { font-family: "Bricolage", sans-serif; font-stretch: 92%; font-size: 19px; font-weight: 700; line-height: 1.1; }
+  .actor code { display: inline-block; margin-top: 10px; font-family: "Mono", monospace; font-size: 12.5px; background: var(--ink); color: white; padding: 3px 7px; border-radius: 5px; }
+  .mini { position: relative; height: 34px; margin-bottom: 12px; border-radius: 6px; background: white; box-shadow: inset 0 0 0 1px rgb(15 30 51 / 0.12); }
+  .mini .sel { position: absolute; left: 10px; right: 30px; top: 11px; height: 12px; outline: 1.5px solid var(--cobalt); outline-offset: 3px; background: rgb(15 30 51 / 0.14); border-radius: 2px; }
+  .mini .h { position: absolute; width: 6px; height: 6px; background: white; border: 1.5px solid var(--cobalt); }
+  .term { height: 34px; margin-bottom: 12px; border-radius: 6px; background: var(--ink); padding: 8px 10px; font-family: "Mono", monospace; font-size: 12px; color: var(--flame); }
+  .visitors { position: absolute; left: 1060px; top: 420px; width: 140px; height: 100px; padding: 16px; border-radius: 14px; box-shadow: inset 0 0 0 1.5px var(--flame); }
+  .visitors h3 { font-family: "Bricolage", sans-serif; font-stretch: 92%; font-size: 19px; font-weight: 700; }
+  .visitors p { margin-top: 6px; font-size: 14px; color: rgb(255 255 255 / 0.66); }
+  svg.flows { position: absolute; inset: 0; overflow: visible; }
+  .label { position: absolute; font-size: 13.5px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--ink); white-space: nowrap; }
+  .label.cobalt { color: #9fb3ff; box-shadow: inset 0 0 0 1px rgb(47 91 255 / 0.6); }
+  .label.flame { color: #ffb27a; box-shadow: inset 0 0 0 1px rgb(255 122 26 / 0.6); }
+  .label.code { color: rgb(255 255 255 / 0.75); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3); font-family: "Mono", monospace; font-weight: 500; }
+  .legend { position: absolute; left: 190px; top: 660px; display: flex; gap: 32px; font-size: 15px; color: rgb(255 255 255 / 0.75); }
+  .legend span { display: inline-flex; align-items: center; gap: 10px; }
+  .legend i { display: inline-block; width: 34px; height: 0; border-top: 2.5px solid; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="frame"><span class="frame-label">Projet Firebase du client</span></div>
+
+  <div class="actor" style="left:0;top:80px">
+    <div class="mini"><span class="sel"></span><span class="h" style="left:4px;top:5px"></span><span class="h" style="right:24px;top:5px"></span><span class="h" style="left:4px;bottom:5px"></span><span class="h" style="right:24px;bottom:5px"></span></div>
+    <h3>Propriétaire du site</h3>
+    <code>/admin</code>
+  </div>
+  <div class="actor" style="left:0;top:400px">
+    <div class="term">$ claude</div>
+    <h3>Agence et Claude Code</h3>
+  </div>
+
+  <div class="node" style="left:230px;top:100px"><h3><span class="mark cobalt"></span>Authentication</h3><p>Le propriétaire seul</p></div>
+  <div class="node" style="left:500px;top:100px"><h3><span class="mark cobalt"></span>Firestore</h3><p>Brouillons et réglages</p></div>
+  <div class="node" style="left:770px;top:100px"><h3><span class="mark cobalt"></span>Storage</h3><p>Médias et versions</p></div>
+  <div class="node" style="left:230px;top:420px"><h3><span class="mark flame"></span>Functions</h3><p>Fige un snapshot</p></div>
+  <div class="node" style="left:500px;top:420px"><h3><span class="mark flame"></span>Cloud Build</h3><p>Lance next build</p></div>
+  <div class="node" style="left:770px;top:420px"><h3><span class="mark flame"></span>Hosting</h3><p>Sert le HTML statique</p></div>
+  <div class="visitors"><h3>Visiteurs</h3><p>Site rapide et indexable</p></div>
+
+  <svg class="flows" viewBox="0 0 1200 700">
+    <defs>
+      <marker id="a-cobalt" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#2f5bff" /></marker>
+      <marker id="a-flame" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#ff7a1a" /></marker>
+      <marker id="a-white" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="rgb(255 255 255 / 0.6)" /></marker>
+    </defs>
+    <g fill="none" stroke-width="2.5" stroke-linecap="round">
+      <path d="M162 150 H226" stroke="#2f5bff" marker-end="url(#a-cobalt)" />
+      <path d="M452 150 H496" stroke="#2f5bff" marker-end="url(#a-cobalt)" />
+      <path d="M340 98 C 340 58, 880 58, 880 94" stroke="#2f5bff" stroke-dasharray="1 0" marker-end="url(#a-cobalt)" />
+      <path d="M610 202 V 300 H 340 V 414" stroke="#ff7a1a" marker-end="url(#a-flame)" />
+      <path d="M452 470 H496" stroke="#ff7a1a" marker-end="url(#a-flame)" />
+      <path d="M722 470 H766" stroke="#ff7a1a" marker-end="url(#a-flame)" />
+      <path d="M992 470 H1056" stroke="#ff7a1a" marker-end="url(#a-flame)" />
+      <path d="M80 542 V 582 H 610 V 526" stroke="rgb(255 255 255 / 0.6)" stroke-dasharray="6 7" marker-end="url(#a-white)" />
+    </g>
+  </svg>
+
+  <span class="label cobalt" style="left:560px;top:48px">Médias importés</span>
+  <span class="label flame" style="left:392px;top:286px">Publier</span>
+  <span class="label code" style="left:258px;top:569px">openflow deploy</span>
+
+  <div class="legend">
+    <span><i style="border-color:#2f5bff"></i>Édition</span>
+    <span><i style="border-color:#ff7a1a"></i>Publication</span>
+    <span><i style="border-color:rgb(255 255 255 / 0.6);border-top-style:dashed"></i>Livraison du code</span>
+  </div>
+</div>
+</body>
+</html>

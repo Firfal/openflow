@@ -61,6 +61,7 @@ packages/
   functions/   @openflow/functions  Cloud Functions (propriétaire, publication, historique)
   cli/         openflow             create, dev, check, hook, seed, build, deploy
 templates/next-starter/             site de départ (conforme à 100 %)
+sites/landing/                      landing du projet, créée et éditée avec OpenFlow
 plugins/openflow/                   plugin Claude Code (skills, hooks)
 tests/e2e/                          règles de sécurité et scénario admin sur les émulateurs
 docs/                               spécification (FR)

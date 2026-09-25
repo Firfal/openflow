@@ -1,0 +1,471 @@
+@import "tailwindcss";
+
+/* Design tokens: see DESIGN.md ("l'atelier d'édition"). */
+@theme {
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
+
+  --color-ink: #0f1e33;
+  --color-ink-2: #1a2d4a;
+  --color-ink-3: #27406a;
+  --color-paper: #eef1f6;
+  --color-cobalt: #2f5bff;
+  --color-cobalt-soft: #dfe6ff;
+  --color-flame: #ff7a1a;
+  --color-graphite: #4a5568;
+  --color-line: #d5dce7;
+
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+  a,
+  button,
+  summary {
+    touch-action: manipulation;
+  }
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cobalt);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-cobalt);
+    color: white;
+  }
+}
+
+/* Component classes live in the components layer: Tailwind utilities can still override them. */
+@layer components {
+  /* Tracing-paper dot grid behind light sections. */
+  .bg-calque {
+    background-color: var(--color-paper);
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--color-ink) 16%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  /* Blueprint grid behind the ink sections. */
+  .bg-plan {
+    background-color: var(--color-ink);
+    background-image:
+      linear-gradient(color-mix(in oklab, white 5%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, white 5%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* The signature: an editor selection outline with square handles. */
+  .selection-frame {
+    outline: 1.5px solid var(--color-cobalt);
+    outline-offset: 6px;
+  }
+  .selection-frame > .handle {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: white;
+    border: 1.5px solid var(--color-cobalt);
+  }
+
+  /* Buttons respond to the press, not to the page load (skill `animate`). */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.7rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    transition:
+      transform 120ms ease-out,
+      background-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override every animation */
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Hero demo: the single orchestrated moment of the page (12 s loop).
+ * click the title → select → retype → saved → publish → live.
+ * Base styles are the FINAL state: that is what reduced-motion users and the admin editor see.
+ * ------------------------------------------------------------------------------------------- */
+@property --reveal {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 100%;
+}
+
+.demo {
+  --demo-duration: 12s;
+  position: relative;
+}
+.demo [data-anim] {
+  animation-duration: var(--demo-duration);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+.demo.is-static [data-anim] {
+  animation: none;
+}
+
+.demo-cursor {
+  position: absolute;
+  left: 24%;
+  top: 38%;
+  width: 22px;
+  opacity: 0;
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.4));
+  pointer-events: none;
+  animation-name: demo-cursor;
+}
+/* Tiny element: animating left/top here is cheaper than measuring the layout in JS. */
+@keyframes demo-cursor {
+  0% {
+    opacity: 0;
+    left: 86%;
+    top: 92%;
+  }
+  3% {
+    opacity: 1;
+    left: 86%;
+    top: 92%;
+    animation-timing-function: var(--ease-in-out-cubic);
+  }
+  9% {
+    left: 24%;
+    top: 38%;
+    scale: 1;
+  }
+  10% {
+    scale: 0.82;
+  }
+  11.5% {
+    scale: 1;
+  }
+  48% {
+    left: 24%;
+    top: 38%;
+    animation-timing-function: var(--ease-in-out-cubic);
+  }
+  56% {
+    left: var(--publish-left, 93%);
+    top: var(--publish-top, 3.5%);
+    scale: 1;
+  }
+  58% {
+    scale: 0.82;
+  }
+  59.5% {
+    scale: 1;
+  }
+  70% {
+    opacity: 1;
+    left: var(--publish-left, 93%);
+    top: var(--publish-top, 3.5%);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    left: var(--publish-left, 93%);
+    top: var(--publish-top, 3.5%);
+  }
+}
+
+.demo-select {
+  animation-name: demo-select;
+}
+@keyframes demo-select {
+  0%,
+  10% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  11.5%,
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.demo-before {
+  opacity: 0;
+  border-radius: 3px;
+  animation-name: demo-before;
+}
+@keyframes demo-before {
+  0%,
+  12% {
+    opacity: 1;
+    background-color: transparent;
+  }
+  13%,
+  17% {
+    opacity: 1;
+    background-color: color-mix(in oklab, var(--color-cobalt) 28%, transparent);
+  }
+  17.5%,
+  97% {
+    opacity: 0;
+    background-color: transparent;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.demo-after {
+  --reveal: 100%;
+  position: relative;
+  display: inline-block;
+  animation-name: demo-type;
+}
+.demo-after-text {
+  display: inline-block;
+  white-space: nowrap;
+  clip-path: inset(0 calc(100% - var(--reveal)) 0 0);
+}
+.demo-caret {
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  left: var(--reveal);
+  width: 3px;
+  margin-left: 2px;
+  background: var(--color-cobalt);
+  opacity: 0;
+  animation: demo-caret var(--demo-duration) linear infinite;
+}
+.demo.is-static .demo-caret {
+  animation: none;
+}
+@keyframes demo-type {
+  0%,
+  17.5% {
+    --reveal: 0%;
+    animation-timing-function: steps(22, end);
+  }
+  40% {
+    --reveal: 100%;
+  }
+  97% {
+    --reveal: 100%;
+  }
+  100% {
+    --reveal: 0%;
+  }
+}
+@keyframes demo-caret {
+  0%,
+  11.5% {
+    opacity: 0;
+  }
+  12%,
+  44% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.demo-field-before {
+  animation-name: demo-field-before;
+  opacity: 0;
+}
+.demo-field-after {
+  animation-name: demo-field-after;
+}
+@keyframes demo-field-before {
+  0%,
+  17% {
+    opacity: 1;
+  }
+  18%,
+  97% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes demo-field-after {
+  0%,
+  17% {
+    opacity: 0;
+  }
+  18%,
+  97% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.demo-pending {
+  opacity: 0;
+  animation-name: demo-pending;
+}
+.demo-saved {
+  animation-name: demo-saved;
+}
+@keyframes demo-pending {
+  0%,
+  17% {
+    opacity: 0;
+  }
+  18%,
+  45% {
+    opacity: 1;
+  }
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes demo-saved {
+  0%,
+  17% {
+    opacity: 1;
+  }
+  18%,
+  45% {
+    opacity: 0;
+  }
+  46%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.demo-publish {
+  animation-name: demo-publish;
+}
+@keyframes demo-publish {
+  0%,
+  57.5% {
+    transform: scale(1);
+  }
+  58% {
+    transform: scale(0.94);
+  }
+  60%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+.demo-progress {
+  transform-origin: left;
+  transform: scaleX(0);
+  animation-name: demo-progress;
+}
+@keyframes demo-progress {
+  0%,
+  59% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  74% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  78%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+.demo-live {
+  animation-name: demo-live;
+}
+@keyframes demo-live {
+  0%,
+  74% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  76%,
+  97% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.demo-live-dot {
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-flame) 60%, transparent);
+  animation: demo-pulse 2s var(--ease-out-quint) infinite;
+}
+@keyframes demo-pulse {
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Pause button of the hero (DemoToggle): last, so it wins over every demo rule. */
+[data-paused] .demo [data-anim],
+[data-paused] .demo .demo-caret,
+[data-paused] .demo .demo-live-dot {
+  animation-play-state: paused;
+}

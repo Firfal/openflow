@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+.openflow/
+openflow/.snapshot.json
+functions/lib/
+functions/node_modules/
+functions/.env*
+.firebase/
+*.log
+next-env.d.ts
+*.tsbuildinfo
+.env*

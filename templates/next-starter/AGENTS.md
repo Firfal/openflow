@@ -31,7 +31,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 7. Seule la section d'en-tête de page (Hero) utilise `h1`. Les autres sections utilisent `h2` puis `h3`.
 8. **Ne renomme ni ne supprime** une section ou un champ déjà livré : le contenu du propriétaire en dépend.
    Ajoute plutôt un nouveau champ avec une valeur par défaut.
-9. Styles : classes Tailwind. La couleur du thème se règle dans Réglages (`bg-accent`, `text-accent`).
+9. Styles : classes Tailwind et jetons du thème déclarés dans `app/globals.css` (`@theme`). N'écris pas de couleur
+   en dur quand un jeton existe. Dans le modèle de départ, la couleur principale se règle dans Réglages (`bg-accent`, `text-accent`).
 10. Aucun accès à Firebase ou Firestore dans `openflow/` ni dans `app/(site)` : le contenu arrive par les props et par `getSettings()`.
 
 Pour une nouvelle section : crée `openflow/components/MaSection.tsx`, ajoute-la à `components` et à une

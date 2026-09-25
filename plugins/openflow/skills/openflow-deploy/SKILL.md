@@ -55,6 +55,12 @@ Cette commande :
 - importe le contenu de départ sans jamais écraser un contenu existant ;
 - lance la première publication.
 
+Si les paquets `@openflow/*` ne viennent pas de npm (site placé dans le dépôt OpenFlow ou dans un fork,
+dépendances `workspace:`), la commande prépare une copie autonome du site : elle empaquette ces paquets
+dans `vendor/` avec `pnpm pack`, y fait pointer les `package.json` et génère un `package-lock.json`.
+Cloud Build et Cloud Functions installent alors exactement les versions du dépôt. Lance d'abord `pnpm build`
+à la racine du dépôt.
+
 Suis le lien Cloud Build affiché : le site doit être en ligne 2 à 4 minutes plus tard.
 
 ## 4. Domaine

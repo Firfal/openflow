@@ -3,6 +3,8 @@ packages:
   - templates/*
   - templates/*/functions
   - tests/*
+  - sites/*
+  - sites/*/functions
 
 onlyBuiltDependencies:
   - esbuild

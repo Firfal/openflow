@@ -147,14 +147,16 @@ export const Promo = {
   fields: {
     title: { type: "text", contentEditable: true },
     subtitle: { type: "text" },
+    code: { type: "text", metadata: { openflowInline: false } },
     note: { type: "text" },
     image: imageField(),
     unused: { type: "textarea" },
   },
-  defaultProps: { title: "Promo", subtitle: "Sous-titre", image: null, unused: "x" },
-  render: ({ title, subtitle, image }) => (
+  defaultProps: { title: "Promo", subtitle: "Sous-titre", code: "npx x", image: null, unused: "x" },
+  render: ({ title, subtitle, code, image }) => (
     <section>
       <h2>{subtitle}</h2>
+      <code>{code}</code>
       <img src={image.src} alt={title} />
       <span>{LABEL}</span>
     </section>
@@ -184,6 +186,10 @@ export default defineConfig({ site: { name: "X" }, components: { Promo } });`,
     expect(rules).toContain("OF-104"); // `note` and `unused` never rendered
     expect(rules).toContain("OF-105"); // `note` has no default
     expect(rules).toContain("OF-106"); // `subtitle` rendered as text but not contentEditable
+    // `code` opts out explicitly (metadata.openflowInline = false): no OF-106 for it.
+    expect(
+      result.issues.some((issue) => issue.rule === "OF-106" && issue.message.includes("« code »")),
+    ).toBe(false);
     expect(rules).toContain("OF-107"); // image.src crashes when image is null
     expect(rules).toContain("OF-108"); // contentEditable `title` used in alt
     expect(rules).toContain("OF-201"); // invalid seed

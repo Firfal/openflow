@@ -94,7 +94,7 @@ render: ({ cta, ctaLabel }) => <a {...linkProps(cta)}>{ctaLabel}</a>`,
     level: "render",
     status: "active",
     why: "Un non-technicien s'attend à cliquer sur un texte pour le modifier (comme dans Webflow ou Framer). Sans `contentEditable`, il doit passer par le panneau latéral.",
-    fix: "Ajoutez `contentEditable: true` aux champs `text` et `textarea` affichés comme contenu d'un élément. Ne le faites pas pour les champs utilisés dans un attribut (voir OF-108).",
+    fix: "Ajoutez `contentEditable: true` aux champs `text` et `textarea` affichés comme contenu d'un élément. Si le champ doit rester une chaîne (utilisé dans un attribut, copié, concaténé), déclarez `metadata: { openflowInline: false }` sur le champ pour assumer ce choix (voir OF-108).",
   },
   {
     id: "OF-107",

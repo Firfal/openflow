@@ -1,0 +1,78 @@
+{
+  "site": {
+    "name": "OpenFlow",
+    "lang": "fr",
+    "url": "https://open-flow.web.app",
+    "description": "Le CMS visuel open source pour les sites Next.js créés avec Claude Code, 100 % Firebase."
+  },
+  "values": {
+    "navigation": [
+      {
+        "label": "Fonctionnement",
+        "link": {
+          "kind": "url",
+          "href": "#fonctionnement"
+        }
+      },
+      {
+        "label": "Norme OFS",
+        "link": {
+          "kind": "url",
+          "href": "#norme"
+        }
+      },
+      {
+        "label": "Firebase",
+        "link": {
+          "kind": "url",
+          "href": "#firebase"
+        }
+      },
+      {
+        "label": "Démarrer",
+        "link": {
+          "kind": "url",
+          "href": "#demarrer"
+        }
+      }
+    ],
+    "headerCtaLabel": "GitHub",
+    "headerCtaLink": {
+      "kind": "url",
+      "href": "https://github.com/Firfal/openflow"
+    },
+    "skipLinkLabel": "Aller au contenu",
+    "footerText": "OpenFlow est un CMS visuel open source pour les sites Next.js créés avec Claude Code, hébergés à 100 % sur Firebase.",
+    "footerLinks": [
+      {
+        "label": "Code source",
+        "link": {
+          "kind": "url",
+          "href": "https://github.com/Firfal/openflow"
+        }
+      },
+      {
+        "label": "Documentation",
+        "link": {
+          "kind": "url",
+          "href": "https://github.com/Firfal/openflow/tree/HEAD/docs"
+        }
+      },
+      {
+        "label": "Norme OFS",
+        "link": {
+          "kind": "url",
+          "href": "https://github.com/Firfal/openflow/blob/HEAD/docs/norme/README.md"
+        }
+      },
+      {
+        "label": "Signaler un problème",
+        "link": {
+          "kind": "url",
+          "href": "https://github.com/Firfal/openflow/issues"
+        }
+      }
+    ],
+    "legalText": "Licence MIT. Cette page est elle-même un site OpenFlow."
+  }
+}

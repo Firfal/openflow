@@ -31,3 +31,10 @@ champs propres à OpenFlow (image et lien), branchés sur Firebase dans l'admin.
   Ne propose jamais de champ de saisie de CSS.
 - Pour les listes, `getItemSummary` affiche un résumé lisible de chaque élément.
 - Un texte utilisé dans un attribut (`alt`, `aria-label`, `title`) doit être un champ **sans** `contentEditable`.
+- Un texte affiché mais qui doit rester une chaîne (commande à copier, valeur passée à un composant client,
+  texte concaténé) se déclare avec `metadata: { openflowInline: false }`. Le propriétaire le modifie alors
+  dans le panneau de droite, et la norme n'émet plus OF-106 pour ce champ :
+
+  ```tsx
+  code: { type: "text", label: "Commande", metadata: { openflowInline: false } },
+  ```

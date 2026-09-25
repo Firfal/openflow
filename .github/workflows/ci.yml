@@ -24,6 +24,9 @@ jobs:
       - name: Starter template complies with the OpenFlow Standard (build level)
         working-directory: templates/next-starter
         run: npx openflow check --level build --format sarif > openflow.sarif || (npx openflow check --level build; exit 1)
+      - name: Landing page (built with OpenFlow) complies with the standard (build level)
+        working-directory: sites/landing
+        run: npx openflow check --level build
       - name: Validate Claude Code plugin manifests
         run: |
           node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/marketplace.json'))"

@@ -95,6 +95,8 @@ interface SentinelInfo {
   contentEditable: boolean;
   /** `false` for optional tokens (e.g. image alt). */
   required: boolean;
+  /** Field explicitly kept out of inline editing (`metadata: { openflowInline: false }`). */
+  inlineOptOut?: boolean;
 }
 
 class Sentinels {
@@ -146,6 +148,7 @@ function sentinelValue(
     return { kind: "url", href: `${SENTINEL_HOST}/${href}` };
   }
   const editable = "contentEditable" in field && field.contentEditable === true;
+  const inlineOptOut = field.metadata?.openflowInline === false;
   switch (field.type) {
     case "text":
     case "textarea":
@@ -154,6 +157,7 @@ function sentinelValue(
         fieldType: field.type,
         contentEditable: editable,
         required: true,
+        inlineOptOut,
       });
     case "richtext":
       return `<p>${sentinels.next({ path: fieldPath, fieldType: "richtext", contentEditable: true, required: true })}</p>`;
@@ -437,6 +441,7 @@ export async function checkRender(
       }
       if (
         !info.contentEditable &&
+        !info.inlineOptOut &&
         inText &&
         !inAttr &&
         (info.fieldType === "text" || info.fieldType === "textarea")

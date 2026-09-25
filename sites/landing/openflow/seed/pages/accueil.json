@@ -1,0 +1,357 @@
+{
+  "slug": "",
+  "title": "Accueil",
+  "status": "published",
+  "seo": {
+    "title": "OpenFlow : le CMS visuel des sites créés avec Claude Code",
+    "description": "Claude Code construit le site, votre client le modifie lui-même : éditeur visuel open source pour Next.js, contenu dans Firebase, publication statique."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "HeroEditor",
+        "props": {
+          "id": "hero",
+          "title": "Claude Code construit le site. Votre client le modifie lui-même.",
+          "subtitle": "OpenFlow ajoute un éditeur visuel aux sites Next.js créés par l'IA : on clique sur un texte pour le changer, on publie, et le site reste statique sur Firebase.",
+          "primaryLabel": "Voir le code sur GitHub",
+          "primaryLink": {
+            "kind": "url",
+            "href": "https://github.com/Firfal/openflow"
+          },
+          "secondaryLabel": "Comment ça marche",
+          "secondaryLink": {
+            "kind": "url",
+            "href": "#fonctionnement"
+          },
+          "installCommand": "npx openflow create mon-site",
+          "demoUrl": "boulangerie-dupont.fr/admin",
+          "demoTabs": [
+            {
+              "label": "Pages"
+            },
+            {
+              "label": "Réglages"
+            },
+            {
+              "label": "Historique"
+            }
+          ],
+          "demoFieldLabel": "Titre principal",
+          "demoBefore": "Pain au levain, cuit ce matin",
+          "demoAfter": "Brioche du dimanche, dès 8 h",
+          "demoPending": "Enregistrement…",
+          "demoSaved": "Enregistré",
+          "demoPublish": "Publier",
+          "demoLive": "En ligne",
+          "demoPauseLabel": "Mettre la démo en pause",
+          "demoPlayLabel": "Relancer la démo"
+        }
+      },
+      {
+        "type": "Steps",
+        "props": {
+          "id": "etapes",
+          "anchor": "fonctionnement",
+          "title": "Trois rôles, un seul site",
+          "intro": "Le code appartient à l'agence, le contenu au propriétaire. OpenFlow fait la jonction.",
+          "steps": [
+            {
+              "title": "Claude Code crée le site",
+              "text": "Le plugin part d'un modèle Next.js et déclare chaque texte, image et lien comme un champ éditable.",
+              "detail": "/plugin install openflow@openflow"
+            },
+            {
+              "title": "Le propriétaire modifie",
+              "text": "Depuis /admin, il clique sur un titre pour le réécrire, change une photo, ajoute une section.",
+              "detail": "monsite.fr/admin"
+            },
+            {
+              "title": "OpenFlow publie",
+              "text": "Un clic sur Publier fige le contenu, reconstruit le site en HTML statique et le met en ligne.",
+              "detail": "Firebase Hosting"
+            }
+          ],
+          "surface": "calque"
+        }
+      },
+      {
+        "type": "Showcase",
+        "props": {
+          "id": "interface",
+          "anchor": "interface",
+          "title": "L'éditeur, tel que le voit votre client",
+          "intro": "Pas de maquette : ce sont des captures de l'admin OpenFlow en train d'éditer cette page.",
+          "image": {
+            "src": "/images/screens/editor.webp",
+            "alt": "L'admin OpenFlow en train d'éditer cette page : bibliothèque de sections à gauche, aperçu de la page au centre avec le titre en cours d'édition, champs de la section à droite.",
+            "width": 2400,
+            "height": 1500
+          },
+          "imageTag": "Capture réelle de l'admin",
+          "callouts": [
+            {
+              "title": "Édition sur la page",
+              "text": "Titres et paragraphes se modifient là où ils s'affichent, sans formulaire."
+            },
+            {
+              "title": "Des sections prêtes à l'emploi",
+              "text": "Le client ajoute ou réordonne les sections conçues pour lui, sans pouvoir casser le design."
+            },
+            {
+              "title": "Sauvegarde automatique",
+              "text": "Chaque modification est enregistrée dans Firestore moins d'une seconde après la dernière frappe."
+            }
+          ],
+          "gallery": [
+            {
+              "image": {
+                "src": "/images/screens/publish.webp",
+                "alt": "Fenêtre « Publier le site » au-dessus de l'éditeur, avec le bouton Mettre en ligne.",
+                "width": 1200,
+                "height": 750
+              },
+              "caption": "Publier : le site est reconstruit en HTML statique, puis mis en ligne."
+            },
+            {
+              "image": {
+                "src": "/images/screens/seo.webp",
+                "alt": "Paramètres de la page d'accueil : titre, adresse, titre et description affichés dans Google.",
+                "width": 1200,
+                "height": 750
+              },
+              "caption": "Référencement page par page, avec les longueurs recommandées."
+            },
+            {
+              "image": {
+                "src": "/images/screens/settings.webp",
+                "alt": "Réglages communs : le menu principal et le pied de page, modifiables comme une page.",
+                "width": 1200,
+                "height": 750
+              },
+              "caption": "Menu et pied de page, communs à toutes les pages."
+            }
+          ],
+          "surface": "calque"
+        }
+      },
+      {
+        "type": "StandardTerminal",
+        "props": {
+          "id": "norme",
+          "anchor": "norme",
+          "title": "Une norme qui corrige l'IA pendant qu'elle code",
+          "intro": "Un site généré n'est utile au client que si tout y est éditable. La norme OpenFlow le vérifie à chaque fichier écrit.",
+          "body": "<p>Texte en dur, image importée, lien figé, champ jamais affiché, API incompatible avec l'export statique : chaque écart revient à Claude Code avec la ligne en cause et le correctif.</p><p>Tant que le site n'est pas conforme, Claude ne rend pas la main.</p>",
+          "terminalTitle": "Hook Claude Code, après chaque fichier écrit",
+          "lines": [
+            {
+              "kind": "command",
+              "text": "Write openflow/components/Hero.tsx"
+            },
+            {
+              "kind": "error",
+              "text": "✖ OF-101 Hero.tsx:14 Texte en dur « Bienvenue »"
+            },
+            {
+              "kind": "fix",
+              "text": "Créez un champ title (text, contentEditable), puis affichez {title}."
+            },
+            {
+              "kind": "command",
+              "text": "Edit openflow/components/Hero.tsx"
+            },
+            {
+              "kind": "ok",
+              "text": "✓ Conforme à la norme OFS, 29 champs sur 29 éditables"
+            }
+          ],
+          "stats": [
+            {
+              "value": "20",
+              "label": "règles vérifiées"
+            },
+            {
+              "value": "3",
+              "label": "niveaux de contrôle"
+            },
+            {
+              "value": "< 1 s",
+              "label": "par fichier modifié"
+            }
+          ],
+          "linkLabel": "Lire la norme OFS",
+          "link": {
+            "kind": "url",
+            "href": "https://github.com/Firfal/openflow/blob/HEAD/docs/norme/README.md"
+          },
+          "surface": "calque"
+        }
+      },
+      {
+        "type": "Architecture",
+        "props": {
+          "id": "architecture",
+          "anchor": "firebase",
+          "title": "Tout reste dans votre projet Firebase",
+          "intro": "Pas de plateforme intermédiaire ni d'abonnement : le site, l'admin et le contenu vivent dans le projet Firebase du client.",
+          "image": {
+            "src": "/images/architecture.webp",
+            "alt": "Schéma : l'admin écrit dans Firestore et Storage ; Publier déclenche Cloud Build, qui déploie le site statique sur Firebase Hosting.",
+            "width": 1200,
+            "height": 700
+          },
+          "services": [
+            {
+              "name": "Hosting",
+              "role": "Sert le site statique et /admin"
+            },
+            {
+              "name": "Firestore",
+              "role": "Brouillons, réglages et historique"
+            },
+            {
+              "name": "Authentication",
+              "role": "Le propriétaire, et lui seul"
+            },
+            {
+              "name": "Storage",
+              "role": "Médiathèque et versions publiées"
+            },
+            {
+              "name": "Functions",
+              "role": "Publication et restauration"
+            },
+            {
+              "name": "Cloud Build",
+              "role": "Reconstruit le site à chaque publication"
+            }
+          ],
+          "surface": "encre"
+        }
+      },
+      {
+        "type": "Comparison",
+        "props": {
+          "id": "comparatif",
+          "anchor": "comparatif",
+          "title": "Pourquoi pas Webflow ou un CMS headless ?",
+          "intro": "Parce que le site est déjà écrit par Claude Code, et que ni vous ni votre client ne voulez d'un abonnement de plus.",
+          "criterionLabel": "Critère",
+          "featuredLabel": "OpenFlow",
+          "otherLabel": "Webflow, Framer",
+          "thirdLabel": "CMS headless",
+          "rows": [
+            {
+              "criterion": "Code du site",
+              "featured": "Le vôtre, en Next.js",
+              "other": "Celui de la plateforme",
+              "third": "Le vôtre"
+            },
+            {
+              "criterion": "Édition directement sur la page",
+              "featured": "Oui",
+              "other": "Oui",
+              "third": "Rarement, souvent en option"
+            },
+            {
+              "criterion": "Hébergement et données",
+              "featured": "Votre projet Firebase",
+              "other": "Leur infrastructure",
+              "third": "Leur cloud"
+            },
+            {
+              "criterion": "Coût mensuel",
+              "featured": "Les quotas gratuits de Firebase",
+              "other": "Un abonnement par site",
+              "third": "Un abonnement par utilisateur"
+            },
+            {
+              "criterion": "Licence",
+              "featured": "MIT",
+              "other": "Propriétaire",
+              "third": "Variable"
+            }
+          ],
+          "surface": "calque"
+        }
+      },
+      {
+        "type": "GetStarted",
+        "props": {
+          "id": "demarrer",
+          "anchor": "demarrer",
+          "title": "Démarrer depuis Claude Code",
+          "intro": "Installez le plugin, puis décrivez le site à créer. Claude s'occupe du reste, norme comprise.",
+          "blockTitle": "Dans Claude Code",
+          "lines": [
+            {
+              "code": "/plugin marketplace add Firfal/openflow",
+              "comment": "Ajoute la marketplace OpenFlow"
+            },
+            {
+              "code": "/plugin install openflow@openflow",
+              "comment": "Installe les skills et les hooks de la norme"
+            },
+            {
+              "code": "Crée le site de la boulangerie Dupont avec OpenFlow",
+              "comment": "Décrivez le site, Claude le construit"
+            }
+          ],
+          "copyLabel": "Copier",
+          "copiedLabel": "Copié",
+          "note": "Sans Claude Code : npx openflow create mon-site, puis npx openflow dev pour lancer le site et l'admin sur les émulateurs Firebase.",
+          "surface": "calque"
+        }
+      },
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "anchor": "faq",
+          "title": "Questions fréquentes",
+          "surface": "calque",
+          "items": [
+            {
+              "question": "Mon client peut-il casser le site ?",
+              "answer": "Non. Il modifie le contenu des sections prévues pour lui : textes, images, liens et ordre des sections. Le code et le design restent entre vos mains."
+            },
+            {
+              "question": "Faut-il le plan Blaze de Firebase ?",
+              "answer": "Oui, pour Cloud Functions, Cloud Build et Storage. Les quotas gratuits couvrent largement un site vitrine."
+            },
+            {
+              "question": "Combien de temps prend une publication ?",
+              "answer": "Deux à quatre minutes : le site est reconstruit en HTML statique. Revenir à une version précédente est instantané."
+            },
+            {
+              "question": "Et si je modifie le code après la livraison ?",
+              "answer": "Relancez openflow deploy. Le contenu du propriétaire est conservé, car le code et le contenu sont stockés séparément."
+            },
+            {
+              "question": "OpenFlow fonctionne-t-il sans Claude Code ?",
+              "answer": "Oui. La CLI et le modèle de départ suffisent. Claude Code et la norme OFS accélèrent la création et garantissent un site entièrement éditable."
+            }
+          ]
+        }
+      },
+      {
+        "type": "ClosingCta",
+        "props": {
+          "id": "fin",
+          "tag": "Titre de section",
+          "title": "Cette page est éditée avec OpenFlow.",
+          "text": "Son contenu vit dans Firestore et se modifie depuis /admin, comme celui de n'importe quel site OpenFlow.",
+          "buttonLabel": "Contribuer sur GitHub",
+          "buttonLink": {
+            "kind": "url",
+            "href": "https://github.com/Firfal/openflow"
+          }
+        }
+      }
+    ]
+  }
+}

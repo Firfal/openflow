@@ -7,6 +7,7 @@ import { COLLECTIONS, DOCS, type ReleaseDoc, type SourceDoc, STORAGE_PATHS } fro
 import { snapshotFromFirestore, snapshotPath, startCloudBuild } from "@openflow/functions/core";
 import { adminApp, defaultProject, firestore, storage } from "../firebase.js";
 import { CliError, capture, firebaseCli, log, run } from "../util.js";
+import { stageWorkspaceSite } from "../vendor.js";
 import { check } from "./check.js";
 import { seed } from "./seed.js";
 
@@ -46,8 +47,9 @@ export async function sourceFiles(site: string): Promise<string[]> {
 /** Creates `source.tgz` of the site (what Cloud Build rebuilds at each publication). */
 export async function archiveSource(
   site: string,
+  only?: string[],
 ): Promise<{ file: string; sha256: string; count: number }> {
-  const files = await sourceFiles(site);
+  const files = only ?? (await sourceFiles(site));
   if (!files.includes("package.json"))
     throw new CliError("package.json introuvable dans les sources du site.");
   const dir = await mkdtemp(path.join(tmpdir(), "openflow-source-"));
@@ -104,23 +106,27 @@ export async function deploy(site: string, options: DeployOptions) {
     throw new CliError("Précisez l'e-mail du propriétaire : --owner client@exemple.fr");
   }
 
-  log.step("Déploiement des règles de sécurité et des Cloud Functions");
-  const firebase = firebaseCli(site);
-  await run(
-    firebase.command,
-    [
-      ...firebase.args,
-      "deploy",
-      "--only",
-      "firestore:rules,storage,functions",
-      "--project",
-      projectId,
-    ],
-    { cwd: site },
-  );
+  // Unpublished OpenFlow packages (monorepo, fork): deploy a standalone copy with vendor/.
+  const staged = await stageWorkspaceSite(site, await sourceFiles(site));
+  const root = staged?.dir ?? site;
 
   const handle = adminApp({ projectId, bucket: options.bucket });
   try {
+    log.step("Déploiement des règles de sécurité et des Cloud Functions");
+    const firebase = firebaseCli(site);
+    await run(
+      firebase.command,
+      [
+        ...firebase.args,
+        "deploy",
+        "--only",
+        "firestore:rules,storage,functions",
+        "--project",
+        projectId,
+      ],
+      { cwd: root },
+    );
+
     const bucket = storage(handle).bucket();
     if (!(await bucket.exists())[0]) {
       throw new CliError(
@@ -128,7 +134,7 @@ export async function deploy(site: string, options: DeployOptions) {
       );
     }
     log.step("Envoi du code source du site");
-    const archive = await archiveSource(site);
+    const archive = await archiveSource(root, staged ? await walk(root) : undefined);
     const destination = `${STORAGE_PATHS.source}/${new Date().toISOString().replace(/[:.]/g, "-")}-${archive.sha256.slice(0, 12)}.tgz`;
     await bucket.upload(archive.file, {
       destination,
@@ -180,6 +186,7 @@ export async function deploy(site: string, options: DeployOptions) {
     }
   } finally {
     await handle.close();
+    if (staged) await rm(staged.dir, { recursive: true, force: true });
   }
 
   log.info(`
