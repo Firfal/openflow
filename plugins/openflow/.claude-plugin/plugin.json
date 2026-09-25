@@ -1,0 +1,13 @@
+{
+  "name": "openflow",
+  "version": "0.1.0",
+  "description": "Crée des sites Next.js éditables par leur propriétaire (éditeur visuel OpenFlow, Firebase) et vérifie la norme OFS à chaque modification.",
+  "author": {
+    "name": "OpenFlow contributors",
+    "url": "https://github.com/Firfal/openflow"
+  },
+  "homepage": "https://github.com/Firfal/openflow",
+  "repository": "https://github.com/Firfal/openflow",
+  "license": "MIT",
+  "keywords": ["cms", "nextjs", "firebase", "puck", "visual-editor", "openflow"]
+}

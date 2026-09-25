@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm check:docs
+      - name: Starter template complies with the OpenFlow Standard (build level)
+        working-directory: templates/next-starter
+        run: npx openflow check --level build --format sarif > openflow.sarif || (npx openflow check --level build; exit 1)
+      - name: Validate Claude Code plugin manifests
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/marketplace.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('plugins/openflow/.claude-plugin/plugin.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('plugins/openflow/hooks/hooks.json'))"
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter @openflow/e2e exec playwright install --with-deps chromium
+      - name: Security rules + admin scenario on the Firebase emulators
+        run: pnpm --filter @openflow/e2e test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: tests/e2e/screenshots
+          if-no-files-found: ignore

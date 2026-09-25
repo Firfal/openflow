@@ -1,0 +1,18 @@
+{
+  "name": "openflow",
+  "owner": {
+    "name": "OpenFlow contributors",
+    "url": "https://github.com/Firfal/openflow"
+  },
+  "metadata": {
+    "description": "Créer avec Claude Code des sites Next.js que leur propriétaire modifie lui-même (OpenFlow, 100 % Firebase)."
+  },
+  "plugins": [
+    {
+      "name": "openflow",
+      "source": "./plugins/openflow",
+      "description": "Skills, norme OFS et hooks de conformité pour créer et livrer des sites OpenFlow.",
+      "category": "development"
+    }
+  ]
+}

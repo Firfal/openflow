@@ -1,0 +1,31 @@
+{
+  "site": {
+    "name": "Mon entreprise",
+    "lang": "fr",
+    "description": "Présentation de l'entreprise en une phrase."
+  },
+  "values": {
+    "theme": "amber",
+    "logo": null,
+    "navigation": [
+      { "label": "Accueil", "link": { "kind": "page", "pageId": "accueil", "href": "/" } },
+      {
+        "label": "À propos",
+        "link": { "kind": "page", "pageId": "a-propos", "href": "/a-propos/" }
+      }
+    ],
+    "headerCtaLabel": "Nous contacter",
+    "headerCtaLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+    "footerText": "Un savoir-faire local au service de vos projets.",
+    "contactEmail": "contact@exemple.fr",
+    "contactPhone": "01 23 45 67 89",
+    "address": "12 rue de l'Exemple\n75000 Paris",
+    "socialLinks": [
+      {
+        "label": "Instagram",
+        "link": { "kind": "url", "href": "https://www.instagram.com/", "newTab": true }
+      }
+    ],
+    "legalText": "Tous droits réservés."
+  }
+}

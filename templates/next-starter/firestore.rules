@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // BEGIN openflow — ne pas modifier (norme OFS, règle OF-303)
+    function ofIsOwner() {
+      return request.auth != null && request.auth.token.get('of_owner', false) == true;
+    }
+    match /of_site/{docId} {
+      allow read, write: if ofIsOwner();
+    }
+    match /of_pages/{pageId} {
+      allow read, delete: if ofIsOwner();
+      allow create, update: if ofIsOwner()
+        && request.resource.data.keys().hasAll(['slug', 'title', 'status', 'data'])
+        && request.resource.data.slug is string
+        && request.resource.data.title is string
+        && request.resource.data.status in ['draft', 'published'];
+    }
+    match /of_media/{mediaId} {
+      allow read, write: if ofIsOwner();
+    }
+    match /of_releases/{releaseId} {
+      allow read: if ofIsOwner();
+      allow write: if false;
+    }
+    match /of_system/{docId} {
+      allow read, write: if false;
+    }
+    // END openflow
+
+    // Ajoutez ici les règles propres à votre site.
+  }
+}

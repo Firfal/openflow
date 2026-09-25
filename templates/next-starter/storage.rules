@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // BEGIN openflow — ne pas modifier (norme OFS, règle OF-303)
+    function ofIsOwner() {
+      return request.auth != null && request.auth.token.get('of_owner', false) == true;
+    }
+    match /openflow/media/{fileName} {
+      allow read: if true;
+      allow create, update: if ofIsOwner()
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|gif|webp|avif)|video/(mp4|webm)|application/pdf');
+      allow delete: if ofIsOwner();
+    }
+    match /openflow/{allPaths=**} {
+      allow read, write: if false;
+    }
+    // END openflow
+
+    // Ajoutez ici les règles propres à votre site.
+  }
+}

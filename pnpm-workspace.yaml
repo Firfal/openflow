@@ -1,0 +1,14 @@
+packages:
+  - packages/*
+  - templates/*
+  - templates/*/functions
+  - tests/*
+
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
+  - sharp
+  - "@firebase/util"
+
+ignoredBuiltDependencies:
+  - re2

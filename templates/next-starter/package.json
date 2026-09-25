@@ -1,0 +1,31 @@
+{
+  "name": "openflow-next-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "openflow dev",
+    "next:dev": "next dev",
+    "build": "openflow build",
+    "check": "openflow check",
+    "deploy": "openflow deploy"
+  },
+  "dependencies": {
+    "@openflow/admin": "workspace:*",
+    "@openflow/core": "workspace:*",
+    "@openflow/next": "workspace:*",
+    "@puckeditor/core": "0.23.0",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "firebase-tools": "^15.31.0",
+    "openflow": "workspace:*",
+    "tailwindcss": "^4.3.3",
+    "typescript": "6.0.3"
+  }
+}

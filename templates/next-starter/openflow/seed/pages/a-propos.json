@@ -1,0 +1,59 @@
+{
+  "slug": "a-propos",
+  "title": "À propos",
+  "status": "published",
+  "seo": {
+    "title": "À propos",
+    "description": "Notre histoire, notre équipe et nos valeurs."
+  },
+  "data": {
+    "root": { "props": {} },
+    "content": [
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-a-propos",
+          "eyebrow": "À propos",
+          "title": "Une équipe passionnée depuis plus de vingt ans",
+          "subtitle": "Découvrez qui nous sommes, comment nous travaillons et ce qui nous anime au quotidien.",
+          "primaryLabel": "Nous contacter",
+          "primaryLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+          "secondaryLabel": "",
+          "secondaryLink": null,
+          "image": {
+            "src": "/images/equipe.svg",
+            "alt": "Illustration de l'équipe",
+            "width": 1200,
+            "height": 900
+          },
+          "layout": "split",
+          "tone": "light"
+        }
+      },
+      {
+        "type": "TextImage",
+        "props": {
+          "id": "histoire",
+          "title": "Notre histoire",
+          "body": "<p>Tout a commencé en 1998, dans un petit atelier de quartier. Depuis, notre équipe a grandi, mais notre exigence est restée la même.</p>",
+          "image": null,
+          "imagePosition": "left",
+          "linkLabel": "Retour à l'accueil",
+          "link": { "kind": "page", "pageId": "accueil", "href": "/" },
+          "tone": "muted"
+        }
+      },
+      {
+        "type": "CallToAction",
+        "props": {
+          "id": "contact-a-propos",
+          "title": "Envie de travailler avec nous ?",
+          "text": "Présentez-nous votre projet en quelques lignes.",
+          "buttonLabel": "Nous écrire",
+          "buttonLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+          "tone": "dark"
+        }
+      }
+    ]
+  }
+}

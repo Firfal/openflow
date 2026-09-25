@@ -1,0 +1,40 @@
+{
+  "name": "@openflow/check",
+  "version": "0.1.0",
+  "description": "OpenFlow Standard (OFS) checker: static analysis, sentinel rendering and HTML checks, with feedback formatted for AI coding agents.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.0",
+    "@openflow/core": "workspace:*",
+    "jiti": "^2.7.0",
+    "parse5": "^8.0.0"
+  },
+  "devDependencies": {
+    "@puckeditor/core": "0.23.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "peerDependencies": {
+    "@puckeditor/core": "0.23.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

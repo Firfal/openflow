@@ -1,0 +1,135 @@
+{
+  "slug": "",
+  "title": "Accueil",
+  "status": "published",
+  "seo": {
+    "title": "Mon entreprise — artisan depuis 1998",
+    "description": "Un savoir-faire local au service de vos projets : découvrez nos services et contactez-nous."
+  },
+  "data": {
+    "root": { "props": {} },
+    "content": [
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-accueil",
+          "eyebrow": "Artisan depuis 1998",
+          "title": "Un savoir-faire local, au service de vos projets",
+          "subtitle": "Nous accompagnons particuliers et professionnels avec exigence, du premier conseil à la réalisation.",
+          "primaryLabel": "Nous contacter",
+          "primaryLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+          "secondaryLabel": "Notre histoire",
+          "secondaryLink": { "kind": "page", "pageId": "a-propos", "href": "/a-propos/" },
+          "image": {
+            "src": "/images/hero.svg",
+            "alt": "Illustration de paysage aux couleurs chaudes",
+            "width": 1200,
+            "height": 900
+          },
+          "layout": "split",
+          "tone": "light"
+        }
+      },
+      {
+        "type": "Features",
+        "props": {
+          "id": "atouts",
+          "title": "Pourquoi nous choisir",
+          "intro": "Trois engagements que nous tenons depuis plus de vingt ans.",
+          "items": [
+            {
+              "icon": "leaf",
+              "title": "Matériaux locaux",
+              "description": "Nous travaillons avec des fournisseurs de la région, choisis pour leur qualité."
+            },
+            {
+              "icon": "clock",
+              "title": "Délais tenus",
+              "description": "Un planning clair dès le devis, et respecté jusqu'à la livraison."
+            },
+            {
+              "icon": "heart",
+              "title": "Écoute",
+              "description": "Chaque projet commence par un vrai échange sur vos besoins."
+            }
+          ],
+          "columns": "3",
+          "tone": "muted"
+        }
+      },
+      {
+        "type": "TextImage",
+        "props": {
+          "id": "atelier",
+          "title": "Notre atelier",
+          "body": "<p>Installés au cœur du quartier, nous concevons et réalisons chaque projet dans notre atelier.</p><p>Cette proximité nous permet de suivre chaque étape et de rester disponibles pour vous.</p>",
+          "image": {
+            "src": "/images/atelier.svg",
+            "alt": "Illustration de l'atelier",
+            "width": 1200,
+            "height": 900
+          },
+          "imagePosition": "right",
+          "linkLabel": "Découvrir l'équipe",
+          "link": { "kind": "page", "pageId": "a-propos", "href": "/a-propos/" },
+          "tone": "light"
+        }
+      },
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "temoignages",
+          "title": "Ils nous font confiance",
+          "items": [
+            {
+              "quote": "Un accueil chaleureux et un travail impeccable. Je recommande sans hésiter.",
+              "author": "Camille D.",
+              "role": "Cliente depuis 2019",
+              "photo": null
+            },
+            {
+              "quote": "Réactifs, précis et de très bon conseil. Le résultat a dépassé nos attentes.",
+              "author": "Thomas L.",
+              "role": "Chef d'entreprise",
+              "photo": null
+            }
+          ],
+          "tone": "light"
+        }
+      },
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "title": "Questions fréquentes",
+          "items": [
+            {
+              "question": "Quels sont vos horaires ?",
+              "answer": "Nous sommes ouverts du mardi au samedi, de 9 h à 19 h."
+            },
+            {
+              "question": "Proposez-vous des devis gratuits ?",
+              "answer": "Oui : décrivez-nous votre projet et nous vous répondons sous 48 heures."
+            },
+            {
+              "question": "Intervenez-vous hors de la ville ?",
+              "answer": "Nous intervenons dans un rayon de 50 km autour de l'atelier."
+            }
+          ],
+          "tone": "muted"
+        }
+      },
+      {
+        "type": "CallToAction",
+        "props": {
+          "id": "contact",
+          "title": "Parlons de votre projet",
+          "text": "Écrivez-nous : nous vous répondons rapidement, sans engagement.",
+          "buttonLabel": "Nous écrire",
+          "buttonLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+          "tone": "accent"
+        }
+      }
+    ]
+  }
+}
