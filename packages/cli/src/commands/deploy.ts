@@ -4,7 +4,12 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { COLLECTIONS, DOCS, type ReleaseDoc, type SourceDoc, STORAGE_PATHS } from "@openflow/core";
-import { snapshotFromFirestore, snapshotPath, startCloudBuild } from "@openflow/functions/core";
+import {
+  ensureWebApp,
+  snapshotFromFirestore,
+  snapshotPath,
+  startCloudBuild,
+} from "@openflow/functions/core";
 import { adminApp, defaultProject, firestore, storage } from "../firebase.js";
 import { CliError, capture, firebaseCli, log, run } from "../util.js";
 import { stageWorkspaceSite } from "../vendor.js";
@@ -114,6 +119,9 @@ export async function deploy(site: string, options: DeployOptions) {
   try {
     log.step("Déploiement des règles de sécurité et des Cloud Functions");
     const firebase = firebaseCli(site);
+    // `--force`: without it, a first non-interactive deploy exits with an error after deploying,
+    // because it will not set the cleanup policy of the functions' container images. Deletions it
+    // would also allow are limited to the `openflow` functions codebase.
     await run(
       firebase.command,
       [
@@ -123,8 +131,17 @@ export async function deploy(site: string, options: DeployOptions) {
         "firestore:rules,storage,functions",
         "--project",
         projectId,
+        "--force",
       ],
       { cwd: root },
+    );
+
+    log.step("Configuration Web de l'admin (/__/firebase/init.json)");
+    const webApp = await ensureWebApp(projectId);
+    log.ok(
+      webApp.created
+        ? `Application Web créée et associée au site : ${webApp.appId}`
+        : `Application Web associée au site : ${webApp.appId}`,
     );
 
     const bucket = storage(handle).bucket();
@@ -173,16 +190,25 @@ export async function deploy(site: string, options: DeployOptions) {
         pageCount: snapshot.pages.length,
       };
       await ref.set(release);
-      const started = await startCloudBuild({
-        projectId,
-        bucket: bucket.name,
-        sourcePath: destination,
-        snapshotPath: file,
-        releaseId: ref.id,
-        serviceAccount: process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT,
-      });
-      await ref.update({ status: "building", ...started });
-      log.ok(`Build lancé : ${started.logUrl}`);
+      try {
+        const started = await startCloudBuild({
+          projectId,
+          bucket: bucket.name,
+          sourcePath: destination,
+          snapshotPath: file,
+          releaseId: ref.id,
+          serviceAccount: process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT,
+        });
+        await ref.update({ status: "building", ...started });
+        log.ok(`Build lancé : ${started.logUrl}`);
+      } catch (error) {
+        // Never leave a release "queued" forever in the owner's history.
+        await ref.update({
+          status: "failed",
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
     }
   } finally {
     await handle.close();

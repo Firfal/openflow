@@ -188,10 +188,12 @@ export function buildRequest(input: BuildInput) {
         ],
       },
     ],
+    // Read back by onBuildStatus from the Pub/Sub event. No step uses it, hence ALLOW_LOOSE:
+    // Cloud Build rejects unused substitutions otherwise.
     substitutions: { _OPENFLOW_RELEASE_ID: input.releaseId },
     tags: ["openflow", `openflow-${input.releaseId.toLowerCase()}`],
     timeout: "1200s",
-    options: { logging: "CLOUD_LOGGING_ONLY" },
+    options: { logging: "CLOUD_LOGGING_ONLY", substitutionOption: "ALLOW_LOOSE" },
     ...(input.serviceAccount
       ? { serviceAccount: `projects/${input.projectId}/serviceAccounts/${input.serviceAccount}` }
       : {}),
@@ -280,6 +282,57 @@ export async function releaseHostingVersion(
     method: "POST",
     data: { message },
   });
+}
+
+const FIREBASE_API = "https://firebase.googleapis.com/v1beta1";
+
+/**
+ * The admin reads its Firebase configuration from `/__/firebase/init.json`, which Hosting only
+ * serves completely when a web app is linked to the site. Links an existing web app, or creates
+ * one, and returns its id.
+ */
+export async function ensureWebApp(
+  projectId: string,
+  site = projectId,
+): Promise<{ appId: string; created: boolean }> {
+  const client = await auth.getClient();
+  const siteUrl = `${HOSTING_API}/projects/${projectId}/sites/${site}`;
+  const current = await client.request<{ appId?: string }>({ url: siteUrl });
+  if (current.data.appId) return { appId: current.data.appId, created: false };
+
+  const apps = await client.request<{ apps?: Array<{ appId: string; state?: string }> }>({
+    url: `${FIREBASE_API}/projects/${projectId}/webApps`,
+  });
+  let appId = apps.data.apps?.find((app) => app.state !== "DELETED")?.appId;
+  const created = !appId;
+  if (!appId) {
+    type Operation = {
+      name: string;
+      done?: boolean;
+      response?: { appId?: string };
+      error?: { message?: string };
+    };
+    let operation = (
+      await client.request<Operation>({
+        url: `${FIREBASE_API}/projects/${projectId}/webApps`,
+        method: "POST",
+        data: { displayName: "OpenFlow" },
+      })
+    ).data;
+    for (let attempt = 0; !operation.done && attempt < 30; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      operation = (await client.request<Operation>({ url: `${FIREBASE_API}/${operation.name}` }))
+        .data;
+    }
+    appId = operation.response?.appId;
+    if (!appId) {
+      throw new Error(
+        `Création de l'application Web impossible : ${operation.error?.message ?? "délai dépassé"}`,
+      );
+    }
+  }
+  await client.request({ url: `${siteUrl}?updateMask=appId`, method: "PATCH", data: { appId } });
+  return { appId, created };
 }
 
 /** Marks every other live release as superseded and `releaseId` as live. */

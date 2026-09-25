@@ -73,6 +73,8 @@ describe("cloud build", () => {
       expect.arrayContaining(["deploy", "--only", "hosting", "--project", "mon-site"]),
     );
     expect(request.substitutions).toEqual({ _OPENFLOW_RELEASE_ID: "R1" });
+    // Cloud Build rejects a substitution no step uses, unless the option is loose.
+    expect(request.options.substitutionOption).toBe("ALLOW_LOOSE");
     expect(request.serviceAccount).toBe(
       "projects/mon-site/serviceAccounts/openflow-builder@mon-site.iam.gserviceaccount.com",
     );
