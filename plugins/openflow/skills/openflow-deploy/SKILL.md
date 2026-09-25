@@ -51,6 +51,7 @@ npx openflow deploy --project <id> --owner <email-du-proprietaire>
 Cette commande :
 - refait le contrôle de conformité ;
 - déploie les règles de sécurité et les Cloud Functions ;
+- retire les droits de propriétaire aux comptes qui ne figurent plus dans `--owner` ;
 - associe une application Web Firebase au site Hosting (elle la crée au besoin) : l'admin lit sa
   configuration dans `/__/firebase/init.json` ;
 - envoie le code source dans Storage ;

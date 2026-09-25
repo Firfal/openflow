@@ -13,6 +13,9 @@ statique publié.
    Dans l'émulateur local, un e-mail non vérifié est accepté pour permettre la connexion rapide.
 3. Les fonctions sensibles (`openflowPublish`, `openflowRestoreRelease`) vérifient **le claim et l'e-mail**.
    Retirer un e-mail du paramètre révoque donc l'accès aux fonctions, même si le claim subsiste.
+4. Les règles Firestore et Storage ne vérifient que le claim. C'est pourquoi `openflow deploy` retire
+   aussi le claim aux comptes qui ne figurent plus parmi les propriétaires et révoque leurs sessions.
+   Leur jeton en cours expire dans l'heure.
 
 Il n'y a pas de clé de compte de service à manipuler, et le premier inscrit ne peut pas s'approprier
 le site.

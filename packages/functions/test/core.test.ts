@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildRequest,
+  formerOwners,
   isOwnerToken,
   ownerDecision,
   parseOwners,
@@ -16,6 +17,19 @@ describe("owner", () => {
       "b@y.fr",
     ]);
     expect(parseOwners(undefined)).toEqual([]);
+  });
+
+  it("finds the accounts that kept the claim after an owner change", () => {
+    const users = [
+      { email: "ancien@exemple.fr", customClaims: { of_owner: true, autre: 1 } },
+      { email: "Nouveau@exemple.fr", customClaims: { of_owner: true } },
+      { email: "visiteur@exemple.fr" },
+    ];
+    expect(formerOwners(users, ["nouveau@exemple.fr"]).map((u) => u.email)).toEqual([
+      "ancien@exemple.fr",
+    ]);
+    // No owner configured: nothing is revoked (the functions refuse everyone anyway).
+    expect(formerOwners(users, [])).toEqual([]);
   });
 
   it("only accepts the configured, verified email", () => {

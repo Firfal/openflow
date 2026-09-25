@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DEMO_PROJECT_ID } from "@openflow/core";
 import { type App, deleteApp, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { CliError } from "./util.js";
@@ -83,3 +84,4 @@ export function firestore(handle: AdminHandle) {
   return db;
 }
 export const storage = (handle: AdminHandle) => getStorage(handle.app);
+export const auth = (handle: AdminHandle) => getAuth(handle.app);

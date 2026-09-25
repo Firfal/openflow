@@ -14,6 +14,7 @@ import {
   type SourceDoc,
   STORAGE_PATHS,
 } from "@openflow/core";
+import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import { GoogleAuth } from "google-auth-library";
 
@@ -71,6 +72,42 @@ export function ownerDecision(
     };
   }
   return { ok: true };
+}
+
+/** Accounts that still carry the owner claim although their e-mail is no longer an owner. */
+export function formerOwners<T extends { email?: string; customClaims?: Record<string, unknown> }>(
+  users: T[],
+  owners: string[],
+): T[] {
+  if (owners.length === 0) return [];
+  return users.filter(
+    (user) =>
+      user.customClaims?.[OWNER_CLAIM] === true &&
+      !owners.includes((user.email ?? "").toLowerCase()),
+  );
+}
+
+/**
+ * The Firestore and Storage rules only check the claim: when the owner changes, the former
+ * owners lose it and their sessions are revoked (their current ID token expires within the hour).
+ * Returns the accounts concerned.
+ */
+export async function revokeFormerOwners(auth: Auth, owners: string[]): Promise<string[]> {
+  const revoked: string[] = [];
+  let pageToken: string | undefined;
+  do {
+    const page = await auth.listUsers(1000, pageToken);
+    for (const user of formerOwners(page.users, owners)) {
+      const claims = Object.fromEntries(
+        Object.entries(user.customClaims ?? {}).filter(([key]) => key !== OWNER_CLAIM),
+      );
+      await auth.setCustomUserClaims(user.uid, claims);
+      await auth.revokeRefreshTokens(user.uid);
+      revoked.push(user.email ?? user.uid);
+    }
+    pageToken = page.pageToken;
+  } while (pageToken);
+  return revoked;
 }
 
 /** True when the ID token carries the owner claim and its email is still an owner. */

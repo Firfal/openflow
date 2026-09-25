@@ -6,11 +6,13 @@ import path from "node:path";
 import { COLLECTIONS, DOCS, type ReleaseDoc, type SourceDoc, STORAGE_PATHS } from "@openflow/core";
 import {
   ensureWebApp,
+  parseOwners,
+  revokeFormerOwners,
   snapshotFromFirestore,
   snapshotPath,
   startCloudBuild,
 } from "@openflow/functions/core";
-import { adminApp, defaultProject, firestore, storage } from "../firebase.js";
+import { adminApp, auth, defaultProject, firestore, storage } from "../firebase.js";
 import { CliError, capture, firebaseCli, log, run } from "../util.js";
 import { stageWorkspaceSite } from "../vendor.js";
 import { check } from "./check.js";
@@ -135,6 +137,16 @@ export async function deploy(site: string, options: DeployOptions) {
       ],
       { cwd: root },
     );
+
+    // A changed `--owner` must not leave the owner claim to the previous account.
+    const ownerLine = (await readFile(envFile, "utf8"))
+      .split("\n")
+      .find((line) => line.startsWith("OPENFLOW_OWNER_EMAIL="));
+    const revoked = await revokeFormerOwners(
+      auth(handle),
+      parseOwners(ownerLine?.slice("OPENFLOW_OWNER_EMAIL=".length)),
+    );
+    if (revoked.length > 0) log.warn(`Droits de propriétaire retirés à : ${revoked.join(", ")}`);
 
     log.step("Configuration Web de l'admin (/__/firebase/init.json)");
     const webApp = await ensureWebApp(projectId);
