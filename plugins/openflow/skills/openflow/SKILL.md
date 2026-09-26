@@ -16,6 +16,7 @@ immédiatement le problème signalé.
 ## Choisir le bon workflow
 
 - Créer un site : suis le skill **openflow-new-site**.
+- Concevoir ou retoucher l'apparence d'un site : le skill **openflow-design**.
 - Livrer ou déployer : le skill **openflow-deploy**, déclenché par l'utilisateur avec `/openflow:openflow-deploy`.
 - Modifier un site existant : lis `AGENTS.md` à la racine du site, puis respecte le contrat ci-dessous.
 

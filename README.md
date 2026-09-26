@@ -28,7 +28,7 @@ ou Framer, avec un backend 100 % Firebase.**
 ```
 
 Le plugin fournit :
-- les skills `openflow`, `openflow-new-site` et `openflow-deploy` ;
+- les skills `openflow`, `openflow-new-site`, `openflow-design` et `openflow-deploy` ;
 - des hooks qui lancent `openflow check` après chaque modification et avant la fin de chaque tâche.
 
 Sans Claude Code :

@@ -87,6 +87,21 @@ function defaultEndpoint(): string {
   return "/forms/submit";
 }
 
+/** Lets browsers fill in the visitor's details (`autocomplete`), guessed from the type and label. */
+function autoComplete(field: FormFieldDef): string | undefined {
+  if (field.type === "email") return "email";
+  if (field.type === "tel") return "tel";
+  if (field.type !== "text") return undefined;
+  const label = String(field.label ?? "")
+    .trim()
+    .toLowerCase();
+  if (/soci[ée]t[ée]|entreprise|company|organi[sz]ation/.test(label)) return "organization";
+  if (/^(nom de famille|last name|surname)/.test(label)) return "family-name";
+  if (/^(prénom|first name)/.test(label)) return "given-name";
+  if (/^(nom|name|full name|votre nom|your name)(\s|$)/.test(label)) return "name";
+  return undefined;
+}
+
 /** reCAPTCHA key published by the layout (`<meta name="openflow-recaptcha">`), if any. */
 function recaptchaKey(): string | undefined {
   if (typeof document === "undefined") return undefined;
@@ -127,6 +142,7 @@ export function OpenFlowForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const statusRef = useRef<HTMLParagraphElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const t = TEXTS[lang];
 
   useEffect(() => {
@@ -135,9 +151,12 @@ export function OpenFlowForm({
     setKey(recaptchaKey());
   }, []);
 
+  // After an error, focus the first field to fix (else the message); after sending, the message.
   useEffect(() => {
-    if (status.kind === "sent" || status.kind === "error") statusRef.current?.focus();
-  }, [status.kind]);
+    if (status.kind !== "sent" && status.kind !== "error") return;
+    const invalid = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    (invalid ?? statusRef.current)?.focus();
+  }, [status]);
 
   // reCAPTCHA is loaded only when a visitor starts filling the form.
   const warmUp = () => {
@@ -204,6 +223,7 @@ export function OpenFlowForm({
 
   return (
     <form
+      ref={formRef}
       className={classNames.form}
       noValidate
       onSubmit={submit}
@@ -253,9 +273,8 @@ export function OpenFlowForm({
                   <input
                     className={classNames.input}
                     type={field.type}
-                    autoComplete={
-                      field.type === "email" ? "email" : field.type === "tel" ? "tel" : undefined
-                    }
+                    autoComplete={autoComplete(field)}
+                    spellCheck={field.type === "email" ? false : undefined}
                     {...common}
                   />
                 )}

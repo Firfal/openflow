@@ -287,6 +287,13 @@ describe("admin OpenFlow (émulateurs)", () => {
     const visitor = await browser.newPage({ viewport: { width: 390, height: 844 } });
     try {
       await visitor.goto(`http://localhost:${PORT}/contact/`);
+      // Sent empty: the errors are shown next to the fields, and the first one gets the focus.
+      await visitor.getByRole("button", { name: "Envoyer le message" }).click();
+      await expect
+        .poll(() => visitor.evaluate(() => document.activeElement?.getAttribute("name")))
+        .toBe("nom");
+      expect(await visitor.getByLabel(/^Nom/).getAttribute("aria-invalid")).toBe("true");
+      expect(await visitor.getByLabel(/^Nom/).getAttribute("autocomplete")).toBe("name");
       await visitor.getByLabel(/^Nom/).fill("Camille Martin");
       await visitor.getByLabel(/^E-mail/).fill("camille@exemple.fr");
       await visitor.getByLabel(/^Message/).fill("Bonjour,\nPouvez-vous me rappeler ?");

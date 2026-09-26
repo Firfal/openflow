@@ -18,6 +18,10 @@ Spécification : `docs/`. Documentation en français, identifiants et commentair
 - Toute nouvelle règle de la norme va dans `RULES` (`packages/check/src/rules.ts`), avec un test de fixture
   dans `packages/check/test/`, puis `pnpm gen:docs`.
 - Le template ne doit contenir aucun texte, aucune image ni aucun lien écrits en dur dans `openflow/components` et `openflow/layout`.
+- Design et UI/UX, toujours : les sites publics (template, landing, composants de `packages/next`) suivent le skill
+  `plugins/openflow/skills/openflow-design`, et l'admin le skill `.claude/skills/admin-ui`. Chaque changement visible
+  se vérifie en captures (ordinateur et mobile, clair et sombre). Pour un besoin qu'ils ne couvrent pas, cherche
+  d'abord un skill reconnu sur GitHub, puis reporte ses principes utiles dans le skill concerné.
 - L'interface de l'admin (`packages/admin`) suit le skill `.claude/skills/admin-ui` : jetons `--of-*` (clair et
   sombre), composants de `ui.tsx`, icônes de `icons.tsx`, noms accessibles utilisés par les tests E2E. Ce que
   voit le propriétaire est décrit dans `docs/interface-admin.md`.

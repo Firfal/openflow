@@ -27,6 +27,9 @@ ajouter des éléments en dehors des blocs `// BEGIN openflow` … `// END openf
 
 ## 3. Concevoir les sections
 
+Commence par le plan de design du skill `openflow-design` (couleurs, typographies, mise en page, élément
+mémorable), et suis ses règles pour chaque section.
+
 - Adapte, renomme ou remplace les sections d'exemple de `openflow/components/`. Tant que le site n'est
   pas livré, les renommer est permis.
 - Crée les sections spécifiques au projet : menu, tarifs, équipe, galerie, horaires, carte…
@@ -56,7 +59,8 @@ npx openflow dev                   # http://localhost:3000 (site) et /admin (éd
 ```
 
 Ouvre `/admin`, connecte-toi avec la connexion rapide de l'émulateur et vérifie que chaque section
-s'édite directement sur la page.
+s'édite directement sur la page. Relis le site en captures d'écran, sur ordinateur et sur mobile
+(skill `openflow-design`, étape 10).
 
 ## 6. Rendre la main
 

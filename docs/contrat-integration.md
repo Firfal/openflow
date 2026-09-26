@@ -10,7 +10,8 @@
 2. Elle demande : « Crée le site de la boulangerie Dupont avec OpenFlow ».
 3. Le skill `openflow-new-site` guide Claude :
    - `npx openflow create` copie le template : infrastructure, sécurité, admin, `AGENTS.md`, hooks ;
-   - Claude conçoit les sections (`openflow/components/`) et le contenu de départ (`openflow/seed/`) ;
+   - Claude conçoit les sections (`openflow/components/`) et le contenu de départ (`openflow/seed/`), en suivant
+     le skill `openflow-design` (plan de design, réflexes génériques à éviter, accessibilité, captures) ;
    - `openflow check --level build`, puis `openflow dev` pour prévisualiser le site et l'admin.
 4. La livraison suit le skill `openflow-deploy` (déclenché par `/openflow:openflow-deploy`).
 
@@ -20,7 +21,7 @@
 |---|---|---|
 | **Template** (`openflow create`) | `templates/next-starter` | Les parties invariantes (Firebase, règles, admin, rendu) ne sont jamais générées par l'IA |
 | **Bloc `AGENTS.md`** (+ `CLAUDE.md` = `@AGENTS.md`) | Racine du site | Contrat toujours chargé, lié à la documentation installée avec le SDK (`node_modules/@openflow/core/docs`) |
-| **Skills** | `plugins/openflow/skills` | Workflows de création et de livraison ; format Agent Skills portable |
+| **Skills** | `plugins/openflow/skills` | Workflows de création, de design et de livraison ; format Agent Skills portable |
 | **Norme OFS et hooks** | `@openflow/check`, `.claude/settings.json`, `plugins/openflow/hooks` | Retour automatique à l'agent, qui se corrige seul |
 
 ## Boucle de retour
