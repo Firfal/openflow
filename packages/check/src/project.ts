@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   compareRulesBlock,
@@ -32,10 +32,84 @@ export const PROJECT_FILES = [
 
 interface HostingConfig {
   public?: string;
-  rewrites?: Array<{ source?: string; destination?: string }>;
+  rewrites?: Array<{
+    source?: string;
+    destination?: string;
+    run?: { serviceId?: string; region?: string };
+  }>;
 }
 
-/** Project-level checks (level `fast`): OF-301 (next.config, middleware) and OF-303 (Firebase). */
+/** Paths of the site's MCP server and of its OAuth discovery (Hosting → `openflowMcp`). */
+export const MCP_REWRITES = [
+  "/mcp",
+  "/mcp/**",
+  "/.well-known/oauth-protected-resource",
+  "/.well-known/oauth-protected-resource/**",
+  "/.well-known/oauth-authorization-server",
+];
+
+/** `OPENFLOW_REGION` of the functions (`functions/.env*`), `europe-west1` by default. */
+async function functionRegions(siteDir: string): Promise<string[]> {
+  const dir = path.join(siteDir, "functions");
+  const regions = new Set<string>();
+  const files = existsSync(dir) ? await readdir(dir) : [];
+  for (const file of files) {
+    if (!file.startsWith(".env") || file === ".env.local") continue;
+    const match = /^OPENFLOW_REGION\s*=\s*"?([\w-]+)"?\s*$/m.exec(
+      await readFile(path.join(dir, file), "utf8"),
+    );
+    if (match) regions.add(match[1]!);
+  }
+  return regions.size > 0 ? [...regions] : ["europe-west1"];
+}
+
+/** OF-305: AI access (MCP address and OAuth discovery, `llms.txt`). */
+async function checkAiAccess(siteDir: string, site: HostingConfig | undefined): Promise<Issue[]> {
+  const issues: Issue[] = [];
+  if (site) {
+    const regions = await functionRegions(siteDir);
+    const missing: string[] = [];
+    for (const source of MCP_REWRITES) {
+      const rewrite = site.rewrites?.find((entry) => entry.source === source);
+      if (rewrite?.run?.serviceId !== "openflowmcp") {
+        missing.push(source);
+      } else if (!regions.includes(rewrite.run.region ?? "")) {
+        issues.push(
+          issue(
+            "OF-305",
+            "firebase.json",
+            `Réécriture ${source} : région « ${rewrite.run.region} » différente de celle des fonctions (${regions.join(", ")}).`,
+          ),
+        );
+      }
+    }
+    if (missing.length > 0) {
+      issues.push(
+        issue(
+          "OF-305",
+          "firebase.json",
+          `Réécritures vers le serveur MCP (service openflowmcp) absentes : ${missing.join(", ")}.`,
+        ),
+      );
+    }
+  }
+  for (const route of ["llms.txt", "llms-full.txt"]) {
+    const found = ["app", "src/app"].some((base) =>
+      ["route.ts", "route.js", "route.tsx"].some((file) =>
+        existsSync(path.join(siteDir, base, route, file)),
+      ),
+    );
+    if (!found) {
+      issues.push(issue("OF-305", `app/${route}/route.ts`, `Route /${route} absente.`));
+    }
+  }
+  return issues;
+}
+
+/**
+ * Project-level checks (level `fast`): OF-301 (next.config, middleware), OF-303 (Firebase) and
+ * OF-305 (AI access).
+ */
 export async function checkProject(siteDir: string): Promise<Issue[]> {
   const issues: Issue[] = [];
 
@@ -108,6 +182,7 @@ export async function checkProject(siteDir: string): Promise<Issue[]> {
           ? [firebaseJson.hosting]
           : [];
       const site = hostings.find((entry) => entry.public === "out");
+      issues.push(...(await checkAiAccess(siteDir, site)));
       if (!site) {
         issues.push(
           issue("OF-303", "firebase.json", 'Aucune configuration hosting avec `"public": "out"`.'),

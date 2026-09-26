@@ -22,6 +22,8 @@ contributors: `docs/interface-admin.md`.
 | `packages/admin/src/editor-ui.tsx` | Editor bar (Puck `overrides.header`), screens, rail plugins, drawer search |
 | `packages/admin/src/style-controls.tsx` | Style rows (set / inherited labels, scrub), box model, colour, length |
 | `packages/admin/src/command.tsx` | ⌘K palette (`requestPublish`, `requestNewPage` events) |
+| `packages/admin/src/assistant.tsx` | « Assistant IA » view (MCP address, per-assistant steps, connected AIs, keys), Pages card |
+| `packages/admin/src/connect.tsx` | OAuth consent screen of an AI assistant (`?view=connect&request=…`, full screen) |
 
 ## Tokens, never raw values
 
@@ -52,6 +54,9 @@ contributors: `docs/interface-admin.md`.
 - Puck: theme it with its tokens first (`--puck-color-*`, `--puck-field-*`, `--puck-drawer-item-*`); layout
   tweaks only as `.of-root .of-editor [class*="_PuckLayout-…_"]` (Puck is pinned, class prefixes are stable).
   Overrides and plugins are module constants (a new identity remounts the canvas).
+- AI entry points (sidebar « Assistant IA » with a green dot, Pages card, editor ✦ button, ⌘K entry) all lead
+  to the same view. New button names must not contain « Assistant IA », « Réglages » or « Modifier »
+  (substring selectors in the e2e tests).
 - Right panel: one column, no tabs. The clicked element's content first (only its fields), then « Style »
   closed by default with a summary in its header (« Mobile · 2 réglages »), then the section's other fields.
   Open/closed states the owner chooses are remembered in `localStorage` (inside `try`/`catch`).
@@ -67,7 +72,8 @@ contributors: `docs/interface-admin.md`.
 ## Keep tests and docs in sync
 
 - E2E tests select by accessible names: « Pages », « Médias », « Réglages », « Thème », « Site et
-  référencement », « Assistant IA », « Historique », « Modifier », « Retour aux pages », « Publier… »,
+  référencement », « Assistant IA » (sidebar, exact), « Connecter Claude ou ChatGPT », « Clé d'accès »,
+  « Autoriser », « Refuser », « Déconnecter », « Historique », « Modifier », « Retour aux pages », « Publier… »,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

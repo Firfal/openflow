@@ -28,7 +28,8 @@ frontière entre les deux est constituée des **champs** déclarés par chaque s
 | `openflow/seed/pages/<id>.json` | Pages de départ | Agent, avant livraison |
 | `app/(site)/[[...slug]]/page.tsx` | Rendu des pages à partir du snapshot | Ne pas modifier |
 | `app/admin/*` | Admin OpenFlow | Ne pas modifier |
-| `firebase.json`, `*.rules`, `functions/` | Infrastructure et sécurité | Seulement hors des blocs `openflow` |
+| `app/llms.txt/route.ts`, `app/llms-full.txt/route.ts` | Le site lu par les IA (`createLlmsTxt`, `createLlmsFullTxt`) | Ne pas modifier |
+| `firebase.json`, `*.rules`, `functions/` | Infrastructure et sécurité ; réécritures `/mcp` vers le serveur MCP (connexion des IA) | Seulement hors des blocs `openflow` |
 
 ## Anatomie d'une section
 
@@ -109,6 +110,7 @@ Puis, dans `openflow.config.tsx` : `components: { …, Offre }` et `categories.c
 - **OF-302** : aucun accès à Firebase dans le rendu public.
 - **OF-303** : les blocs `openflow` de `firebase.json` et des règles de sécurité ne sont pas modifiés.
 - **OF-304** : aucun secret dans le code.
+- **OF-305** : les IA peuvent se connecter (`/mcp` dans `firebase.json`) et lire le site (`llms.txt`).
 - **OF-401 à OF-405** : HTML accessible et référençable (`alt`, un seul `h1`, `<title>` et description, liens valides, `lang`).
 
 Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.

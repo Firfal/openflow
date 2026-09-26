@@ -23,4 +23,5 @@ Spécification : `docs/`. Documentation en français, identifiants et commentair
   voit le propriétaire est décrit dans `docs/interface-admin.md`.
 - Les outils de l'assistant IA (serveur MCP `openflowMcp` et WebMCP de l'admin) sont définis une seule fois dans
   `packages/core/src/agent/` : tout nouvel outil y va, avec un test dans `packages/core/test/agent.test.ts`, et
-  sa ligne dans `docs/assistant-ia.md`.
+  sa ligne dans `docs/assistant-ia.md`. La connexion OAuth du serveur MCP (`https://<site>/mcp`) vit dans
+  `packages/functions/src/oauth.ts` (tests `packages/functions/test/oauth.test.ts` et `tests/e2e/assistant.test.ts`).

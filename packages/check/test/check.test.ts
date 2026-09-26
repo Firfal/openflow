@@ -14,7 +14,7 @@ import {
   scanSecrets,
   stopHook,
 } from "../src/index.js";
-import { GOOD_HERO, makeSite, TMP } from "./helpers.js";
+import { FIREBASE_JSON, GOOD_HERO, makeSite, TMP } from "./helpers.js";
 
 const rulesOf = (issues: { rule: string }[]) => issues.map((issue) => issue.rule).sort();
 
@@ -127,6 +127,38 @@ describe("project checks", () => {
     const rules = rulesOf(await checkProject(dir));
     expect(rules.filter((rule) => rule === "OF-301")).toHaveLength(3);
     expect(rules.filter((rule) => rule === "OF-303").length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("AI access (OF-305)", () => {
+  it("accepts a site with the MCP rewrites and llms.txt", async () => {
+    const dir = await makeSite("ai-ok");
+    expect(rulesOf(await checkProject(dir))).not.toContain("OF-305");
+  });
+
+  it("warns when the MCP rewrites or the llms.txt routes are missing", async () => {
+    const dir = await makeSite("ai-missing", {
+      "firebase.json": {
+        ...FIREBASE_JSON,
+        hosting: {
+          public: "out",
+          rewrites: [{ source: "/admin/**", destination: "/admin/index.html" }],
+        },
+      },
+      "app/llms.txt/route.ts": null,
+      "app/llms-full.txt/route.ts": null,
+    });
+    const issues = (await checkProject(dir)).filter((i) => i.rule === "OF-305");
+    expect(issues).toHaveLength(3);
+    expect(issues.every((i) => i.severity === "warning")).toBe(true);
+    expect(issues[0]!.message).toContain("/mcp, /mcp/**");
+  });
+
+  it("warns when the rewrites target another region than the functions", async () => {
+    const dir = await makeSite("ai-region", { "functions/.env": "OPENFLOW_REGION=us-central1\n" });
+    const issues = (await checkProject(dir)).filter((i) => i.rule === "OF-305");
+    expect(issues).toHaveLength(5);
+    expect(issues[0]!.message).toContain("us-central1");
   });
 });
 

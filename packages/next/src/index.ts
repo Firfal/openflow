@@ -1,6 +1,6 @@
 export { createOpenFlowLayout } from "./layout.js";
 export { buildMetadata, createOpenFlowPage } from "./page.js";
-export { createRobots, createSitemap } from "./sitemap.js";
+export { createLlmsFullTxt, createLlmsTxt, createRobots, createSitemap } from "./sitemap.js";
 export {
   getPages,
   getSettings,

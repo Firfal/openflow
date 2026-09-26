@@ -60,6 +60,7 @@ export {
   STORAGE_RULES_BLOCK,
   STORAGE_RULES_FILE,
 } from "./firebase-rules.js";
+export { buildLlmsFullTxt, buildLlmsTxt, htmlToMarkdown, pageText } from "./llms.js";
 export {
   collectEditablePaths,
   IMAGE_PLACEHOLDER,

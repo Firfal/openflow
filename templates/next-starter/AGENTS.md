@@ -16,6 +16,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 - `openflow/seed/` : le contenu de départ (`settings.json`, `pages/<id>.json`), importé dans Firestore
   à la livraison. Il n'écrase jamais le contenu du propriétaire.
 - `app/(site)/[[...slug]]/page.tsx` : toutes les pages viennent du snapshot publié. `app/admin/` : l'admin.
+- `app/llms.txt/` et `app/llms-full.txt/` : le site tel que le lisent les IA. Les réécritures `/mcp` de
+  `firebase.json` : l'adresse où le propriétaire branche son IA (Claude, ChatGPT…).
 - Export statique (`output: "export"`) sur Firebase Hosting. Il n'y a **pas de serveur Next.js**.
 
 ## Contrat des sections (obligatoire)

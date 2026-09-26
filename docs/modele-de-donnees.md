@@ -13,7 +13,10 @@ propres au site. Les types TypeScript se trouvent dans `packages/core/src/model.
 | `of_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` | Admin, `openflow seed` | Admin (médiathèque) |
 | `of_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `openflowPublish` |
 | `of_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème (`buildSiteSchema`) | `openflow seed` / `deploy` | `openflowMcp` |
-| `of_agent_tokens/{id}` | Clés des assistants IA : `label`, `hash` (SHA-256), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` | `openflowCreateAgentToken`, `openflowMcp` | Admin (liste, révocation) |
+| `of_agent_tokens/{id}` | IA connectées et clés d'accès : `kind` (`key` ou `oauth`), `label`, `hash` (SHA-256 de la clé ou du jeton d'accès), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` ; en OAuth, `clientId`, `expiresAt`, `refreshHash`, `refreshExpiresAt`, `redirect` | `openflowCreateAgentToken`, `openflowMcp` | Admin (liste, déconnexion) |
+| `of_agent_clients/{clientId}` | Clients OAuth enregistrés par les IA : `name`, `redirectUris`, `authMethod`, `secretHash`, `createdAt`, `lastUsedAt` | `openflowMcp` | `openflowMcp` |
+| `of_agent_requests/{id}` | Demandes d'autorisation en attente du propriétaire (10 min) | `openflowMcp` | `openflowAgentConsent` |
+| `of_agent_codes/{hash}` | Codes d'autorisation, à usage unique (5 min) | `openflowAgentConsent` | `openflowMcp` |
 
 Taille : une page Puck pèse généralement quelques dizaines de Ko. L'admin avertit au-delà de 800 Ko et
 refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).

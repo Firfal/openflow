@@ -232,5 +232,7 @@ Livraison :
   1. Console Firebase > Authentication > Méthodes de connexion : activez « Lien par e-mail » et Google.
   2. Envoyez au propriétaire l'adresse https://<votre-domaine>/admin/ : il se connecte avec ${options.owner ?? "son e-mail"}.
   3. Chaque « Publier » reconstruit le site (2 à 4 min). Relancez \`openflow deploy\` après toute modification du code.
+  4. IA : le propriétaire colle https://<votre-domaine>/mcp dans Claude ou ChatGPT (Ajouter un connecteur),
+     se connecte et clique sur « Autoriser ». Tout est expliqué dans l'admin, rubrique Assistant IA.
 `);
 }

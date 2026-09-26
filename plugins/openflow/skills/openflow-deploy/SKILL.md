@@ -59,8 +59,9 @@ Cette commande :
   sections (`of_system/schema`) lu par le serveur MCP ;
 - lance la première publication.
 
-Le propriétaire peut ensuite brancher son IA (Claude, ChatGPT…) : Réglages > Assistant IA crée une clé et
-donne l'adresse du serveur MCP (`openflowMcp`). Voir `docs/assistant-ia.md` du dépôt OpenFlow.
+Le propriétaire peut ensuite brancher son IA (Claude, ChatGPT, Cursor…) sur `https://<domaine>/mcp` : il se
+connecte et clique sur « Autoriser » dans l'admin (rubrique Assistant IA). Voir `docs/assistant-ia.md` du
+dépôt OpenFlow. Garde les réécritures `/mcp` de `firebase.json` (règle OF-305).
 
 Si les paquets `@openflow/*` ne viennent pas de npm (site placé dans le dépôt OpenFlow ou dans un fork,
 dépendances `workspace:`), la commande prépare une copie autonome du site : elle empaquette ces paquets
@@ -86,6 +87,9 @@ Rédige une fiche courte, en français et sans jargon :
 - s'y retrouver : le panneau « Aide » de l'éditeur, et la recherche rapide ⌘K (Ctrl K sous Windows) ;
 - mettre en ligne : bouton « Publier » (2 à 4 minutes), qui indique le nombre de modifications en attente ;
 - revenir en arrière : Historique > « Remettre en ligne » ;
+- modifier le site en discutant avec son IA : dans Claude ou ChatGPT, « Ajouter un connecteur » avec
+  l'adresse `https://<domaine>/mcp`, puis « Se connecter » et « Autoriser » (étapes détaillées dans l'admin,
+  rubrique Assistant IA) ;
 - les réglages communs (menu, coordonnées, couleur) : Réglages > Contenu commun, puis Thème.
 
 ## Évolutions ultérieures du code

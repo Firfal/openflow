@@ -7,10 +7,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** Temporary sites live inside the package so that `react`, `@puckeditor/core`… resolve. */
 export const TMP = path.join(here, ".tmp");
 
+const MCP_RUN = { serviceId: "openflowmcp", region: "europe-west1" };
+
 export const FIREBASE_JSON = {
   hosting: {
     public: "out",
-    rewrites: [{ source: "/admin/**", destination: "/admin/index.html" }],
+    rewrites: [
+      { source: "/admin/**", destination: "/admin/index.html" },
+      { source: "/mcp", run: MCP_RUN },
+      { source: "/mcp/**", run: MCP_RUN },
+      { source: "/.well-known/oauth-protected-resource", run: MCP_RUN },
+      { source: "/.well-known/oauth-protected-resource/**", run: MCP_RUN },
+      { source: "/.well-known/oauth-authorization-server", run: MCP_RUN },
+    ],
   },
   firestore: { rules: "firestore.rules" },
   storage: { rules: "storage.rules" },
@@ -80,6 +89,13 @@ export const GOOD_SEED = {
   data: { root: { props: {} }, content: [{ type: "Hero", props: { id: "hero", title: "Salut" } }] },
 };
 
+export const LLMS_ROUTE = `import { createLlmsTxt } from "@openflow/next/data";
+import config from "../../openflow.config";
+
+export const dynamic = "force-static";
+export const GET = createLlmsTxt(config);
+`;
+
 export type SiteFiles = Record<string, string | object>;
 
 /** Writes a complete, compliant site then applies `overrides` (a `null` value deletes a file). */
@@ -98,6 +114,8 @@ export async function makeSite(
     "firestore.rules": FIRESTORE_RULES_FILE,
     "storage.rules": STORAGE_RULES_FILE,
     "next.config.ts": NEXT_CONFIG,
+    "app/llms.txt/route.ts": LLMS_ROUTE,
+    "app/llms-full.txt/route.ts": LLMS_ROUTE,
     ...overrides,
   };
   for (const [rel, content] of Object.entries(files)) {

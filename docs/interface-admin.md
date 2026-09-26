@@ -18,8 +18,9 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 - **Barre latérale** :
   - le site et son adresse ;
   - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
-  - **Pages**, **Médias**, **Réglages**, qui se déplie en quatre sous-pages : Contenu commun, Thème, Site et
-    référencement, Assistant IA ;
+  - **Pages**, **Médias** ;
+  - **Assistant IA**, avec un point vert quand une IA est connectée ;
+  - **Réglages**, qui se déplie en trois sous-pages : Contenu commun, Thème, Site et référencement ;
   - **Historique** ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
@@ -28,6 +29,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   Publier affiche le nombre de modifications en attente.
 - **Pages** :
   - un bandeau dit si le site en ligne est à jour ;
+  - tant qu'aucune IA n'est connectée, une carte propose « Connecter Claude ou ChatGPT » (elle se masque) ;
   - chaque page affiche **un seul statut** : Masquée, Jamais publiée, Modifications non publiées ou En ligne ;
   - le bouton « Modifier » ouvre l'éditeur ;
   - le menu « ⋯ » propose Paramètres et référencement, Dupliquer, Voir en ligne et Supprimer ;
@@ -37,9 +39,20 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   importés ou fichiers du site) et chercher par nom. Chaque fichier a une fiche : dimensions, poids, origine et
   adresse à copier.
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic.
+- **Assistant IA** : brancher une IA qui modifie le site par la discussion
+  ([assistant-ia.md](assistant-ia.md)). La page contient :
+  - l'adresse du site pour l'IA, `https://<domaine>/mcp` ;
+  - les étapes pour Claude, ChatGPT, Claude Code, Cursor, VS Code ou un autre client, avec un lien direct
+    quand l'assistant en propose un ;
+  - la liste des IA connectées, chacune avec « Déconnecter » ;
+  - des idées de demandes à copier ;
+  - en bas, repliée, la clé d'accès pour les outils qui ne savent pas se connecter.
+- **Écran d'autorisation** : quand une IA demande l'accès, l'admin s'ouvre en plein écran, avec le nom de
+  l'assistant, ce qu'il pourra faire et l'adresse où le navigateur sera renvoyé. Un site inconnu est
+  signalé. Deux boutons : « Autoriser » et « Refuser ».
 - **Recherche rapide** (<kbd>⌘</kbd> <kbd>K</kbd> ou <kbd>Ctrl</kbd> <kbd>K</kbd>, comme Quick Find dans Webflow
   et la palette de commandes de Framer) : ouvrir une page ou un réglage, créer une page, publier, voir le
-  site, changer d'apparence.
+  site, connecter une IA, changer d'apparence.
 
 ## Éditeur de page
 
@@ -49,7 +62,7 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 |---|---|
 | Gauche | Retour aux pages, sélecteur de page (ouvre une autre page sans repasser par la liste) |
 | Centre | Écrans **Ordinateur** (1280 px), **Tablette** (768 px), **Mobile** (390 px) |
-| Droite | État de l'enregistrement, annuler et rétablir, recherche, **Publier** |
+| Droite | État de l'enregistrement, annuler et rétablir, recherche, **Connecter une IA** (✦, point vert si une IA est connectée), **Publier** |
 
 - **Rail de gauche**, dont chaque icône ouvre un panneau :
   - **Ajouter** : les sections du site, avec une recherche. Un clic ajoute une section sous la section
@@ -134,5 +147,7 @@ Sur Windows et Linux, <kbd>Ctrl</kbd> remplace <kbd>⌘</kbd>.
 - `packages/admin/src/ui.tsx` contient les composants de base : boutons, menu, fenêtre, statuts, états vides.
 - `packages/admin/src/shell.tsx` contient le tableau de bord, et `editor-ui.tsx` la barre, le rail et les
   panneaux de l'éditeur.
+- `packages/admin/src/assistant.tsx` contient la page Assistant IA et la carte du tableau de bord, et
+  `connect.tsx` l'écran d'autorisation d'une IA.
 - Toute évolution de l'interface suit `.claude/skills/admin-ui/SKILL.md`. On la vérifie par des captures en
   clair et en sombre, puis par les tests de bout en bout (`pnpm --filter @openflow/e2e test`).

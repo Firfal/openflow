@@ -1,4 +1,4 @@
-import type { OpenFlowConfig } from "@openflow/core";
+import { buildLlmsFullTxt, buildLlmsTxt, type OpenFlowConfig } from "@openflow/core";
 import type { MetadataRoute } from "next";
 import { getSnapshot } from "./snapshot.js";
 import { pageUrl } from "./urls.js";
@@ -31,5 +31,27 @@ export function createRobots(config: OpenFlowConfig) {
         ? new URL("/sitemap.xml", snapshot.site.url).toString()
         : undefined,
     };
+  };
+}
+
+const TEXT = { "Content-Type": "text/plain; charset=utf-8" };
+
+/**
+ * `app/llms.txt/route.ts`: the site for AI agents (https://llmstxt.org), the list of its pages.
+ * ```ts
+ * export const dynamic = "force-static";
+ * export const GET = createLlmsTxt(config);
+ * ```
+ */
+export function createLlmsTxt(config: OpenFlowConfig) {
+  return async function GET(): Promise<Response> {
+    return new Response(buildLlmsTxt(await getSnapshot(config)), { headers: TEXT });
+  };
+}
+
+/** `app/llms-full.txt/route.ts`: the text of every page, in Markdown. */
+export function createLlmsFullTxt(config: OpenFlowConfig) {
+  return async function GET(): Promise<Response> {
+    return new Response(buildLlmsFullTxt(await getSnapshot(config), config), { headers: TEXT });
   };
 }

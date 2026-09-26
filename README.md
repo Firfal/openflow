@@ -6,8 +6,9 @@ ou Framer, avec un backend 100 % Firebase.**
 - Le propriétaire clique sur un texte pour le modifier, remplace les images, ajoute ou réordonne des
   sections, change le style écran par écran, puis clique sur « Publier ». Tout se fait depuis
   `https://son-site/admin`.
-- Il peut aussi **brancher son IA** (Claude, ChatGPT…) sur son site et le modifier en discutant avec elle :
-  serveur MCP intégré et WebMCP ([docs/assistant-ia.md](docs/assistant-ia.md)).
+- Il peut aussi **brancher son IA** (Claude, ChatGPT, Cursor…) sur son site et le modifier en discutant avec
+  elle : il colle `https://son-site/mcp` dans son assistant, se connecte et clique sur « Autoriser »
+  ([docs/assistant-ia.md](docs/assistant-ia.md)). Le site publié expose aussi `llms.txt` aux IA qui le lisent.
 - Le site est publié en **HTML statique** sur Firebase Hosting : rapide, bien référencé, à coût quasi nul.
 - Tout vit **dans le projet Firebase du site** : Hosting, Firestore, Auth, Storage, Functions et Cloud Build.
 - Le code produit par l'IA est contrôlé par une **norme vérifiable (OFS)**. Claude Code reçoit un retour
@@ -50,7 +51,7 @@ npx openflow deploy --project mon-projet --owner client@exemple.fr
 | [Modèle de données](docs/modele-de-donnees.md) | Firestore, Storage, snapshot |
 | [Sécurité](docs/securite.md) | Propriétaire unique, règles, build |
 | [Interface de l'admin](docs/interface-admin.md) | Tableau de bord, éditeur, panneau de droite et style, raccourcis, clair et sombre |
-| [Assistant IA](docs/assistant-ia.md) | Serveur MCP et WebMCP : modifier le site par la discussion |
+| [Assistant IA](docs/assistant-ia.md) | Brancher Claude, ChatGPT ou Cursor sur `https://<site>/mcp` (connexion OAuth), WebMCP, `llms.txt` |
 | [Contrat d'intégration](docs/contrat-integration.md) | Kit Claude Code, boucle de retour |
 | [Norme OFS](docs/norme/README.md) | Les règles OF-xxx vérifiées par `openflow check` |
 | [Feuille de route](docs/roadmap.md) | Phases 2 à 5 |

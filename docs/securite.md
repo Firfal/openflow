@@ -29,8 +29,9 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
   validées (champs obligatoires, statut).
 - `of_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
 - `of_system` : aucun accès client.
-- `of_agent_tokens` (clés des assistants IA) : lecture et suppression (révocation) par le propriétaire,
-  création uniquement par la fonction `openflowCreateAgentToken` ; seule l'empreinte SHA-256 est stockée.
+- `of_agent_tokens` (IA connectées et clés d'accès) : lecture et suppression (déconnexion) par le
+  propriétaire ; création uniquement par les fonctions ; seules les empreintes SHA-256 sont stockées.
+- `of_agent_clients`, `of_agent_requests`, `of_agent_codes` (connexion OAuth des IA) : aucun accès client.
 - Storage `openflow/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
   en type et en taille ; les SVG sont refusés pour éviter l'injection de scripts.
 - Storage `openflow/source` et `openflow/snapshots` : aucun accès client.
@@ -56,10 +57,15 @@ utilisateur connecté non propriétaire sont refusés partout ; le propriétaire
 
 ## Assistant IA (MCP et WebMCP)
 
-Le serveur MCP (fonction HTTPS `openflowMcp`) n'accepte que les clés créées par le propriétaire, révocables à
-tout moment. Les outils n'écrivent que des brouillons et assainissent ce qu'ils écrivent (texte riche, liens,
-images, style) contre l'injection. L'import de médias refuse les adresses privées. Détails :
-[assistant-ia.md](assistant-ia.md#sécurité).
+Le serveur MCP (`https://<domaine>/mcp`, fonction `openflowMcp`) accepte deux types d'accès :
+- les IA que le propriétaire a autorisées lui-même sur l'écran d'autorisation de l'admin (OAuth 2.1 avec
+  PKCE, adresses de retour vérifiées, jetons d'une heure renouvelés) ;
+- les clés qu'il a créées.
+
+Les deux se retirent d'un clic. Les outils n'écrivent que des brouillons et assainissent ce qu'ils écrivent
+(texte riche, liens, images, style) contre l'injection. L'import de médias refuse les adresses privées. La
+réécriture Hosting vers la fonction (`run`) ne demande aucun droit supplémentaire au compte de build.
+Détails : [assistant-ia.md](assistant-ia.md#sécurité).
 
 ## Recommandations au propriétaire
 
