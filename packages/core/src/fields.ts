@@ -6,21 +6,41 @@ export const OPENFLOW_FIELD_KEY = "openflow";
 
 export type OpenFlowFieldKind = "image" | "link" | "video";
 
+/** An optimized copy of an image (WebP), made when it is added to the media library. */
+export interface ImageVariant {
+  url: string;
+  width: number;
+  height: number;
+  size?: number;
+}
+
+/** An optimized copy of a video (H.264 MP4, 1080p or 720p). */
+export interface VideoVariant {
+  url: string;
+  width: number;
+  height: number;
+  size?: number;
+}
+
 /** Value stored by an {@link imageField}. `src` is a public URL (Cloud Storage or absolute). */
 export interface ImageValue {
   src: string;
   alt: string;
   width?: number;
   height?: number;
+  /** Optimized copies, added at publication (never edited by hand). */
+  variants?: ImageVariant[];
 }
 
-/** Value stored by a {@link videoField}: a muted, looping video (MP4 or WebM, 15 MB max). */
+/** Value stored by a {@link videoField}: a muted, looping video (MP4, WebM or MOV). */
 export interface VideoValue {
   src: string;
   /** Image shown before the video plays (and instead of it for reduced motion). */
   poster?: string;
   /** Short description for assistive technologies. */
   description?: string;
+  /** Optimized copies (1080p, 720p), added at publication. */
+  variants?: VideoVariant[];
 }
 
 /** Value stored by a {@link linkField}. Page links are re-resolved at publish time. */
@@ -131,44 +151,85 @@ export function linkProps(link: LinkValue | null | undefined): {
 /**
  * Props to spread on an `<img>` element for an {@link ImageValue}. Returns `null` when empty.
  * Also carries the element marker (`data-of`) that lets the owner click the image in the editor.
+ * Once published, an image of the media library has optimized copies: `srcSet` lets the browser
+ * download the right width, and `sizes` (the displayed width, `100vw` by default) guides it.
  */
-export function imageProps(image: ImageValue | null | undefined): {
+export function imageProps(
+  image: ImageValue | null | undefined,
+  options: { sizes?: string } = {},
+): {
   src: string;
   alt: string;
   width?: number;
   height?: number;
+  srcSet?: string;
+  sizes?: string;
   "data-of"?: string;
   "data-of-i"?: string;
 } | null {
   if (!image?.src) return null;
   const mark = (image as { __of?: { p: string; i?: string } }).__of;
+  const variants = [...(image.variants ?? [])].sort((a, b) => a.width - b.width);
+  // Fallback `src`: the copy closest to 1440 px, never the (possibly huge) original.
+  const fallback = variants.find((v) => v.width >= 1440) ?? variants.at(-1);
   return {
-    src: image.src,
+    src: fallback?.url ?? image.src,
     alt: image.alt ?? "",
     width: image.width,
     height: image.height,
+    ...(variants.length > 1
+      ? {
+          srcSet: variants.map((v) => `${v.url} ${v.width}w`).join(", "),
+          sizes: options.sizes ?? "100vw",
+        }
+      : {}),
     ...(mark ? { "data-of": mark.p, "data-of-i": mark.i } : {}),
   };
 }
 
 /**
  * Props to spread on a `<video>` element for a {@link VideoValue}. Returns `null` when empty.
- * Also carries the element marker (`data-of`) used by the editor.
+ * Also carries the element marker (`data-of`) used by the editor. Once published, a video of the
+ * media library is played from its optimized copies: 720p on phones, 1080p elsewhere
+ * (`<source media>`), with the poster extracted from the video when none was chosen.
  */
 export function videoProps(video: VideoValue | null | undefined): {
   src?: string;
   poster?: string;
   "aria-label"?: string;
+  children?: ReturnType<typeof createElement>[];
   "data-of"?: string;
   "data-of-i"?: string;
 } | null {
   const mark = (video as { __of?: { p: string; i?: string; e?: 1 } } | null | undefined)?.__of;
   // An empty video is only rendered in the editor, as a clickable placeholder (its poster).
   if (!video?.src && !mark?.e) return null;
+  // Largest first: the default source; the smallest serves phones (first matching source wins).
+  const variants = [...(video?.variants ?? [])].sort(
+    (a, b) => Math.min(b.width, b.height) - Math.min(a.width, a.height),
+  );
+  const large = variants[0];
+  const small = variants.length > 1 ? variants.at(-1) : undefined;
+  const sources = large
+    ? [
+        ...(small
+          ? [
+              createElement("source", {
+                key: small.url,
+                src: small.url,
+                type: "video/mp4",
+                media: "(max-width: 767px)",
+              }),
+            ]
+          : []),
+        createElement("source", { key: large.url, src: large.url, type: "video/mp4" }),
+      ]
+    : undefined;
   return {
-    src: video?.src || undefined,
+    ...(sources ? {} : { src: video?.src || undefined }),
     poster: video?.poster || undefined,
     "aria-label": video?.description || undefined,
+    ...(sources ? { children: sources } : {}),
     ...(mark ? { "data-of": mark.p, "data-of-i": mark.i } : {}),
   };
 }

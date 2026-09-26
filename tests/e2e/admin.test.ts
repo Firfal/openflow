@@ -155,6 +155,25 @@ describe("admin OpenFlow (émulateurs)", () => {
       "média enregistré",
     );
     expect(media.path).toMatch(/^openflow\/media\/.+-photo-test\.png$/);
+    // openflowOptimizeMedia (Storage trigger) adds the WebP copies to the library entry. Behind an
+    // HTTPS proxy, firebase-tools routes the emulators' internal calls through it and Storage
+    // triggers never fire: checked in CI (no proxy), skipped here.
+    if (process.env.HTTPS_PROXY || process.env.https_proxy) {
+      console.warn(
+        "Déclencheurs Storage indisponibles derrière un proxy : optimisation non vérifiée.",
+      );
+    } else {
+      const optimized = await waitFor(
+        async () => {
+          const snap = await db.collection("of_media").where("path", "==", media.path).get();
+          const data = snap.docs[0]?.data();
+          return data?.optimization?.status === "done" ? data : undefined;
+        },
+        60_000,
+        "copies optimisées",
+      );
+      expect(optimized.variants[0].url).toContain("openflow%2Fmedia%2Foptimized%2F");
+    }
     await page.getByText("Enregistré", { exact: true }).waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "Retour aux pages" }).click();
   });

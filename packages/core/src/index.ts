@@ -39,7 +39,14 @@ export type {
   ThemeToken,
 } from "./config.js";
 export { defineConfig, toPuckConfig } from "./config.js";
-export type { ImageValue, LinkValue, OpenFlowFieldKind, VideoValue } from "./fields.js";
+export type {
+  ImageValue,
+  ImageVariant,
+  LinkValue,
+  OpenFlowFieldKind,
+  VideoValue,
+  VideoVariant,
+} from "./fields.js";
 export {
   getOpenFlowFieldKind,
   imageField,

@@ -1,4 +1,5 @@
 import type { Data } from "@puckeditor/core";
+import type { ImageVariant, VideoVariant } from "./fields.js";
 
 /** Firestore collections used by OpenFlow. All are prefixed with `of_` to avoid clashes. */
 export const COLLECTIONS = {
@@ -169,6 +170,15 @@ export interface MediaDoc {
   /** `static`: file shipped with the site in `public/` (listed by `openflow seed`). */
   source?: "storage" | "static";
   createdAt: string;
+  /**
+   * Optimized copies made by `openflowOptimizeMedia`: WebP widths of an image, 1080p and 720p MP4
+   * of a video. Used by the published site (`srcset`, `<source>`); the original stays untouched.
+   */
+  variants?: Array<ImageVariant | VideoVariant>;
+  /** Poster extracted from a video (WebP). */
+  poster?: string;
+  /** State of the optimization, shown in the media library. */
+  optimization?: { status: "pending" | "done" | "skipped" | "failed"; at?: string; error?: string };
 }
 
 /** Public URL of a Cloud Storage object readable without token (see `storage.rules`). */

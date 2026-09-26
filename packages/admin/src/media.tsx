@@ -175,6 +175,20 @@ export function MediaLibrary({
   );
 }
 
+/** What the site serves instead of the original (see `openflowOptimizeMedia`). */
+function optimizationLabel(media: MediaEntry): string {
+  const state = media.optimization?.status;
+  if (state === "failed") return "Impossible : l'original est utilisé";
+  if (state === "skipped") return "Non nécessaire (image animée)";
+  if (state !== "done" || !media.variants?.length) return "En cours…";
+  const largest = [...media.variants].sort((a, b) => b.width - a.width)[0]!;
+  if (media.contentType.startsWith("video/")) {
+    const heights = media.variants.map((v) => `${Math.min(v.width, v.height)}p`).join(", ");
+    return `${heights} · ${formatSize(largest.size)} au lieu de ${formatSize(media.size)}`;
+  }
+  return `${media.variants.length} tailles · ${formatSize(largest.size)} au plus`;
+}
+
 function formatSize(bytes: number | undefined) {
   if (!bytes) return "";
   return bytes > 1024 * 1024
@@ -308,6 +322,12 @@ export function MediaView() {
                   <span style={{ marginLeft: "auto" }}>{formatSize(selected.size)}</span>
                 </li>
               ) : null}
+              {selected.source !== "static" && (
+                <li>
+                  <span className="of-subtle">Version optimisée</span>
+                  <span style={{ marginLeft: "auto" }}>{optimizationLabel(selected)}</span>
+                </li>
+              )}
               <li>
                 <span className="of-subtle">Origine</span>
                 <span style={{ marginLeft: "auto" }}>

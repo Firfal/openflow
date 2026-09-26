@@ -5,6 +5,7 @@ import {
   COLLECTIONS,
   createSnapshot,
   DOCS,
+  type MediaDoc,
   OWNER_CLAIM,
   type PageDoc,
   type ReleaseDoc,
@@ -17,6 +18,7 @@ import {
 import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import { GoogleAuth } from "google-auth-library";
+import { withVariants } from "./media.js";
 
 export type Builder = "cloud-build" | "local";
 
@@ -131,7 +133,7 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
     db.collection(COLLECTIONS.pages).get(),
   ]);
   const settings = (settingsSnap.data() as SettingsDoc | undefined) ?? FALLBACK_SETTINGS;
-  return createSnapshot({
+  const snapshot = createSnapshot({
     releaseId,
     settings: {
       site: settings.site ?? FALLBACK_SETTINGS.site,
@@ -140,6 +142,18 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
     },
     pages: pagesSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as PageDoc) })),
   });
+  // Optimized copies of the library's images and videos (srcset, <source>).
+  const library = new Map<string, MediaDoc>();
+  for (const doc of (await db.collection(COLLECTIONS.media).get()).docs) {
+    const media = doc.data() as MediaDoc;
+    if (media.variants?.length) library.set(media.path, media);
+  }
+  if (library.size === 0) return snapshot;
+  return {
+    ...snapshot,
+    settings: withVariants(snapshot.settings, library),
+    pages: snapshot.pages.map((page) => ({ ...page, data: withVariants(page.data, library) })),
+  };
 }
 
 export async function getSource(db: Firestore): Promise<SourceDoc | undefined> {

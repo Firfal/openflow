@@ -7,6 +7,7 @@ import {
   handleMcpMessage,
   OWNER_CLAIM,
   PUBLICATION_FAILED_LOG,
+  publicStorageUrl,
   type ReleaseDoc,
   type SiteSchema,
   SnapshotError,
@@ -19,6 +20,7 @@ import { logger } from "firebase-functions";
 import { type CallableRequest, HttpsError, onCall, onRequest } from "firebase-functions/https";
 import { defineString } from "firebase-functions/params";
 import { onMessagePublished } from "firebase-functions/pubsub";
+import { onObjectFinalized } from "firebase-functions/storage";
 import {
   adminBackend,
   agentConfig,
@@ -45,6 +47,7 @@ import {
   startLocalBuild,
   type TokenInfo,
 } from "./core.js";
+import { isOriginalMedia, mediaEntry, optimizeImage, optimizeVideo } from "./media.js";
 import {
   decideRequest,
   describeRequest,
@@ -615,3 +618,60 @@ export const openflowRestoreRelease = onCall({ region, enforceAppCheck }, async 
   await markLive(db, releaseId, { restoredAt: new Date().toISOString() });
   return { ok: true };
 });
+
+const OPTIMIZED_IMAGES = /^image\/(png|jpeg|webp|avif|gif)$/;
+const OPTIMIZED_VIDEOS = /^video\/(mp4|webm|quicktime)$/;
+
+/**
+ * Optimizes every file added to the media library (admin upload, AI import): WebP copies of images
+ * for `srcset`, 1080p and 720p MP4 copies of videos with a poster (see `media.ts`). The copies are
+ * recorded in the library entry and used by the next publications; the original is kept.
+ */
+export const openflowOptimizeMedia = onObjectFinalized(
+  { region, memory: "4GiB", cpu: 2, timeoutSeconds: 540, maxInstances: 3 },
+  async (event) => {
+    const { name, contentType = "", bucket: bucketName, size } = event.data;
+    if (!name || !isOriginalMedia(name)) return;
+    const image = OPTIMIZED_IMAGES.test(contentType);
+    if (!image && !OPTIMIZED_VIDEOS.test(contentType)) return;
+    const db = getFirestore();
+    const bucket = getStorage().bucket(bucketName);
+    const ref = await mediaEntry(db, name, {
+      path: name,
+      url: publicStorageUrl(bucketName, name),
+      name: path.basename(name),
+      contentType,
+      size: Number(size) || 0,
+      source: "storage",
+    });
+    const at = () => new Date().toISOString();
+    await ref.update({ optimization: { status: "pending", at: at() } });
+    try {
+      const storage = {
+        bucketName,
+        publicUrl: (file: string) =>
+          `${storageBaseUrl()}/v0/b/${bucketName}/o/${encodeURIComponent(file)}?alt=media`,
+        download: async (file: string) => (await bucket.file(file).download())[0],
+        upload: (file: string, data: Buffer, type: string) =>
+          bucket.file(file).save(data, {
+            contentType: type,
+            resumable: false,
+            metadata: { cacheControl: "public, max-age=31536000, immutable" },
+          }),
+      };
+      const result = image
+        ? await optimizeImage(storage, name)
+        : await optimizeVideo(storage, name);
+      await ref.update(
+        result
+          ? { ...JSON.parse(JSON.stringify(result)), optimization: { status: "done", at: at() } }
+          : { optimization: { status: "skipped", at: at() } },
+      );
+    } catch (error) {
+      logger.error("OpenFlow media optimization failed", { name, error: String(error) });
+      await ref.update({
+        optimization: { status: "failed", at: at(), error: String(error).slice(0, 300) },
+      });
+    }
+  },
+);

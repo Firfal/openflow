@@ -48,10 +48,16 @@ export const STORAGE_RULES_BLOCK = `function ofIsOwner() {
 }
 match /openflow/media/{fileName} {
   allow read: if true;
-  allow create, update: if ofIsOwner()
-    && request.resource.size < 15 * 1024 * 1024
-    && request.resource.contentType.matches('image/(png|jpeg|gif|webp|avif)|video/(mp4|webm)|application/pdf');
+  allow create, update: if ofIsOwner() && (
+    (request.resource.size < 15 * 1024 * 1024
+      && request.resource.contentType.matches('image/(png|jpeg|gif|webp|avif)|application/pdf'))
+    || (request.resource.size < 100 * 1024 * 1024
+      && request.resource.contentType.matches('video/(mp4|webm|quicktime)')));
   allow delete: if ofIsOwner();
+}
+match /openflow/media/optimized/{allPaths=**} {
+  allow read: if true;
+  allow write: if false;
 }
 match /openflow/{allPaths=**} {
   allow read, write: if false;

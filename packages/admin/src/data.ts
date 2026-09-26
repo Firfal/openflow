@@ -198,11 +198,12 @@ function imageSize(file: File): Promise<{ width?: number; height?: number }> {
 }
 
 export const ACCEPTED_IMAGES = "image/png,image/jpeg,image/gif,image/webp,image/avif";
-export const ACCEPTED_VIDEOS = "video/mp4,video/webm";
+export const ACCEPTED_VIDEOS = "video/mp4,video/webm,video/quicktime";
 /** @deprecated use ACCEPTED_IMAGES */
 export const ACCEPTED_MEDIA = ACCEPTED_IMAGES;
-/** Same limit as the Storage rules (`storage.rules`). */
+/** Same limits as the Storage rules (`storage.rules`): videos are optimized after upload. */
 export const MAX_MEDIA_BYTES = 15 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 export type MediaKind = "image" | "video";
 
@@ -212,12 +213,15 @@ export async function uploadMedia(
   file: File,
   kind: MediaKind = "image",
 ): Promise<MediaEntry> {
-  if (file.size > MAX_MEDIA_BYTES) throw new Error("Fichier trop lourd (15 Mo maximum).");
+  const max = kind === "video" ? MAX_VIDEO_BYTES : MAX_MEDIA_BYTES;
+  if (file.size > max) {
+    throw new Error(`Fichier trop lourd (${Math.round(max / 1024 / 1024)} Mo maximum).`);
+  }
   const accepted = kind === "video" ? ACCEPTED_VIDEOS : ACCEPTED_IMAGES;
   if (!accepted.split(",").includes(file.type)) {
     throw new Error(
       kind === "video"
-        ? "Format non pris en charge : utilisez une vidéo MP4 ou WebM."
+        ? "Format non pris en charge : utilisez une vidéo MP4, WebM ou MOV."
         : "Format non pris en charge : utilisez une image PNG, JPEG, GIF, WebP ou AVIF.",
     );
   }

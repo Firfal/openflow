@@ -25,9 +25,11 @@
   },
   "dependencies": {
     "@openflow/core": "workspace:*",
+    "ffmpeg-static": "^5.3.0",
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.4.0",
-    "google-auth-library": "^11.1.0"
+    "google-auth-library": "^11.1.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@puckeditor/core": "0.23.0",
