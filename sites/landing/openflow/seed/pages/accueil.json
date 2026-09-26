@@ -48,7 +48,10 @@
           "demoPublish": "Publier",
           "demoLive": "En ligne",
           "demoPauseLabel": "Mettre la démo en pause",
-          "demoPlayLabel": "Relancer la démo"
+          "demoPlayLabel": "Relancer la démo",
+          "visual": "demo",
+          "visualImage": null,
+          "visualVideo": null
         }
       },
       {

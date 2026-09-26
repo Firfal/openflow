@@ -27,6 +27,8 @@ hooks renvoient automatiquement les erreurs à l'agent, qui les corrige avant de
 | [OF-107](OF-107.md) | Section qui plante avec des valeurs limites | erreur | render | appliquée |
 | [OF-108](OF-108.md) | Champ `contentEditable` utilisé dans un attribut ou une chaîne | erreur | render | appliquée |
 | [OF-109](OF-109.md) | Champ éditable invisible dans l'éditeur | avertissement | render | appliquée |
+| [OF-110](OF-110.md) | Section sans élément racine unique | avertissement | render | appliquée |
+| [OF-111](OF-111.md) | Image ou vidéo affichée sans `imageProps` / `videoProps` | avertissement | render | appliquée |
 | [OF-201](OF-201.md) | Contenu non conforme au schéma | erreur | render | appliquée |
 | [OF-202](OF-202.md) | Section ou champ renommé alors qu'il est utilisé en production | erreur | render | prévue |
 | [OF-203](OF-203.md) | Configuration OpenFlow invalide | erreur | render | appliquée |

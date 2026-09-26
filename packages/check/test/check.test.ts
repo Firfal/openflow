@@ -233,6 +233,45 @@ export default defineConfig({ site: { name: "X" }, components: { Status } });`,
     expect(hidden[0]?.severity).toBe("warning");
   }, 30_000);
 
+  it("validates the published markup: element-valued texts, single root, imageProps", async () => {
+    const section = `import { imageField, imageProps } from "@openflow/core";
+export const Card = {
+  fields: {
+    title: { type: "text", contentEditable: true },
+    photo: imageField(),
+    cover: imageField(),
+  },
+  defaultProps: { title: "Carte", photo: null, cover: null },
+  render: ({ title, photo, cover }) => {
+    const img = imageProps(photo);
+    return (
+      <>
+        <h2>{\`\${title} !\`}</h2>
+        {img && <img {...img} />}
+        {cover?.src && <img src={cover.src} alt={cover.alt} />}
+      </>
+    );
+  },
+};
+`;
+    const dir = await makeSite("render-marked", {
+      "openflow/components/Card.tsx": section,
+      "openflow.config.tsx": `import { defineConfig } from "@openflow/core";
+import { Card } from "./openflow/components/Card";
+export default defineConfig({ site: { name: "X" }, components: { Card } });`,
+    });
+    const result = await runCheck({ siteDir: dir, level: "render" });
+    const messages = result.issues.map((issue) => `${issue.rule} ${issue.message}`);
+    // `${title} !` becomes "[object Object] !" once texts are marked elements.
+    expect(messages.some((m) => m.startsWith("OF-108") && m.includes("[object Object]"))).toBe(
+      true,
+    );
+    expect(messages.some((m) => m.startsWith("OF-110"))).toBe(true);
+    // `photo` goes through imageProps (marked); `cover` does not.
+    const unmarked = messages.filter((m) => m.startsWith("OF-111"));
+    expect(unmarked).toHaveLength(1);
+  }, 30_000);
+
   it("reports a config that cannot be loaded", async () => {
     const dir = await makeSite("render-broken", {
       "openflow.config.tsx": `import "./does-not-exist";\nexport default {};`,

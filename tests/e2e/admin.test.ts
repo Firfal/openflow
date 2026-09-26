@@ -173,6 +173,9 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(release.builder).toBe("local");
     const html = readFileSync(path.join(site, "out", "index.html"), "utf8");
     expect(html).toContain(NEW_TITLE);
+    // Published sections carry the same element markers as the editor (click-to-select, styles).
+    expect(html).toMatch(/data-of-s="[^"]+"/);
+    expect(html).toMatch(/data-of="title"/);
     expect(existsSync(path.join(site, "out", "admin", "index.html"))).toBe(true);
     await page
       .getByText("Le site est en ligne avec vos dernières modifications.")

@@ -6,6 +6,7 @@
     "description": "Le CMS visuel open source pour les sites Next.js créés avec Claude Code, 100 % Firebase."
   },
   "values": {
+    "logo": null,
     "navigation": [
       {
         "label": "Fonctionnement",

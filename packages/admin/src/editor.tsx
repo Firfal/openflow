@@ -12,6 +12,7 @@ import {
 } from "./editor-ui.js";
 import { prepareEditorConfig } from "./fields.js";
 import { errorMessage } from "./firebase.js";
+import { type Focus, FocusContext, type FocusStore } from "./focus.js";
 import { FR_DICTIONARY } from "./i18n.js";
 import { Button, Spinner } from "./ui.js";
 
@@ -63,6 +64,8 @@ export function EditorView({ pageId }: { pageId: string }) {
     () => (page ? { page: { id: page.id, slug: page.slug, title: page.title } } : {}),
     [page],
   );
+  const [focus, setFocus] = useState<Focus | null>(null);
+  const focusStore = useMemo<FocusStore>(() => ({ focus, setFocus }), [focus]);
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
     () => ({
@@ -91,20 +94,22 @@ export function EditorView({ pageId }: { pageId: string }) {
   // `metadata` object makes Puck rebuild its store and remount the canvas (e.g. mid-drag).
   return (
     <EditorChromeContext.Provider value={chrome}>
-      <div className="of-editor">
-        <Puck
-          config={editorConfig}
-          data={initialData!}
-          onChange={autosave.schedule}
-          dictionary={FR_DICTIONARY}
-          headerTitle={page.title}
-          headerPath={slugToPath(page.slug)}
-          height="calc(100dvh - var(--of-topbar-height))"
-          iframe={EDITOR_IFRAME}
-          metadata={metadata}
-          overrides={PAGE_EDITOR_OVERRIDES}
-        />
-      </div>
+      <FocusContext.Provider value={focusStore}>
+        <div className="of-editor">
+          <Puck
+            config={editorConfig}
+            data={initialData!}
+            onChange={autosave.schedule}
+            dictionary={FR_DICTIONARY}
+            headerTitle={page.title}
+            headerPath={slugToPath(page.slug)}
+            height="calc(100dvh - var(--of-topbar-height))"
+            iframe={EDITOR_IFRAME}
+            metadata={metadata}
+            overrides={PAGE_EDITOR_OVERRIDES}
+          />
+        </div>
+      </FocusContext.Provider>
     </EditorChromeContext.Provider>
   );
 }

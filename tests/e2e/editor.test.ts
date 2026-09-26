@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // Editor ergonomics on the emulators, for any OpenFlow site (template by default,
 // OPENFLOW_E2E_SITE=sites/landing for the landing): adding and reordering sections with the mouse,
-// collapsed content opened while editing, and the site frame around the page.
+// collapsed content opened while editing, the site frame around the page, and media replaced
+// from the page.
 const site =
   process.env.OPENFLOW_E2E_SITE ??
   path.resolve(import.meta.dirname, "../../templates/next-starter");
@@ -163,6 +164,23 @@ describe("éditeur de page", () => {
     await expect.poll(async () => (await sections()).join(), { timeout: 10_000 }).toBe(ids.join());
   });
 
+  it("selects the field of a clicked text and edits it from the panel", async () => {
+    // A text inside a list (e.g. a FAQ answer): marked `data-of="items.answer"`, `data-of-i`.
+    const marked = frame.locator("[data-puck-component] span[data-of*='.'][data-of-i]").first();
+    await marked.scrollIntoViewIfNeeded();
+    const { x, y } = await center(marked);
+    await page.mouse.click(x, y);
+    // Puck renders the fields panel twice (desktop and mobile layouts): take the visible one.
+    const card = page.locator(".of-selected:visible");
+    await card.waitFor({ timeout: 10_000 });
+    expect(await card.locator(".of-selected__label").innerText()).toMatch(/n° \d/);
+    const input = card.locator("input, textarea").first();
+    await input.fill("Texte modifié depuis le panneau");
+    await expect
+      .poll(async () => (await marked.innerText()).trim(), { timeout: 10_000 })
+      .toBe("Texte modifié depuis le panneau");
+  });
+
   it("opens collapsed content (<details>) so it can be edited in place", async () => {
     const details = frame.locator("[data-puck-component] details");
     if ((await details.count()) === 0) return;
@@ -180,5 +198,50 @@ describe("éditeur de page", () => {
     await link.click({ force: true });
     await page.getByText("modifiez-les dans Réglages").waitFor({ timeout: 5_000 });
     expect(await frame.locator("[data-puck-component]").count()).toBeGreaterThan(0);
+  });
+
+  it("replaces an image by tapping it on the page and picking a file of the site", async () => {
+    const image = frame.locator("[data-puck-component] img[data-of]").first();
+    await image.scrollIntoViewIfNeeded();
+    const before = await image.getAttribute("src");
+    const { x, y } = await center(image);
+    await page.mouse.click(x, y);
+    const dialog = page.locator("dialog.of-dialog[open]");
+    await dialog.waitFor({ timeout: 10_000 });
+    // Registered by `openflow seed`: the images shipped in public/.
+    await dialog.getByRole("button", { name: "Fichiers du site" }).click();
+    const items = dialog.locator(".of-media-grid__item img");
+    await expect.poll(() => items.count(), { timeout: 10_000 }).toBeGreaterThan(1);
+    const sources = await items.evaluateAll((els) => els.map((el) => el.getAttribute("src")));
+    const pick = sources.findIndex((src) => src !== before);
+    await items.nth(pick).click();
+    await expect.poll(() => image.getAttribute("src"), { timeout: 10_000 }).toBe(sources[pick]);
+    expect(await dialog.count()).toBe(0);
+  });
+
+  it("switches a visual to a video and replaces it from its placeholder", async () => {
+    // Sites whose hero offers a « Vidéo » visual (the landing).
+    const hero = frame.locator("[data-puck-component]:has(h1)").first();
+    await hero.scrollIntoViewIfNeeded();
+    const { box } = await center(hero);
+    await page.mouse.click(box.x + 20, box.y + 20);
+    await page.waitForTimeout(500);
+    const option = page.locator("label:visible", { hasText: /^Vidéo$/ });
+    if (path.basename(site) === "landing") expect(await option.count()).toBeGreaterThan(0);
+    if ((await option.count()) === 0) return;
+    await option.first().click();
+    const video = hero.locator("video[data-of]");
+    await video.waitFor({ timeout: 10_000 });
+    const tap = await center(video);
+    await page.mouse.click(tap.x, tap.y);
+    const dialog = page.locator("dialog.of-dialog[open]");
+    await dialog.waitFor({ timeout: 10_000 });
+    await dialog.getByRole("button", { name: "Importer une vidéo" }).waitFor();
+    await dialog.getByRole("button", { name: "Fermer" }).click();
+    await page
+      .locator("label:visible", { hasText: /^Démo animée/ })
+      .first()
+      .click();
+    await expect.poll(() => video.count(), { timeout: 10_000 }).toBe(0);
   });
 });

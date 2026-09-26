@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { OpenFlowConfig } from "./config.js";
+import type { MediaDoc } from "./model.js";
 import {
   PAGE_ID,
   resolveSeedSettings,
@@ -147,4 +149,109 @@ export async function snapshotFromSeed(siteDir: string, config: OpenFlowConfig):
     );
   }
   return createSnapshot({ releaseId: "seed", settings: seed.settings, pages: seed.pages });
+}
+
+/** Width and height read from an image header (PNG, JPEG, GIF, WebP, SVG), when available. */
+export function imageDimensions(data: Buffer, ext: string): { width?: number; height?: number } {
+  const e = ext.toLowerCase().replace(/^\./, "");
+  try {
+    if (e === "png" && data.length > 24) {
+      return { width: data.readUInt32BE(16), height: data.readUInt32BE(20) };
+    }
+    if (e === "gif" && data.length > 10) {
+      return { width: data.readUInt16LE(6), height: data.readUInt16LE(8) };
+    }
+    if (e === "webp" && data.toString("ascii", 0, 4) === "RIFF") {
+      const chunk = data.toString("ascii", 12, 16);
+      if (chunk === "VP8X") {
+        return { width: 1 + data.readUIntLE(24, 3), height: 1 + data.readUIntLE(27, 3) };
+      }
+      if (chunk === "VP8L") {
+        const bits = data.readUInt32LE(21);
+        return { width: 1 + (bits & 0x3fff), height: 1 + ((bits >> 14) & 0x3fff) };
+      }
+      if (chunk === "VP8 ") {
+        return { width: data.readUInt16LE(26) & 0x3fff, height: data.readUInt16LE(28) & 0x3fff };
+      }
+    }
+    if ((e === "jpg" || e === "jpeg") && data[0] === 0xff && data[1] === 0xd8) {
+      let offset = 2;
+      while (offset < data.length) {
+        if (data[offset] !== 0xff) return {};
+        const marker = data[offset + 1] ?? 0;
+        const length = data.readUInt16BE(offset + 2);
+        // SOF0-SOF15, except DHT (C4), JPG (C8) and DAC (CC).
+        if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+          return { height: data.readUInt16BE(offset + 5), width: data.readUInt16BE(offset + 7) };
+        }
+        offset += 2 + length;
+      }
+    }
+    if (e === "svg") {
+      const svg = data.toString("utf8", 0, 2000);
+      const w = svg.match(/<svg[^>]*\swidth="([\d.]+)(px)?"/)?.[1];
+      const h = svg.match(/<svg[^>]*\sheight="([\d.]+)(px)?"/)?.[1];
+      if (w && h) return { width: Math.round(Number(w)), height: Math.round(Number(h)) };
+      const box = svg.match(/viewBox="[\d.-]+[\s,]+[\d.-]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/);
+      if (box) return { width: Math.round(Number(box[1])), height: Math.round(Number(box[2])) };
+    }
+  } catch {
+    // truncated or unusual file: no dimensions
+  }
+  return {};
+}
+
+const STATIC_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  svg: "image/svg+xml",
+  mp4: "video/mp4",
+  webm: "video/webm",
+};
+
+/**
+ * Images and videos shipped in `public/` (seed screenshots, illustrations…), as media library
+ * entries: the owner can pick them again after replacing them. Document ids are stable
+ * (`static-<hash of the path>`), so re-running the seed never duplicates them.
+ */
+export async function listStaticMedia(
+  siteDir: string,
+): Promise<Array<{ id: string; doc: MediaDoc }>> {
+  const root = path.join(siteDir, "public");
+  const out: Array<{ id: string; doc: MediaDoc }> = [];
+  const walk = async (dir: string) => {
+    for (const entry of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      const ext = path.extname(entry.name).slice(1).toLowerCase();
+      const contentType = STATIC_TYPES[ext];
+      if (!contentType || entry.name.startsWith(".")) continue;
+      const publicPath = `/${path.relative(root, full).split(path.sep).join("/")}`;
+      const data = await readFile(full);
+      const size = (await stat(full)).size;
+      const id = `static-${createHash("sha1").update(publicPath).digest("hex").slice(0, 16)}`;
+      out.push({
+        id,
+        doc: {
+          path: publicPath,
+          url: publicPath,
+          name: entry.name,
+          contentType,
+          size,
+          ...(contentType.startsWith("image/") ? imageDimensions(data, ext) : {}),
+          source: "static",
+          createdAt: new Date(0).toISOString(),
+        },
+      });
+    }
+  };
+  await walk(root);
+  return out.sort((a, b) => a.doc.path.localeCompare(b.doc.path));
 }

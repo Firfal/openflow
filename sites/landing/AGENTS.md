@@ -22,8 +22,9 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 
 1. **Aucun texte visible en dur** : chaque texte passe par un champ. Titres, boutons et textes courts :
    `{ type: "text", contentEditable: true }`. Paragraphes : `"textarea"` (contentEditable) ou `"richtext"`.
-2. **Images** : `imageField()` de `@openflow/core`, affichée avec `imageProps(image)`. N'importe jamais
-   d'image et n'écris jamais de `src` fixe.
+2. **Images et vidéos** : `imageField()` de `@openflow/core`, affichée avec `imageProps(image)` ; `videoField()`
+   avec `videoProps(video)` (muette, en boucle, bouton pause). N'importe jamais d'image et n'écris jamais de `src`
+   fixe. Le propriétaire clique sur l'image dans la page pour la remplacer.
 3. **Liens** : `linkField()`, affiché avec `<a {...linkProps(link)}>`. N'écris jamais de `href` fixe (seuls `#ancre` et `/` sont admis).
 4. **`defaultProps` complets et réalistes** pour chaque champ, plus `defaultItemProps` pour chaque liste.
 5. **Rendu robuste** : `image?.src`, `items?.map(...)`, des champs vides ou très longs, et aucun accès à `window` ou `document` pendant le rendu.

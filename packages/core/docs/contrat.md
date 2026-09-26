@@ -7,7 +7,7 @@ modifient un site OpenFlow. Il est installé avec `@openflow/core` : sa version 
 
 Le propriétaire du site **n'est pas développeur**. Il modifie son site depuis `/admin` :
 - il clique sur un texte de la page pour le réécrire ;
-- il remplace les images depuis la médiathèque ;
+- il clique sur une image ou une vidéo de la page pour la remplacer depuis la médiathèque ;
 - il ajoute, déplace, duplique ou supprime des **sections** ;
 - il édite les réglages communs (menu, pied de page, couleur) ;
 - il clique sur « Publier » : le site est reconstruit en HTML statique sur Firebase Hosting.
@@ -98,6 +98,9 @@ Puis, dans `openflow.config.tsx` : `components: { …, Offre }` et `categories.c
 - **OF-108** : un champ `contentEditable` n'apparaît jamais dans un attribut ni dans une chaîne.
 - **OF-109** : un champ éditable reste visible dans l'éditeur (`puck?.isEditing`), même s'il n'apparaît sur le
   site que dans un état caché (animation, `opacity-0`, très grand écran).
+- **OF-110** : une section a un seul élément racine (une `<section>`, un `<div>`…), pas un fragment de frères.
+- **OF-111** : une image est affichée avec `imageProps()` et une vidéo avec `videoProps()`, pour que le propriétaire
+  puisse cliquer dessus dans la page.
 - **OF-201** : le contenu de départ respecte les champs déclarés.
 - **OF-202** : on ne renomme ni ne supprime un champ ou une section déjà livrés.
 - **OF-203** : la config est valide (sections en PascalCase, `site.name`).
@@ -124,7 +127,10 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
   `getSettings(config)` de `@openflow/next`.
 - **États cachés.** Un texte visible seulement pendant une animation, au survol ou sur très grand écran doit aussi
   s'afficher quand `puck?.isEditing` est vrai (OF-109). Les `<details>` sont ouverts automatiquement dans l'éditeur.
-- **Images du contenu de départ.** Elles peuvent pointer vers `public/` (`"/images/x.jpg"`). Le propriétaire les remplacera.
+- **Images du contenu de départ.** Elles peuvent pointer vers `public/` (`"/images/x.jpg"`). `openflow seed` les
+  ajoute à la médiathèque (« Fichiers du site ») : le propriétaire peut les remplacer, puis y revenir.
+- **Vidéo.** `videoField()` et `videoProps()` : vidéo muette, en boucle, avec un bouton pause, et sans lecture
+  automatique si le visiteur préfère réduire les animations. Voir `champs.md`.
 
 ## Contenu de départ (seed)
 

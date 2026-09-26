@@ -142,6 +142,13 @@ function checkValue(field: Field, value: unknown, path: string): string | undefi
     }
     return undefined;
   }
+  if (kind === "video") {
+    if (value === null) return undefined;
+    if (!isObject(value) || typeof value.src !== "string") {
+      return `${path} : vidéo attendue sous la forme { "src": "...", "poster": "...", "description": "..." } ou null`;
+    }
+    return undefined;
+  }
   if (kind === "link") {
     if (value === null) return undefined;
     if (!isObject(value) || typeof value.href !== "string") {

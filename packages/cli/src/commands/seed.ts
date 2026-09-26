@@ -1,7 +1,7 @@
 import path from "node:path";
 import { loadSite } from "@openflow/check";
 import { COLLECTIONS, DOCS, ensureIds, type PageDoc, type SettingsDoc } from "@openflow/core";
-import { loadSeed, writeSnapshotFile } from "@openflow/core/node";
+import { listStaticMedia, loadSeed, writeSnapshotFile } from "@openflow/core/node";
 import { snapshotFromFirestore } from "@openflow/functions/core";
 import { adminApp, defaultProject, firestore } from "../firebase.js";
 import { CliError, log } from "../util.js";
@@ -36,6 +36,7 @@ export async function seed(
   });
   let created = 0;
   let kept = 0;
+  let media = 0;
   try {
     const db = firestore(handle);
     const now = new Date().toISOString();
@@ -67,12 +68,20 @@ export async function seed(
       await ref.set(JSON.parse(JSON.stringify(doc)));
       created++;
     }
+    // Images and videos of public/ go into the media library (the owner can reuse them).
+    for (const { id, doc } of await listStaticMedia(site)) {
+      const ref = db.collection(COLLECTIONS.media).doc(id);
+      if (!options.force && (await ref.get()).exists) continue;
+      await ref.set(JSON.parse(JSON.stringify(doc)));
+      media++;
+    }
   } finally {
     await handle.close();
   }
   log.ok(
     `Contenu initial importé dans ${handle.emulator ? "l'émulateur" : handle.projectId} : ${created} document(s) créé(s), ${kept} conservé(s).`,
   );
+  if (media > 0) log.ok(`Médiathèque : ${media} image(s) du site ajoutée(s).`);
   return { created, kept };
 }
 

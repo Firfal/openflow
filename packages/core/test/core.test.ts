@@ -20,7 +20,7 @@ import {
   validateConfig,
   validatePageData,
 } from "../src/index.js";
-import { loadSeed, snapshotFromSeed } from "../src/node.js";
+import { imageDimensions, listStaticMedia, loadSeed, snapshotFromSeed } from "../src/node.js";
 
 const config = defineConfig({
   site: { name: "Test", lang: "fr" },
@@ -242,5 +242,47 @@ describe("seed", () => {
     expect(seed?.pages[0]).toMatchObject({ id: "accueil", status: "published" });
     await writeFile(path.join(dir, "openflow/seed/pages/Bad Name.json"), "");
     await expect(snapshotFromSeed(dir, config)).rejects.toThrow(/Seed invalide/);
+  });
+});
+
+describe("static media", () => {
+  const png = (width: number, height: number) => {
+    const data = Buffer.alloc(33);
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(data);
+    data.write("IHDR", 12, "ascii");
+    data.writeUInt32BE(width, 16);
+    data.writeUInt32BE(height, 20);
+    return data;
+  };
+
+  it("reads image dimensions from headers", () => {
+    expect(imageDimensions(png(1600, 900), ".png")).toEqual({ width: 1600, height: 900 });
+    const gif = Buffer.from("GIF89a\x40\x01\xf0\x00\x80\x00\x00", "latin1");
+    expect(imageDimensions(gif, "gif")).toEqual({ width: 320, height: 240 });
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80"></svg>');
+    expect(imageDimensions(svg, "svg")).toEqual({ width: 120, height: 80 });
+    expect(imageDimensions(Buffer.from("nope"), "jpg")).toEqual({});
+  });
+
+  it("lists the images and videos of public/ with stable ids", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "openflow-media-"));
+    await mkdir(path.join(dir, "public/captures"), { recursive: true });
+    await writeFile(path.join(dir, "public/captures/admin.png"), png(1440, 900));
+    await writeFile(path.join(dir, "public/intro.mp4"), Buffer.alloc(10));
+    await writeFile(path.join(dir, "public/robots.txt"), "User-agent: *");
+    await writeFile(path.join(dir, "public/.DS_Store"), "");
+    const media = await listStaticMedia(dir);
+    expect(media.map((m) => m.doc.path)).toEqual(["/captures/admin.png", "/intro.mp4"]);
+    expect(media[0]?.doc).toMatchObject({
+      url: "/captures/admin.png",
+      contentType: "image/png",
+      width: 1440,
+      height: 900,
+      source: "static",
+    });
+    expect(media[1]?.doc).toMatchObject({ contentType: "video/mp4" });
+    expect(media[1]?.doc).not.toHaveProperty("width");
+    expect((await listStaticMedia(dir)).map((m) => m.id)).toEqual(media.map((m) => m.id));
+    expect(await listStaticMedia(path.join(dir, "missing"))).toEqual([]);
   });
 });

@@ -1,8 +1,16 @@
-import { type LinkValue, linkField, type SettingsConfig } from "@openflow/core";
+import {
+  type ImageValue,
+  imageField,
+  type LinkValue,
+  linkField,
+  type SettingsConfig,
+} from "@openflow/core";
 import type { Fields } from "@puckeditor/core";
 
 /** Global content shared by every page, edited in the admin under "Réglages". */
 export interface SiteSettingsValues {
+  /** Uploaded logo; the drawn OpenFlow mark is used when empty. */
+  logo: ImageValue | null;
   navigation: Array<{ label: string; link: LinkValue | null }>;
   headerCtaLabel: string;
   headerCtaLink: LinkValue | null;
@@ -18,6 +26,7 @@ const linkItem: Fields<{ label: string; link: LinkValue | null }> = {
 };
 
 export const settingsFields: Fields<SiteSettingsValues> = {
+  logo: imageField({ label: "Logo (remplace le logo dessiné)" }),
   navigation: {
     type: "array",
     label: "Menu principal",
@@ -40,6 +49,7 @@ export const settingsFields: Fields<SiteSettingsValues> = {
 };
 
 export const settingsDefaults: SiteSettingsValues = {
+  logo: null,
   navigation: [],
   headerCtaLabel: "GitHub",
   headerCtaLink: null,

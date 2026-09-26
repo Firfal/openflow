@@ -2,8 +2,10 @@ import {
   getOpenFlowFieldKind,
   type ImageValue,
   type LinkValue,
+  markComponent,
   type OpenFlowConfig,
   slugToPath,
+  type VideoValue,
 } from "@openflow/core";
 import {
   type Config,
@@ -15,81 +17,47 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 import { EditorFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
-import { ACCEPTED_MEDIA, listMedia, type MediaEntry, uploadMedia } from "./data.js";
+import { ACCEPTED_IMAGES, ACCEPTED_VIDEOS, uploadMedia } from "./data.js";
 import { errorMessage } from "./firebase.js";
-import { Button, Dialog } from "./ui.js";
+import { MediaLibrary } from "./media.js";
+import { Button } from "./ui.js";
 
 type RenderProps<V> = Parameters<CustomField<V>["render"]>[0];
-
-function MediaLibrary({
-  open,
-  onClose,
-  onPick,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onPick: (media: MediaEntry) => void;
-}) {
-  const { services } = useAdmin();
-  const [items, setItems] = useState<MediaEntry[] | null>(null);
-  const [error, setError] = useState<string>();
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    listMedia(services.db).then(
-      (media) => !cancelled && setItems(media),
-      (e) => !cancelled && setError(errorMessage(e)),
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [open, services.db]);
-  return (
-    <Dialog open={open} title="Médiathèque" onClose={onClose}>
-      {error && <p className="of-error">{error}</p>}
-      {items?.length === 0 && (
-        <p className="of-muted">Aucune image pour l'instant : utilisez « Importer une image ».</p>
-      )}
-      <div className="of-media-grid">
-        {items?.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="of-media-grid__item"
-            onClick={() => onPick(item)}
-            title={item.name}
-          >
-            <img src={item.url} alt={item.alt ?? item.name} loading="lazy" />
-          </button>
-        ))}
-      </div>
-    </Dialog>
-  );
-}
 
 export function ImageInput({
   value,
   onChange,
   readOnly,
   label,
+  openLibrary = false,
 }: {
   value: ImageValue | null | undefined;
   onChange: (value: ImageValue | null) => void;
   readOnly?: boolean;
   label: string;
+  /** Opens the media library right away (image clicked on the page). */
+  openLibrary?: boolean;
 }) {
   const { services, notify } = useAdmin();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [library, setLibrary] = useState(false);
   const altId = useId();
+  useEffect(() => {
+    if (openLibrary && !readOnly) setLibrary(true);
+  }, [openLibrary, readOnly]);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     setBusy(true);
     try {
       const media = await uploadMedia(services, file);
-      onChange({ src: media.url, alt: value?.alt ?? "", width: media.width, height: media.height });
+      onChange({
+        src: media.url,
+        alt: value?.alt ?? "",
+        width: media.width,
+        height: media.height,
+      });
     } catch (error) {
       notify("error", errorMessage(error));
     } finally {
@@ -122,7 +90,7 @@ export function ImageInput({
         <input
           ref={input}
           type="file"
-          accept={ACCEPTED_MEDIA}
+          accept={ACCEPTED_IMAGES}
           hidden
           onChange={(e) => onFile(e.target.files?.[0])}
         />
@@ -143,6 +111,10 @@ export function ImageInput({
       <MediaLibrary
         open={library}
         onClose={() => setLibrary(false)}
+        onImport={() => {
+          setLibrary(false);
+          input.current?.click();
+        }}
         onPick={(media) => {
           setLibrary(false);
           onChange({
@@ -253,6 +225,136 @@ export function LinkInput({
   );
 }
 
+export function VideoInput({
+  value,
+  onChange,
+  readOnly,
+  label,
+  openLibrary = false,
+}: {
+  value: VideoValue | null | undefined;
+  onChange: (value: VideoValue | null) => void;
+  readOnly?: boolean;
+  label: string;
+  /** Opens the media library right away (video clicked on the page). */
+  openLibrary?: boolean;
+}) {
+  const { services, notify } = useAdmin();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [library, setLibrary] = useState<"video" | "poster" | null>(null);
+  const descriptionId = useId();
+  useEffect(() => {
+    if (openLibrary && !readOnly) setLibrary("video");
+  }, [openLibrary, readOnly]);
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const media = await uploadMedia(services, file, "video");
+      onChange({ ...value, src: media.url });
+    } catch (error) {
+      notify("error", errorMessage(error));
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = "";
+    }
+  };
+
+  return (
+    <FieldLabel label={label} el="div" readOnly={readOnly}>
+      <div className="of-image-field">
+        {value?.src ? (
+          <video
+            className="of-image-field__preview"
+            src={value.src}
+            poster={value.poster}
+            muted
+            loop
+            playsInline
+            controls
+          />
+        ) : (
+          <div className="of-image-field__empty">Aucune vidéo</div>
+        )}
+        <div className="of-row">
+          <Button busy={busy} disabled={readOnly} onClick={() => input.current?.click()}>
+            Importer une vidéo
+          </Button>
+          <Button variant="ghost" disabled={readOnly} onClick={() => setLibrary("video")}>
+            Médiathèque
+          </Button>
+          {value?.src && (
+            <Button variant="ghost" disabled={readOnly} onClick={() => onChange(null)}>
+              Retirer
+            </Button>
+          )}
+        </div>
+        <p className="of-muted">MP4 ou WebM, 15 Mo maximum, sans son : elle est lue en boucle.</p>
+        <input
+          ref={input}
+          type="file"
+          accept={ACCEPTED_VIDEOS}
+          hidden
+          onChange={(e) => onFile(e.target.files?.[0])}
+        />
+        {value?.src && (
+          <>
+            <div className="of-row">
+              <Button variant="ghost" disabled={readOnly} onClick={() => setLibrary("poster")}>
+                {value.poster ? "Changer l'image d'aperçu" : "Ajouter une image d'aperçu"}
+              </Button>
+            </div>
+            <label className="of-field" htmlFor={descriptionId}>
+              <span className="of-field__label">Description de la vidéo (accessibilité)</span>
+              <input
+                id={descriptionId}
+                className="of-input"
+                value={value.description ?? ""}
+                readOnly={readOnly}
+                placeholder="Ex. : Le chef pétrit la pâte à pain"
+                onChange={(e) => onChange({ ...value, description: e.target.value })}
+              />
+            </label>
+          </>
+        )}
+      </div>
+      <MediaLibrary
+        open={library !== null}
+        kind={library === "poster" ? "image" : "video"}
+        onClose={() => setLibrary(null)}
+        onImport={
+          library === "video"
+            ? () => {
+                setLibrary(null);
+                input.current?.click();
+              }
+            : undefined
+        }
+        onPick={(media) => {
+          const target = library;
+          setLibrary(null);
+          if (target === "poster" && value?.src) onChange({ ...value, poster: media.url });
+          else onChange({ ...value, src: media.url });
+        }}
+      />
+    </FieldLabel>
+  );
+}
+
+function VideoFieldRender({
+  field,
+  name,
+  value,
+  onChange,
+  readOnly,
+}: RenderProps<VideoValue | null>) {
+  return (
+    <VideoInput label={field.label ?? name} value={value} onChange={onChange} readOnly={readOnly} />
+  );
+}
+
 function ImageFieldRender({
   field,
   name,
@@ -281,6 +383,8 @@ function mapField(field: Field): Field {
   const kind = getOpenFlowFieldKind(field);
   if (kind === "image")
     return { ...(field as CustomField<ImageValue | null>), render: ImageFieldRender } as Field;
+  if (kind === "video")
+    return { ...(field as CustomField<VideoValue | null>), render: VideoFieldRender } as Field;
   if (kind === "link")
     return { ...(field as CustomField<LinkValue | null>), render: LinkFieldRender } as Field;
   if (field.type === "array")
@@ -308,7 +412,8 @@ export function prepareEditorConfig(config: OpenFlowConfig): Config {
   const components = Object.fromEntries(
     Object.entries(config.components).map(([name, component]) => [
       name,
-      { ...component, fields: mapFields(component.fields) },
+      // Element markers (data-of): the owner clicks a text or an image to select its field.
+      markComponent({ ...component, fields: mapFields(component.fields) }),
     ]),
   );
   const userRoot = config.root;

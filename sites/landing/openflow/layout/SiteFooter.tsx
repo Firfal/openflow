@@ -1,4 +1,4 @@
-import { linkProps } from "@openflow/core";
+import { imageProps, linkProps } from "@openflow/core";
 import { LogoMark } from "./Logo";
 import type { SiteSettingsValues } from "./settings";
 
@@ -9,6 +9,7 @@ export function SiteFooter({
   settings: SiteSettingsValues;
   siteName: string;
 }) {
+  const logo = imageProps(settings.logo);
   return (
     <footer className="bg-plan text-white/70">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-[1.2fr_1fr]">
@@ -17,7 +18,7 @@ export function SiteFooter({
             className="flex items-center gap-2.5 font-display text-xl font-bold text-white"
             translate="no"
           >
-            <LogoMark />
+            {logo ? <img {...logo} className="h-7 w-auto" /> : <LogoMark />}
             {siteName}
           </p>
           {settings.footerText && <p className="mt-4 leading-7">{settings.footerText}</p>}

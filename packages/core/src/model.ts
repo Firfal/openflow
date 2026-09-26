@@ -113,6 +113,8 @@ export interface MediaDoc {
   width?: number;
   height?: number;
   alt?: string;
+  /** `static`: file shipped with the site in `public/` (listed by `openflow seed`). */
+  source?: "storage" | "static";
   createdAt: string;
 }
 

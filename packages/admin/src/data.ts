@@ -148,9 +148,10 @@ export function subscribeRelease(
   );
 }
 
-export async function listMedia(db: Firestore): Promise<MediaEntry[]> {
+/** Media library, newest first (site files from `public/` come last). */
+export async function listMedia(db: Firestore, max = 300): Promise<MediaEntry[]> {
   const snap = await getDocs(
-    query(collection(db, COLLECTIONS.media), orderBy("createdAt", "desc"), limit(60)),
+    query(collection(db, COLLECTIONS.media), orderBy("createdAt", "desc"), limit(max)),
   );
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as MediaDoc) }));
 }
@@ -172,14 +173,29 @@ function imageSize(file: File): Promise<{ width?: number; height?: number }> {
   });
 }
 
-export const ACCEPTED_MEDIA = "image/png,image/jpeg,image/gif,image/webp,image/avif";
+export const ACCEPTED_IMAGES = "image/png,image/jpeg,image/gif,image/webp,image/avif";
+export const ACCEPTED_VIDEOS = "video/mp4,video/webm";
+/** @deprecated use ACCEPTED_IMAGES */
+export const ACCEPTED_MEDIA = ACCEPTED_IMAGES;
+/** Same limit as the Storage rules (`storage.rules`). */
 export const MAX_MEDIA_BYTES = 15 * 1024 * 1024;
 
+export type MediaKind = "image" | "video";
+
 /** Uploads a file to `openflow/media/` and records it in `of_media`. */
-export async function uploadMedia(services: Services, file: File): Promise<MediaEntry> {
+export async function uploadMedia(
+  services: Services,
+  file: File,
+  kind: MediaKind = "image",
+): Promise<MediaEntry> {
   if (file.size > MAX_MEDIA_BYTES) throw new Error("Fichier trop lourd (15 Mo maximum).");
-  if (!ACCEPTED_MEDIA.split(",").includes(file.type)) {
-    throw new Error("Format non pris en charge : utilisez une image PNG, JPEG, GIF, WebP ou AVIF.");
+  const accepted = kind === "video" ? ACCEPTED_VIDEOS : ACCEPTED_IMAGES;
+  if (!accepted.split(",").includes(file.type)) {
+    throw new Error(
+      kind === "video"
+        ? "Format non pris en charge : utilisez une vidéo MP4 ou WebM."
+        : "Format non pris en charge : utilisez une image PNG, JPEG, GIF, WebP ou AVIF.",
+    );
   }
   const dot = file.name.lastIndexOf(".");
   const name = slugify(dot > 0 ? file.name.slice(0, dot) : file.name) || "image";
@@ -198,6 +214,7 @@ export async function uploadMedia(services: Services, file: File): Promise<Media
     contentType: file.type,
     size: file.size,
     ...(await imageSize(file)),
+    source: "storage",
     createdAt: now(),
   };
   const created = await addDoc(collection(services.db, COLLECTIONS.media), media);

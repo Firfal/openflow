@@ -1,4 +1,4 @@
-import { linkProps } from "@openflow/core";
+import { imageProps, linkProps } from "@openflow/core";
 import { LogoMark } from "./Logo";
 import type { SiteSettingsValues } from "./settings";
 
@@ -10,6 +10,7 @@ export function SiteHeader({
   siteName: string;
 }) {
   const navigation = settings.navigation ?? [];
+  const logo = imageProps(settings.logo);
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink/85 text-white backdrop-blur-md">
       {settings.skipLinkLabel && (
@@ -26,7 +27,7 @@ export function SiteHeader({
           className="flex items-center gap-2.5 font-display text-lg font-bold"
           translate="no"
         >
-          <LogoMark />
+          {logo ? <img {...logo} className="h-7 w-auto" /> : <LogoMark />}
           {siteName}
         </a>
         <nav className="hidden items-center gap-8 text-[15px] text-white/75 md:flex">

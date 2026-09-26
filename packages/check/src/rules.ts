@@ -113,10 +113,11 @@ render: ({ cta, ctaLabel }) => <a {...linkProps(cta)}>{ctaLabel}</a>`,
     severity: "error",
     level: "render",
     status: "active",
-    why: "Dans l'éditeur, un champ `contentEditable` est transformé en élément React éditable. Utilisé dans un attribut (`alt`, `title`, `aria-label`) ou concaténé, il devient « [object Object] ».",
+    why: "Dans l'éditeur comme sur le site publié, un champ `contentEditable` est un élément React (marqué pour la sélection au clic et le style). Utilisé dans un attribut (`alt`, `title`, `aria-label`), concaténé ou transformé (`.toUpperCase()`, `.length`), il devient « [object Object] » ou fait planter la section.",
     fix: "Retirez `contentEditable` de ce champ, ou utilisez un second champ non éditable en ligne pour l'attribut.",
     bad: `title: { type: "text", contentEditable: true }
-render: ({ title }) => <img alt={title} ... />`,
+render: ({ title }) => <img alt={title} ... />
+render: ({ title }) => <h2>{\`\${title} !\`}</h2>`,
     good: `title: { type: "text" }
 render: ({ title }) => <img alt={title} ... />`,
   },
@@ -135,6 +136,29 @@ render: ({ title }) => <img alt={title} ... />`,
     {puck?.isEditing && <span className="chip">{savedLabel}</span>}
   </>
 )`,
+  },
+  {
+    id: "OF-110",
+    title: "Section sans élément racine unique",
+    severity: "warning",
+    level: "render",
+    status: "active",
+    why: "Le propriétaire règle le style d'une section (fond, marges, largeur) : ce style s'applique à l'élément racine de la section. Avec plusieurs racines (fragment), il se répartit mal ou ne s'applique qu'en partie.",
+    fix: "Enveloppez le rendu de la section dans un seul élément (`<section>…</section>`) au lieu d'un fragment `<>…</>`.",
+    bad: `render: ({ title, text }) => (<><h2>{title}</h2><p>{text}</p></>)`,
+    good: `render: ({ title, text }) => (<section><h2>{title}</h2><p>{text}</p></section>)`,
+  },
+  {
+    id: "OF-111",
+    title: "Image ou vidéo affichée sans `imageProps` / `videoProps`",
+    severity: "warning",
+    level: "render",
+    status: "active",
+    why: "`imageProps(image)` ajoute le marqueur qui permet au propriétaire de cliquer sur l'image dans l'éditeur pour la remplacer. Une image affichée avec `src={image.src}` n'est pas sélectionnable sur la page.",
+    fix: 'Affichez l\'image avec `const img = imageProps(image); img && <img {...img} className="…" />`.',
+    bad: `<img src={image?.src} alt={image?.alt} />`,
+    good: `const img = imageProps(image);
+return img && <img {...img} className="rounded-xl" />;`,
   },
   {
     id: "OF-201",

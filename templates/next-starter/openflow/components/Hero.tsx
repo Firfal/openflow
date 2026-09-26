@@ -33,7 +33,7 @@ export const Hero: ComponentConfig<HeroProps> = {
     primaryLink: linkField({ label: "Bouton principal (lien)" }),
     secondaryLabel: { type: "text", label: "Bouton secondaire (texte)", contentEditable: true },
     secondaryLink: linkField({ label: "Bouton secondaire (lien)" }),
-    image: imageField({ label: "Image" }),
+    image: imageField({ label: "Image", placeholder: false }),
     layout: {
       type: "radio",
       label: "Disposition",

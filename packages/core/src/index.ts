@@ -1,6 +1,6 @@
 export type { LayoutProps, OpenFlowConfig, SettingsConfig, SiteDefaults } from "./config.js";
 export { defineConfig, toPuckConfig } from "./config.js";
-export type { ImageValue, LinkValue, OpenFlowFieldKind } from "./fields.js";
+export type { ImageValue, LinkValue, OpenFlowFieldKind, VideoValue } from "./fields.js";
 export {
   getOpenFlowFieldKind,
   imageField,
@@ -8,6 +8,8 @@ export {
   linkField,
   linkProps,
   OPENFLOW_FIELD_KEY,
+  videoField,
+  videoProps,
 } from "./fields.js";
 export {
   compareRulesBlock,
@@ -20,12 +22,14 @@ export {
 } from "./firebase-rules.js";
 export {
   collectEditablePaths,
+  IMAGE_PLACEHOLDER,
   type ImageMarked,
   MARK_KEY,
   type Mark,
   markComponent,
   markProps,
   prepareRenderConfig,
+  VIDEO_PLACEHOLDER,
 } from "./marks.js";
 export type {
   MediaDoc,

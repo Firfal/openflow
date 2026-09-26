@@ -4,12 +4,16 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   collectEditablePaths,
+  IMAGE_PLACEHOLDER,
   imageField,
   imageProps,
   linkField,
   markComponent,
   markProps,
   prepareRenderConfig,
+  VIDEO_PLACEHOLDER,
+  videoField,
+  videoProps,
 } from "../src/index.js";
 
 const fields = {
@@ -88,6 +92,36 @@ describe("element markers", () => {
     });
     expect(markProps(fields, { image: null }).image).toBeNull();
     expect(imageProps({ src: "/a.jpg", alt: "" })).not.toHaveProperty("data-of");
+  });
+
+  it("tags videos and shows placeholders for empty media only in the editor", () => {
+    const media = {
+      image: imageField(),
+      fixed: imageField({ placeholder: false }),
+      video: videoField(),
+    } as unknown as Fields;
+    const filled = markProps(media, { video: { src: "/v.mp4", description: "Four" } }) as any;
+    expect(videoProps(filled.video)).toEqual({
+      src: "/v.mp4",
+      poster: undefined,
+      "aria-label": "Four",
+      "data-of": "video",
+      "data-of-i": undefined,
+    });
+
+    const empty = { image: null, fixed: null, video: null };
+    const published = markProps(media, empty) as any;
+    expect(imageProps(published.image)).toBeNull();
+    expect(videoProps(published.video)).toBeNull();
+
+    const editing = markProps(media, empty, { editing: true }) as any;
+    expect(imageProps(editing.image)).toMatchObject({ src: IMAGE_PLACEHOLDER, "data-of": "image" });
+    expect(editing.fixed).toBeNull();
+    const placeholder = videoProps(editing.video);
+    expect(placeholder).toMatchObject({ poster: VIDEO_PLACEHOLDER, "data-of": "video" });
+    expect(placeholder?.src).toBeUndefined();
+    // A stored value without `src` is never rendered on the published site.
+    expect(videoProps({ src: "", poster: "/p.jpg" })).toBeNull();
   });
 
   it("wraps a section in data-of-s and renders it through the marked props", () => {

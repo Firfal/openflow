@@ -4,6 +4,7 @@ import {
   getOpenFlowFieldKind,
   type Issue,
   type OpenFlowConfig,
+  prepareRenderConfig,
   validateConfig,
   validatePageData,
   validateSettingsValues,
@@ -138,6 +139,15 @@ function sentinelValue(
     });
     return { src: `${SENTINEL_HOST}/${src}.jpg`, alt };
   }
+  if (kind === "video") {
+    const src = sentinels.next({
+      path: `${fieldPath}.src`,
+      fieldType: "video",
+      contentEditable: false,
+      required: true,
+    });
+    return { src: `${SENTINEL_HOST}/${src}.mp4` };
+  }
   if (kind === "link") {
     const href = sentinels.next({
       path: fieldPath,
@@ -197,6 +207,12 @@ function scenarioValue(field: Field, scenario: Scenario, fallback: unknown): unk
       : scenario === "vide"
         ? null
         : { src: `${SENTINEL_HOST}/long.jpg`, alt: LONG_TEXT };
+  if (kind === "video")
+    return scenario === "partiel"
+      ? { src: "" }
+      : scenario === "vide"
+        ? null
+        : { src: `${SENTINEL_HOST}/long.mp4`, description: LONG_TEXT };
   if (kind === "link")
     return scenario === "partiel"
       ? { kind: "url", href: "" }
@@ -337,6 +353,42 @@ function collectVisibility(
   return result;
 }
 
+/** Number of root elements of a section, i.e. element children of its `data-of-s` wrapper. */
+function sectionRoots(markedHtml: string): number {
+  // React 19 hoists resource hints (<link rel="preload"> for images, <style>, <meta>…).
+  const hoisted = new Set(["link", "meta", "style", "script", "title", "base"]);
+  let count = 1;
+  const fragment = parse(`<!doctype html><html><body>${markedHtml}</body></html>`);
+  const visit = (node: ChildNode | DefaultTreeAdapterMap["document"]) => {
+    if ("attrs" in node && (node as Element).attrs.some((a) => a.name === "data-of-s")) {
+      count = (node as Element).childNodes.filter(
+        (child) => "tagName" in child && !hoisted.has((child as Element).tagName),
+      ).length;
+      return;
+    }
+    if ("childNodes" in node) for (const child of node.childNodes as ChildNode[]) visit(child);
+  };
+  visit(fragment);
+  return count;
+}
+
+/** `src` of sentinel images rendered without the `data-of` marker of `imageProps`. */
+function unmarkedSentinelImages(html: string): string[] {
+  const out: string[] = [];
+  const fragment = parse(`<!doctype html><html><body>${html}</body></html>`);
+  const visit = (node: ChildNode | DefaultTreeAdapterMap["document"]) => {
+    if (node.nodeName === "img" || node.nodeName === "video") {
+      const attrs = new Map((node as Element).attrs.map((a) => [a.name, a.value]));
+      const src = attrs.get("src") ?? "";
+      if (src.startsWith(SENTINEL_HOST) && !attrs.has("data-of"))
+        out.push(src.replace(SENTINEL_HOST, ""));
+    }
+    if ("childNodes" in node) for (const child of node.childNodes as ChildNode[]) visit(child);
+  };
+  visit(fragment);
+  return out;
+}
+
 export interface SectionReport {
   name: string;
   fields: number;
@@ -433,10 +485,12 @@ export async function checkRender(
     );
   }
 
-  const render = (name: string, props: Record<string, unknown>) =>
+  const render = (name: string, props: Record<string, unknown>, marked = false) =>
     site.renderToStaticMarkup(
       site.createElement(site.Render, {
-        config: { components: { [name]: config.components[name] } },
+        config: marked
+          ? prepareRenderConfig({ components: { [name]: config.components[name]! } })
+          : { components: { [name]: config.components[name] } },
         data: {
           root: { props: {} },
           content: [{ type: name, props: { id: `${name}-check`, ...props } }],
@@ -485,6 +539,22 @@ export async function checkRender(
       continue;
     }
     const found = collect(html);
+    // A field may only show for one option of a choice (e.g. an image when « Visuel » is
+    // « Image »): render every option of radio/select fields and merge what is displayed.
+    for (const [key, field] of fields) {
+      if (field.type !== "radio" && field.type !== "select") continue;
+      for (const option of field.options ?? []) {
+        if (option.value === props[key]) continue;
+        try {
+          const variant = collect(render(name, { ...props, [key]: option.value }));
+          for (const token of variant.text) found.text.add(token);
+          for (const token of variant.attribute) found.attribute.add(token);
+          found.leftoverText.push(...variant.leftoverText);
+        } catch {
+          // crashes are reported by the edge-case renders below
+        }
+      }
+    }
     let rendered = 0;
     let required = 0;
     for (const [token, info] of sentinels.byToken) {
@@ -553,6 +623,41 @@ export async function checkRender(
         makeIssue(
           "OF-107",
           `Section « ${name} » : le rendu échoue dans l'éditeur (puck.isEditing) : ${(error as Error).message}`,
+          where,
+        ),
+      );
+    }
+    // What is published: the same section with element markers (texts are React elements).
+    try {
+      const markedHtml = render(name, props, true);
+      if (markedHtml.includes("[object Object]")) {
+        issues.push(
+          makeIssue(
+            "OF-108",
+            `Section « ${name} » : un champ contentEditable est converti en texte (concaténation, .toUpperCase(), attribut…) : « [object Object] » s'affiche.`,
+            where,
+          ),
+        );
+      }
+      if (sectionRoots(markedHtml) > 1) {
+        issues.push(
+          makeIssue("OF-110", `Section « ${name} » : le rendu a plusieurs éléments racine.`, where),
+        );
+      }
+      for (const src of unmarkedSentinelImages(markedHtml)) {
+        issues.push(
+          makeIssue(
+            "OF-111",
+            `Section « ${name} » : un média (${src}) est affiché sans imageProps ou videoProps : il ne peut pas être sélectionné dans l'éditeur.`,
+            where,
+          ),
+        );
+      }
+    } catch (error) {
+      issues.push(
+        makeIssue(
+          "OF-108",
+          `Section « ${name} » : le rendu échoue quand les textes éditables sont des éléments (${(error as Error).message}). Affichez-les uniquement sous la forme {champ}.`,
           where,
         ),
       );

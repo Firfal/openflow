@@ -1,7 +1,8 @@
 import { ActionBar, createUsePuck, type Overrides } from "@puckeditor/core";
 import { createContext, type ReactNode, useContext } from "react";
 import type { SaveState } from "./autosave.js";
-import { CanvasFrame, SettingsCanvasFrame } from "./canvas.js";
+import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
+import { FieldsPanel } from "./panel.js";
 import { Button } from "./ui.js";
 
 /**
@@ -208,6 +209,8 @@ export const PAGE_EDITOR_OVERRIDES: Partial<Overrides> = {
   drawer: DrawerWithHint,
   drawerItem: DrawerItemWithAdd,
   iframe: CanvasFrame,
+  fields: FieldsPanel,
+  componentOverlay: SectionOverlay,
 };
 
 /** Overrides of the settings editor (no sections: header actions only). */

@@ -3,6 +3,7 @@ import {
   findPage,
   type OpenFlowConfig,
   paramsToSlug,
+  prepareRenderConfig,
   type Snapshot,
   type SnapshotPage,
   slugToParams,
@@ -51,6 +52,8 @@ export function buildMetadata(site: Snapshot["site"], page: SnapshotPage): Metad
  * ```
  */
 export function createOpenFlowPage(config: OpenFlowConfig) {
+  // Same element markers as in the editor (`data-of`, `data-of-s`): style rules target them.
+  const renderConfig = prepareRenderConfig(config);
   async function load(params: Params) {
     const { slug } = await params;
     const snapshot = await getSnapshot(config);
@@ -73,7 +76,7 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
     if (!page) notFound();
     return (
       <Render
-        config={config}
+        config={renderConfig}
         data={applyDefaults(page.data, config)}
         metadata={{
           site: snapshot.site,
