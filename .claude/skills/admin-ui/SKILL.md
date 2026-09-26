@@ -52,6 +52,9 @@ contributors: `docs/interface-admin.md`.
 - Puck: theme it with its tokens first (`--puck-color-*`, `--puck-field-*`, `--puck-drawer-item-*`); layout
   tweaks only as `.of-root .of-editor [class*="_PuckLayout-…_"]` (Puck is pinned, class prefixes are stable).
   Overrides and plugins are module constants (a new identity remounts the canvas).
+- Right panel: one column, no tabs. The clicked element's content first (only its fields), then « Style »
+  closed by default with a summary in its header (« Mobile · 2 réglages »), then the section's other fields.
+  Open/closed states the owner chooses are remembered in `localStorage` (inside `try`/`catch`).
 
 ## Motion and accessibility
 
@@ -65,9 +68,10 @@ contributors: `docs/interface-admin.md`.
 
 - E2E tests select by accessible names: « Pages », « Médias », « Réglages », « Thème », « Site et
   référencement », « Assistant IA », « Historique », « Modifier », « Retour aux pages », « Publier… »,
-  « Mettre en ligne », « Enregistré », tab « Style », screens « Ordinateur » / « Mobile », « Fermer », and the
-  classes `.of-drawer-item`, `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`,
-  `.of-key-created`. Renaming one means updating `tests/e2e/*.test.ts` and `sites/landing/visuals/admin.mjs`.
+  « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
+  section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
+  `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one
+  means updating `tests/e2e/*.test.ts` and `sites/landing/visuals/admin.mjs`.
 - Check a change with screenshots in light and dark (emulators + Playwright, 1440×900 and 390×844), then
   `pnpm lint`, `pnpm typecheck`, and `pnpm --filter @openflow/e2e test` (template and
   `OPENFLOW_E2E_SITE=$PWD/sites/landing`).

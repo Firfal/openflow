@@ -17,7 +17,7 @@ import {
   useFocus,
 } from "./focus.js";
 import { Icon, type IconName } from "./icons.js";
-import { StylePanel } from "./style-panel.js";
+import { StylePanel, useStyleSummary } from "./style-panel.js";
 import { IconButton } from "./ui.js";
 
 const usePuck = createUsePuck();
@@ -175,18 +175,80 @@ function NothingSelected() {
   );
 }
 
+/** A disclosure whose state the browser remembers (a convenience, never site data). */
+function useStoredToggle(key: string, initial: boolean): [boolean, () => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem(key);
+      return stored === null ? initial : stored === "1";
+    } catch {
+      return initial;
+    }
+  });
+  const toggle = useCallback(() => {
+    setOpen((value) => {
+      try {
+        window.localStorage.setItem(key, value ? "0" : "1");
+      } catch {
+        // Private mode: the choice lasts for this visit.
+      }
+      return !value;
+    });
+  }, [key]);
+  return [open, toggle];
+}
+
 /**
- * « Contenu »: the clicked element and only its fields, the other fields of the section behind a
- * disclosure; a click beside the elements (or « Afficher toute la section ») shows them all.
+ * « Style », below the content: closed by default (content is what owners change most), its
+ * header says which screen it acts on, and the browser remembers whether it is open.
  */
-function ContentTab({ children }: { children: ReactNode }) {
+function StyleBlock() {
+  const [open, toggle] = useStoredToggle("openflow:style-open", false);
+  const { screen, count } = useStyleSummary();
+  const id = useId();
+  return (
+    <section className={`of-block${open ? " is-open" : ""}`} aria-label="Style">
+      <button
+        type="button"
+        className="of-block__toggle"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={toggle}
+      >
+        <Icon name="palette" size={14} />
+        <span className="of-block__title">Style</span>
+        <span className="of-block__summary">
+          {screen} · {count === 0 ? "aucun réglage" : `${count} réglage${count > 1 ? "s" : ""}`}
+        </span>
+        <Icon name={open ? "chevronDown" : "chevronRight"} size={14} />
+      </button>
+      {open && (
+        <div id={id}>
+          <StylePanel />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Right panel (Puck `overrides.fields`), one column as in Framer and Figma:
+ * - an element clicked on the page: its content (only its fields), its style below (closed by
+ *   default), then the other fields of the section behind a disclosure;
+ * - the section itself: all its fields, then its style.
+ * No style block when `editor.styles` is `off`.
+ */
+export function FieldsPanel({ children }: { children: ReactNode }) {
+  const { config } = useAdmin();
   const { focus, setFocus } = useFocus();
   const selected = usePuck((s) => s.selectedItem);
   const fields = usePuck((s) =>
     selected ? (s.config.components[selected.type]?.fields as Fields | undefined) : undefined,
   );
+  const rootFields = usePuck((s) => Object.keys(s.config.root?.fields ?? {}).length > 0);
   const [showAll, setShowAll] = useState(false);
   const selectedId = selected?.props.id as string | undefined;
+  const styles = config.editor?.styles !== "off";
 
   // Another section gets selected (outline, keyboard…): the clicked element no longer applies.
   // Only on a selection change: a click sets the focus just before Puck selects its section.
@@ -201,27 +263,34 @@ function ContentTab({ children }: { children: ReactNode }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on each new element.
   useEffect(() => setShowAll(false), [focus?.componentId, focus?.path, focus?.index]);
 
-  const group =
-    selected && focus && focus.componentId === selectedId ? resolveGroup(fields, focus) : undefined;
+  if (!selected) {
+    return (
+      <div className="of-panel">
+        <NothingSelected />
+        {rootFields && children}
+      </div>
+    );
+  }
+  const group = focus && focus.componentId === selectedId ? resolveGroup(fields, focus) : undefined;
   if (!group || !focus) {
     return (
-      <>
-        {selected && (
-          <p className="of-panel__hint">
-            <Icon name="pointer" size={13} className="of-icon--first-line" />
-            <span>
-              Toute la section. Cliquez sur un texte, un bouton ou une image pour ne voir que ses
-              réglages.
-            </span>
-          </p>
-        )}
+      <div className="of-panel">
+        <p className="of-panel__hint">
+          <Icon name="pointer" size={13} className="of-icon--first-line" />
+          <span>
+            Toute la section. Cliquez sur un texte, un bouton ou une image pour ne voir que ses
+            réglages.
+          </span>
+        </p>
         {children}
-      </>
+        {styles && <StyleBlock />}
+      </div>
     );
   }
   return (
-    <>
+    <div className="of-panel">
       <ElementPanel group={group} focus={focus} />
+      {styles && <StyleBlock />}
       <button
         type="button"
         className="of-panel__more"
@@ -232,57 +301,6 @@ function ContentTab({ children }: { children: ReactNode }) {
         Tous les champs de la section
       </button>
       {showAll && children}
-    </>
-  );
-}
-
-/**
- * Right panel (Puck `overrides.fields`). « Contenu »: the clicked element, or the whole section.
- * « Style »: free style of the section or element (unless `editor.styles` is `off`).
- */
-export function FieldsPanel({ children }: { children: ReactNode }) {
-  const { config } = useAdmin();
-  const selected = usePuck((s) => s.selectedItem);
-  const rootFields = usePuck((s) => Object.keys(s.config.root?.fields ?? {}).length > 0);
-  const [tab, setTab] = useState<"content" | "style">("content");
-  if (!selected) {
-    return (
-      <div className="of-panel">
-        <NothingSelected />
-        {rootFields && children}
-      </div>
-    );
-  }
-  if (config.editor?.styles === "off") {
-    return (
-      <div className="of-panel">
-        <ContentTab>{children}</ContentTab>
-      </div>
-    );
-  }
-  return (
-    <div className="of-panel">
-      <div className="of-panel__tabs" role="tablist" aria-label="Panneau">
-        {(
-          [
-            ["content", "Contenu", "type"],
-            ["style", "Style", "palette"],
-          ] as const
-        ).map(([value, label, icon]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={tab === value}
-            className={tab === value ? "is-active" : ""}
-            onClick={() => setTab(value)}
-          >
-            <Icon name={icon} size={14} />
-            {label}
-          </button>
-        ))}
-      </div>
-      {tab === "content" ? <ContentTab>{children}</ContentTab> : <StylePanel />}
     </div>
   );
 }

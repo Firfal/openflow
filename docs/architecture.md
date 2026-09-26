@@ -19,7 +19,7 @@ Projet Firebase du client (plan Blaze)
 | `@openflow/core` | `defineConfig`, champs `imageField` et `linkField`, modèle Firestore, format du snapshot (zod), validation, règles de sécurité de référence, documentation pour les agents |
 | `@openflow/check` | Norme OFS : registre des règles, analyse statique (Babel), rendu par sentinelles (Puck `Render` sous Node), contrôle du HTML, formats agent, JSON et SARIF, hooks Claude Code |
 | `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap et robots (`@openflow/next/data`), `<OpenFlowAdmin />` (`@openflow/next/admin`) |
-| `@openflow/admin` | Application d'administration React : connexion, pages, médias, éditeur Puck avec sauvegarde automatique (barre unique, rail, onglets Contenu et Style), réglages, publication, historique, recherche rapide ⌘K ; interface en français, claire ou sombre (voir [interface-admin.md](interface-admin.md)) |
+| `@openflow/admin` | Application d'administration React : connexion, pages, médias, éditeur Puck avec sauvegarde automatique (barre unique, rail, panneau de droite en une colonne : contenu de l'élément, puis style), réglages, publication, historique, recherche rapide ⌘K ; interface en français, claire ou sombre (voir [interface-admin.md](interface-admin.md)) |
 | `@openflow/functions` | Cloud Functions et logique de publication (snapshot, requête Cloud Build, API REST Hosting) |
 | `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `deploy` |
 | `templates/next-starter` | Site Next.js de départ, conforme à 100 % à la norme OFS |
@@ -54,8 +54,8 @@ Projet Firebase du client (plan Blaze)
 - L'éditeur est Puck, configuré avec **les mêmes sections** que le site public : ce qu'on voit est
   exactement ce qui sera publié. Les styles du site sont synchronisés dans l'iframe de l'éditeur.
 - Le propriétaire clique sur un texte, une image ou une vidéo de la page : le champ correspondant s'ouvre
-  en tête du panneau de droite (une image ou une vidéo ouvre directement la médiathèque). L'onglet « Style »
-  modifie le style de la section ou de l'élément pour l'écran affiché (Ordinateur, Tablette, Mobile).
+  en tête du panneau de droite (une image ou une vidéo ouvre directement la médiathèque). Le bloc « Style »,
+  en dessous, modifie le style de la section ou de l'élément pour l'écran affiché (Ordinateur, Tablette, Mobile).
   La feuille de style est recalculée à chaque modification et injectée dans l'iframe de l'éditeur.
 - Un **assistant IA** peut modifier le site par la discussion : serveur MCP (fonction HTTPS `openflowMcp`) et WebMCP
   dans l'admin, avec les mêmes outils (`packages/core/src/agent/`). Voir [assistant-ia.md](assistant-ia.md).

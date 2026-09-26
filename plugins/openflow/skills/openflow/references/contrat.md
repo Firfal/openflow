@@ -9,7 +9,7 @@ Le propriétaire du site **n'est pas développeur**. Il modifie son site depuis 
 - il clique sur un texte de la page pour le réécrire ;
 - il clique sur une image ou une vidéo de la page pour la remplacer depuis la médiathèque ;
 - il ajoute, déplace, duplique ou supprime des **sections** ;
-- il change le style d'une section ou d'un élément, écran par écran (onglet « Style ») ;
+- il change le style d'une section ou d'un élément, écran par écran (bloc « Style » du panneau de droite) ;
 - il édite les réglages communs (menu, pied de page) et le thème (couleurs et polices) ;
 - il clique sur « Publier » : le site est reconstruit en HTML statique sur Firebase Hosting.
 
@@ -135,9 +135,9 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
 
 ## Style libre et thème
 
-Le propriétaire peut modifier le style de chaque section et de chaque élément (onglet « Style » de
-l'éditeur). OpenFlow stocke ces réglages dans la prop réservée `_style` et génère le CSS lui-même : tu
-n'as rien à coder, mais la section doit s'y prêter.
+Le propriétaire peut modifier le style de chaque section et de chaque élément (bloc « Style » du
+panneau de droite de l'éditeur). OpenFlow stocke ces réglages dans la prop réservée `_style` et génère
+le CSS lui-même : tu n'as rien à coder, mais la section doit s'y prêter.
 
 - **Une seule racine par section** (OF-110) : le style « Section » s'applique à cet élément.
 - **Un texte seul dans son élément** : `<h2>{title}</h2>` plutôt que `<h2>{title} {suffix}</h2>`. Le style

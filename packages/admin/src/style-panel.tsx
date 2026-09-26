@@ -12,7 +12,7 @@ import {
 import { createUsePuck, type Fields } from "@puckeditor/core";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
-import { resolveField, useFocus } from "./focus.js";
+import { resolveField, resolveGroup, useFocus } from "./focus.js";
 import { Icon, type IconName } from "./icons.js";
 import { MediaLibrary } from "./media.js";
 import {
@@ -192,8 +192,26 @@ function lengthParts(value: string | undefined): { n: number; unit: string } | u
   return value === "0" ? { n: 0, unit: "px" } : undefined;
 }
 
+/** Screen shown and number of values it sets, for the header of the Style block. */
+export function useStyleSummary(): { screen: string; count: number } {
+  const { focus } = useFocus();
+  const selected = usePuck((s) => s.selectedItem);
+  const viewports = usePuck((s) => s.appState.ui.viewports);
+  const width = typeof viewports.current.width === "number" ? viewports.current.width : 1280;
+  const bp = breakpointForWidth(width);
+  const selectedId = selected?.props.id as string | undefined;
+  const path =
+    focus?.path && focus.componentId === selectedId && focus.kind !== "link"
+      ? focus.path
+      : undefined;
+  const style: SectionStyle = sanitizeStyle(selected?.props[STYLE_KEY]) ?? {};
+  const responsive = (path ? style.fields?.[path] : style.section) ?? {};
+  const screen = SCREENS.find((s) => s.bp === bp) ?? SCREENS[0]!;
+  return { screen: screen.label, count: Object.keys(responsive[bp] ?? {}).length };
+}
+
 /**
- * « Style » tab: free style of the selected section or of the clicked element, per screen.
+ * « Style » block: free style of the selected section or of the clicked element, per screen.
  * Values are stored in the section's `_style` prop through Puck's `replace` action (undoable,
  * autosaved) and rendered by `buildPageCss`, as on the published site.
  */
@@ -405,6 +423,11 @@ export function StylePanel() {
     });
 
   const sectionLabel = component?.label ?? selected.type;
+  // A button is named as a whole (« Bouton principal »), as in the content block.
+  const elementLabel =
+    focus?.link && focus.path
+      ? (resolveGroup(component?.fields as Fields | undefined, focus)?.title ?? resolved?.label)
+      : resolved?.label;
   const text = target !== "media";
   const textColor = values.color ?? inherited.color;
   let contrast: { ratio: number; ok: boolean; large: boolean } | undefined;
@@ -424,14 +447,17 @@ export function StylePanel() {
         <button
           type="button"
           className={target === "section" ? "is-current" : ""}
+          title={`Style de toute la section « ${sectionLabel} »`}
           onClick={() => setFocus({ componentId: selectedId })}
         >
           {sectionLabel}
         </button>
         {resolved && (
           <>
-            <span aria-hidden>›</span>
-            <span className="is-current">{resolved.label}</span>
+            <Icon name="chevronRight" size={12} className="of-style__crumbs-sep" />
+            <span className="is-current" title={elementLabel}>
+              {elementLabel}
+            </span>
           </>
         )}
       </nav>

@@ -62,18 +62,24 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
   - le texte s'écrit directement sur la page ;
   - une image ou une vidéo se remplace d'un clic ;
   - la barre de la section propose monter, descendre, dupliquer et supprimer.
-- **Panneau de droite** : il indique quoi faire tant que rien n'est sélectionné. Il a deux onglets :
-  - **Contenu** : **uniquement les réglages de l'élément cliqué**, comme dans Webflow :
-    - un bouton : son texte et son lien ;
-    - un élément de liste (une carte, une question de FAQ…) : les champs de cet élément ;
-    - un texte, une image ou une vidéo : ce seul champ.
+- **Panneau de droite** : il indique quoi faire tant que rien n'est sélectionné. Ensuite, il tient **en une
+  seule colonne**, comme dans Framer et Figma, de haut en bas :
+  1. **Le contenu de l'élément cliqué**, toujours ouvert, et **uniquement ses réglages**, comme dans Webflow :
+     - un bouton : son texte et son lien ;
+     - un élément de liste (une carte, une question de FAQ…) : les champs de cet élément ;
+     - un texte, une image ou une vidéo : ce seul champ.
+  2. **Style**, replié par défaut, car on change le contenu bien plus souvent que le style. Son en-tête
+     résume ce qui est réglé sur l'écran affiché, par exemple « Mobile · 2 réglages ». Le navigateur retient
+     s'il est ouvert ou fermé.
+  3. **Tous les champs de la section**, repliés.
 
-    Les autres champs de la section restent derrière « Tous les champs de la section ». Un clic à côté des
-    éléments, ou la croix de l'élément, affiche toute la section.
-  - **Style** : le style libre de la section ou de l'élément, sur l'écran affiché.
+  Un clic à côté des éléments, ou la croix de l'élément, affiche toute la section : ses champs, puis son
+  style, replié de la même façon.
 
-### Onglet Style
+### Bloc Style
 
+- Le fil en tête du bloc dit ce qui est stylé : la section, ou la section puis l'élément (« Hero ›
+  Bouton principal »). Un clic sur la section passe au style de toute la section.
 - Les réglages sont rangés en groupes repliables : Typographie, Couleurs, Espacements, Dimensions, Bordure et
   effets, Visibilité. Un point bleu marque les groupes qui ont des réglages sur l'écran affiché.
 - La couleur d'un libellé indique d'où vient sa valeur, comme dans Webflow (sans le rose) :

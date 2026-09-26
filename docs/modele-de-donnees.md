@@ -61,7 +61,7 @@ refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
 
 ## Style libre (`_style`)
 
-Prop réservée de chaque section, écrite par l'onglet « Style » de l'admin :
+Prop réservée de chaque section, écrite par le bloc « Style » du panneau de droite de l'admin :
 
 ```jsonc
 {

@@ -2396,7 +2396,7 @@ select.of-input {
   font-size: 11px;
 }
 
-/* Right panel: Contenu / Style tabs, then the fields. */
+/* Right panel, one column: the element's content, its style (closed by default), the rest. */
 .of-panel {
   display: flex;
   flex-direction: column;
@@ -2404,41 +2404,53 @@ select.of-input {
   font-family: var(--of-font);
 }
 
-.of-panel__tabs {
+/* « Style »: a disclosure whose header says which screen it acts on and how much is set. */
+.of-block {
+  border-bottom: 1px solid var(--of-border);
+}
+
+.of-block__toggle {
+  --of-icon-color: var(--of-text-3);
   position: sticky;
   top: 0;
   z-index: 3;
   display: flex;
-  gap: 2px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--of-border);
-  background: var(--of-surface);
-}
-
-.of-panel__tabs button {
-  flex: 1;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 28px;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
   border: 0;
-  border-radius: var(--of-radius);
-  background: transparent;
-  color: var(--of-text-3);
+  background: var(--of-surface);
+  color: var(--of-text);
   font-size: 12.5px;
-  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.of-panel__tabs button:hover {
-  color: var(--of-text);
+.of-block__toggle:hover {
+  --of-icon-color: var(--of-text-2);
   background: var(--of-surface-2);
 }
 
-.of-panel__tabs button.is-active {
-  background: var(--of-surface-2);
-  color: var(--of-text);
+.of-block.is-open .of-block__toggle {
+  box-shadow: 0 1px 0 var(--of-border);
+}
+
+.of-block__title {
+  flex: none;
+  font-weight: 600;
+}
+
+.of-block__summary {
+  flex: 1;
+  min-width: 0;
+  color: var(--of-text-3);
+  font-size: 12px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .of-panel__empty {
@@ -2685,7 +2697,7 @@ select.of-input {
 /* Style panel (Webflow-like: compact two-column rows, per screen). */
 .of-style,
 .of-style-empty {
-  padding: 12px;
+  padding: 12px 16px 14px;
   font-size: 12.5px;
   color: var(--of-text);
 }
@@ -2696,9 +2708,9 @@ select.of-input {
 
 .of-style__crumbs {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
+  min-width: 0;
   margin-bottom: 10px;
   padding: 4px;
   border-radius: var(--of-radius);
@@ -2706,11 +2718,12 @@ select.of-input {
   color: var(--of-text-3);
 }
 
+/* One line: the section keeps its name, a long element label ends with an ellipsis. */
 .of-style__crumbs button,
-.of-style__crumbs > span:not([aria-hidden]) {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.of-style__crumbs > span {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
   height: 24px;
   padding: 0 8px;
   border: 0;
@@ -2719,7 +2732,22 @@ select.of-input {
   color: var(--of-text-2);
   font-size: 12px;
   font-weight: 500;
+  line-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+/* The element keeps its name: the section's gives way first. */
+.of-style__crumbs > button:not(:only-child) {
+  flex-shrink: 1000;
+  min-width: 56px;
+}
+
+.of-style__crumbs-sep {
+  flex: none;
+  color: var(--of-text-3);
 }
 
 .of-style__crumbs button:hover {
@@ -2754,8 +2782,8 @@ select.of-input {
 
 .of-style-group {
   border-top: 1px solid var(--of-border);
-  margin: 0 -12px;
-  padding: 0 12px;
+  margin: 0 -16px;
+  padding: 0 16px;
 }
 
 .of-style-group:first-of-type {
@@ -3055,8 +3083,8 @@ button.of-style-row__reset:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin: 0 -12px;
-  padding: 12px 12px 0;
+  margin: 0 -16px;
+  padding: 12px 16px 0;
   border-top: 1px solid var(--of-border);
 }
 

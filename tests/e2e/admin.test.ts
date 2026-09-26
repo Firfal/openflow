@@ -159,7 +159,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Retour aux pages" }).click();
   });
 
-  it("styles the title for mobile only, from the Style tab", async () => {
+  it("styles the title for mobile only, from the Style block below its content", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     const home = page.locator("li", {
       has: page.getByRole("button", { name: "Accueil", exact: true }),
@@ -172,12 +172,15 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.mouse.click(box.x + 10, box.y + box.height / 2);
     // Puck renders the fields panel twice (desktop and mobile layouts): take the visible one.
     const panel = page.locator(".of-panel:visible");
-    await panel.getByRole("tab", { name: "Style" }).click();
+    // The content comes first; the style is closed by default (the browser remembers it).
+    const toggle = panel.getByRole("button", { name: /^Style/ });
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
     await panel.locator(".of-style__crumbs .is-current").getByText("Titre").waitFor();
     await panel.getByRole("button", { name: "Mobile", exact: true }).click();
     await panel.getByLabel("Couleur du texte").fill("#ff0000");
     const color = () => title.evaluate((el) => getComputedStyle(el).color);
     await expect.poll(color, { timeout: 10_000 }).toBe("rgb(255, 0, 0)");
+    await expect.poll(() => toggle.textContent()).toContain("Mobile · 1 réglage");
     await page.screenshot({ path: path.join(SCREENSHOTS, "02b-style.png") });
     await panel.getByRole("button", { name: "Ordinateur", exact: true }).click();
     await expect.poll(color, { timeout: 10_000 }).not.toBe("rgb(255, 0, 0)");
