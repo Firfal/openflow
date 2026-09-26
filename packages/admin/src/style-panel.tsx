@@ -211,7 +211,10 @@ export function StylePanel() {
   const selectedId = selected?.props.id as string | undefined;
   const width = typeof viewports.current.width === "number" ? viewports.current.width : 1280;
   const bp = breakpointForWidth(width);
-  const onElement = Boolean(focus?.path && focus.componentId === selectedId);
+  // A link alone (button without editable text) has no element to style: its section is styled.
+  const onElement = Boolean(
+    focus?.path && focus.componentId === selectedId && focus.kind !== "link",
+  );
   const component = selected ? puckConfig.components[selected.type] : undefined;
   const resolved =
     onElement && focus?.path

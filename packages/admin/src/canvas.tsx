@@ -3,7 +3,7 @@ import { createUsePuck, type Fields } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAdmin } from "./context.js";
-import { type Focus, resolveField, useFocus } from "./focus.js";
+import { type Focus, resolveField, resolveGroup, useFocus } from "./focus.js";
 
 /** Elements handled by Puck itself (sections, drop zones, action bars): never intercepted. */
 const PUCK_UI = "[data-puck-dropzone], [data-puck-overlay], [data-puck-overlay-portal]";
@@ -27,7 +27,8 @@ const attr = (value: string) => value.replace(/\\/g, "\\\\").replace(/"/g, '\\"'
 function focusCss(focus: Focus | null): string {
   if (!focus?.path) return "";
   const index = focus.index ? `[data-of-i="${attr(focus.index)}"]` : ":not([data-of-i])";
-  return `[data-of-s="${attr(focus.componentId)}"] [data-of="${attr(focus.path)}"]${index} {
+  const marker = focus.kind === "link" ? "data-of-l" : "data-of";
+  return `[data-of-s="${attr(focus.componentId)}"] [${marker}="${attr(focus.path)}"]${index} {
   outline: 2px solid var(--of-accent, #2f5bff) !important; outline-offset: 3px; border-radius: 2px;
 }`;
 }
@@ -76,16 +77,36 @@ function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
           .find((el) => el.matches("[data-puck-component]"));
       if (!section) return;
       const componentId = section.getAttribute("data-puck-component") ?? "";
-      const marked = markedAt(section, target, event.clientX, event.clientY);
+      // A button (`data-of-l`, editor only): its text and its link belong together. A click on
+      // its padding selects its label.
+      const anchor = target.closest("a[data-of-l]");
+      const button = anchor && section.contains(anchor) ? anchor : null;
+      const marked =
+        markedAt(section, target, event.clientX, event.clientY) ??
+        button?.querySelector("[data-of]") ??
+        null;
+      const index = marked?.getAttribute("data-of-i") ?? undefined;
+      const link =
+        button && (button.getAttribute("data-of-i") ?? undefined) === index
+          ? (button.getAttribute("data-of-l") ?? undefined)
+          : undefined;
       const focus: Focus = marked
         ? {
             componentId,
             path: marked.getAttribute("data-of") ?? undefined,
-            index: marked.getAttribute("data-of-i") ?? undefined,
+            index,
             kind:
               marked.tagName === "IMG" ? "image" : marked.tagName === "VIDEO" ? "video" : "text",
+            ...(link && marked.tagName !== "IMG" && marked.tagName !== "VIDEO" ? { link } : {}),
           }
-        : { componentId };
+        : button
+          ? {
+              componentId,
+              path: button.getAttribute("data-of-l") ?? undefined,
+              index: button.getAttribute("data-of-i") ?? undefined,
+              kind: "link",
+            }
+          : { componentId };
       setFocus(focus);
       if (event.button === 0 && (focus.kind === "image" || focus.kind === "video"))
         down = { x: event.clientX, y: event.clientY, t: event.timeStamp, focus };
@@ -276,8 +297,13 @@ export function SectionOverlay({
     isSelected && focus?.componentId === componentId && focus.path && focus.kind === "text"
       ? focus
       : null;
+  // A button is named as a whole (« Bouton principal »), other texts by their field.
   const label =
-    focused?.path && fields ? resolveField(fields, focused.path, focused.index)?.label : undefined;
+    focused?.path && fields
+      ? focused.link
+        ? resolveGroup(fields, focused)?.title
+        : resolveField(fields, focused.path, focused.index)?.label
+      : undefined;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `data` re-measures after an edit.
   useLayoutEffect(() => {

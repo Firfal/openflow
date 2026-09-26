@@ -8,6 +8,7 @@ import {
   imageField,
   imageProps,
   linkField,
+  linkProps,
   markComponent,
   markProps,
   prepareRenderConfig,
@@ -92,6 +93,30 @@ describe("element markers", () => {
     });
     expect(markProps(fields, { image: null }).image).toBeNull();
     expect(imageProps({ src: "/a.jpg", alt: "" })).not.toHaveProperty("data-of");
+  });
+
+  it("tags links in the editor only, empty ones included, so linkProps emits data-of-l", () => {
+    const withLinks = {
+      cta: linkField(),
+      items: { type: "array", arrayFields: { link: linkField() } },
+    } as unknown as Fields;
+    const values = {
+      cta: { kind: "url", href: "https://x.fr" },
+      items: [{ link: null }],
+    };
+    const published = markProps(withLinks, values) as any;
+    expect(published.cta).toBe(values.cta);
+    expect(linkProps(published.cta)).toEqual({ href: "https://x.fr" });
+    expect(published.items[0].link).toBeNull();
+
+    const editing = markProps(withLinks, values, { editing: true }) as any;
+    expect(linkProps(editing.cta)).toEqual({ href: "https://x.fr", "data-of-l": "cta" });
+    expect(linkProps(editing.items[0].link)).toEqual({
+      href: "#",
+      "data-of-l": "items.link",
+      "data-of-i": "0",
+    });
+    expect(values.items[0]!.link).toBeNull();
   });
 
   it("tags videos and shows placeholders for empty media only in the editor", () => {

@@ -46,6 +46,16 @@ const sections = () =>
     return ids;
   });
 
+/** Clicking an element shows only its fields: open the other fields of the section. */
+async function showSectionFields() {
+  const more = page
+    .locator(".of-panel:visible")
+    .getByRole("button", { name: "Tous les champs de la section" });
+  if ((await more.count()) > 0 && (await more.getAttribute("aria-expanded")) === "false") {
+    await more.click();
+  }
+}
+
 async function center(locator: { boundingBox: () => Promise<any> }) {
   const box = await locator.boundingBox();
   if (!box) throw new Error("élément invisible");
@@ -185,6 +195,27 @@ describe("éditeur de page", () => {
       .toBe("Texte modifié depuis le panneau");
   });
 
+  it("shows only the text and the link of a clicked button", async () => {
+    const label = frame
+      .locator("[data-puck-component] a[data-of-l] [data-of]")
+      .filter({ visible: true })
+      .first();
+    await label.scrollIntoViewIfNeeded();
+    const { x, y } = await center(label);
+    await page.mouse.click(x, y);
+    const panel = page.locator(".of-panel:visible");
+    const card = panel.locator(".of-selected");
+    await card.waitFor({ timeout: 10_000 });
+    await card.getByText("Texte du bouton", { exact: true }).waitFor();
+    await card.getByText("Lien", { exact: true }).waitFor();
+    // The other fields of the section stay closed until asked for.
+    expect(await panel.locator("[class*='_PuckFields-field_']").count()).toBe(0);
+    await panel.getByRole("button", { name: "Tous les champs de la section" }).click();
+    await expect
+      .poll(() => panel.locator("[class*='_PuckFields-field_']").count())
+      .toBeGreaterThan(1);
+  });
+
   it("opens collapsed content (<details>) so it can be edited in place", async () => {
     const details = frame.locator("[data-puck-component] details");
     if ((await details.count()) === 0) return;
@@ -230,6 +261,7 @@ describe("éditeur de page", () => {
     const { box } = await center(hero);
     await page.mouse.click(box.x + 20, box.y + 20);
     await page.waitForTimeout(500);
+    await showSectionFields();
     const option = page.locator("label:visible", { hasText: /^Vidéo$/ });
     if (path.basename(site) === "landing") expect(await option.count()).toBeGreaterThan(0);
     if ((await option.count()) === 0) return;
@@ -242,6 +274,7 @@ describe("éditeur de page", () => {
     await dialog.waitFor({ timeout: 10_000 });
     await dialog.getByRole("button", { name: "Importer une vidéo" }).waitFor();
     await dialog.getByRole("button", { name: "Fermer" }).click();
+    await showSectionFields();
     await page
       .locator("label:visible", { hasText: /^Démo animée/ })
       .first()

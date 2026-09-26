@@ -8,6 +8,9 @@ import { getOpenFlowFieldKind, type ImageValue } from "./fields.js";
  * both in the editor and on the published site. The admin uses them to know which field was
  * clicked; style rules (`_style`) target them in the same way everywhere.
  *
+ * In the editor only, links also carry `data-of-l="<path>"` (set by `linkProps`, even when empty),
+ * so a click on a button shows its text and its link together.
+ *
  * Only values that the OpenFlow Standard already requires to be rendered as element children
  * (contentEditable texts, OF-108) are wrapped, so components keep working unchanged.
  */
@@ -80,6 +83,15 @@ function markValue(
 ): unknown {
   const kind = markKind(field);
   const i = index.length > 0 ? index.join(".") : undefined;
+  if (getOpenFlowFieldKind(field) === "link") {
+    // Editor only: the published HTML stays as it is. An empty link becomes a marked empty value,
+    // which `linkProps` still renders as `href="#"`.
+    if (!options.editing) return value;
+    const mark = { p: path, i } satisfies Mark;
+    return value && typeof value === "object"
+      ? { ...value, [MARK_KEY]: mark }
+      : { [MARK_KEY]: mark };
+  }
   if (kind === "image" || kind === "video") {
     const mark = { p: path, i } satisfies Mark;
     const empty = !value || typeof value !== "object" || !(value as { src?: string }).src;

@@ -63,7 +63,13 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
   - une image ou une vidéo se remplace d'un clic ;
   - la barre de la section propose monter, descendre, dupliquer et supprimer.
 - **Panneau de droite** : il indique quoi faire tant que rien n'est sélectionné. Il a deux onglets :
-  - **Contenu** : l'élément cliqué en premier, puis tous les champs de la section.
+  - **Contenu** : **uniquement les réglages de l'élément cliqué**, comme dans Webflow :
+    - un bouton : son texte et son lien ;
+    - un élément de liste (une carte, une question de FAQ…) : les champs de cet élément ;
+    - un texte, une image ou une vidéo : ce seul champ.
+
+    Les autres champs de la section restent derrière « Tous les champs de la section ». Un clic à côté des
+    éléments, ou la croix de l'élément, affiche toute la section.
   - **Style** : le style libre de la section ou de l'élément, sur l'écran affiché.
 
 ### Onglet Style

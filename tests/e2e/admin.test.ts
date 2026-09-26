@@ -133,6 +133,11 @@ describe("admin OpenFlow (émulateurs)", () => {
   it("uploads an image to Cloud Storage from the image field", async () => {
     const frame = page.frameLocator("#preview-frame");
     await frame.locator("h1").click();
+    // The title is selected: its fields only, the others behind « Tous les champs de la section ».
+    await page
+      .locator(".of-panel:visible")
+      .getByRole("button", { name: "Tous les champs de la section" })
+      .click();
     const png = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
       "base64",

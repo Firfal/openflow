@@ -116,13 +116,16 @@ export function linkProps(link: LinkValue | null | undefined): {
   href: string;
   target?: string;
   rel?: string;
+  "data-of-l"?: string;
+  "data-of-i"?: string;
 } {
-  if (!link?.href || !isSafeHref(link.href)) return { href: "#" };
+  // Editor marker (see `markProps`): lets the owner's click on a button reach its link field.
+  const mark = (link as { __of?: { p: string; i?: string } } | null | undefined)?.__of;
+  const marker = mark ? { "data-of-l": mark.p, "data-of-i": mark.i } : {};
+  if (!link?.href || !isSafeHref(link.href)) return { href: "#", ...marker };
   return link.newTab
-    ? { href: link.href, target: "_blank", rel: "noopener noreferrer" }
-    : {
-        href: link.href,
-      };
+    ? { href: link.href, target: "_blank", rel: "noopener noreferrer", ...marker }
+    : { href: link.href, ...marker };
 }
 
 /**

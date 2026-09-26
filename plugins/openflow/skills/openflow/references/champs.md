@@ -30,6 +30,10 @@ champs propres à OpenFlow (image, vidéo et lien), branchés sur Firebase dans 
 
 - Les **libellés** (`label`) s'affichent au propriétaire : ils sont en français, courts et concrets
   (« Bouton principal (texte) » plutôt que « cta1 »).
+- Un **bouton**, c'est un texte (`contentEditable`) placé **à l'intérieur** de `<a {...linkProps(link)}>`.
+  Dans l'éditeur, `linkProps` ajoute au lien le marqueur `data-of-l`, même quand le lien est vide. Ainsi, un
+  clic sur le bouton affiche au propriétaire son texte et son lien, et rien d'autre. Le site publié ne porte
+  pas ce marqueur.
 - Les options de style sont limitées et nommées pour un non-technicien (« Clair », « Sombre », « Couleur »).
   Ne propose jamais de champ de saisie de CSS.
 - Pour les listes, `getItemSummary` affiche un résumé lisible de chaque élément.

@@ -33,7 +33,9 @@ Projet Firebase du client (plan Blaze)
   application des `defaultProps`.
 - Les réglages globaux alimentent `app/(site)/layout.tsx` (en-tête, pied de page, thème).
 - Chaque section est entourée d'un `<div data-of-s="id" style="display:contents">`, et chaque texte, image
-  ou vidéo éditable porte `data-of="chemin"` (`prepareRenderConfig`). L'éditeur utilise les mêmes marqueurs.
+  ou vidéo éditable porte `data-of="chemin"` (`prepareRenderConfig`). L'éditeur utilise les mêmes marqueurs,
+  plus `data-of-l="chemin"` sur les liens (posé par `linkProps`, dans l'éditeur seulement), pour qu'un clic sur
+  un bouton en montre le texte et le lien.
 - **Style libre** : la prop réservée `_style` de chaque section est transformée en CSS par `buildPageCss`
   (`packages/core/src/style.ts`), une fonction pure qui n'accepte que des valeurs en liste blanche. La feuille
   est placée dans le `<head>` (balise `<style precedence>` de React 19). Hors couche CSS, elle l'emporte sur
