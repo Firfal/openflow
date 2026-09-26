@@ -1,4 +1,6 @@
-// `no-external.css`: no third-party font request (privacy, and works behind strict proxies).
+// `no-external.css`: no third-party font request (privacy, and works behind strict proxies). The
+// admin's own font (Inter, OFL) is bundled with the site instead.
+import "@fontsource-variable/inter/wght.css";
 import "@puckeditor/core/no-external.css";
 import "./styles.css";
 

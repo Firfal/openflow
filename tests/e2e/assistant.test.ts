@@ -203,7 +203,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
       )
       .toBe("Sous-titre écrit par l'assistant du navigateur");
     await page.getByText("Enregistré", { exact: true }).waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "Terminer" }).click();
+    await page.getByRole("button", { name: "Retour aux pages" }).click();
   });
 
   it("revokes the key", async () => {

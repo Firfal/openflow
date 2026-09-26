@@ -3,17 +3,19 @@ import { useState } from "react";
 import { useAdmin } from "./context.js";
 import type { ReleaseEntry } from "./data.js";
 import { call, errorMessage } from "./firebase.js";
-import { Button, Dialog, formatDate, StatusChip } from "./ui.js";
+import { Icon, type IconName } from "./icons.js";
+import { PageHead } from "./shell.js";
+import { Button, Dialog, EmptyState, formatDate, StatusChip, type Tone, timeAgo } from "./ui.js";
 
 const STATUS: Record<
   ReleaseStatus,
-  { label: string; tone: "green" | "grey" | "orange" | "red" | "blue" }
+  { label: string; tone: Tone; icon: IconName; dot: "live" | "failed" | "running" | "" }
 > = {
-  queued: { label: "En attente", tone: "blue" },
-  building: { label: "En cours", tone: "blue" },
-  live: { label: "En ligne", tone: "green" },
-  failed: { label: "Échec", tone: "red" },
-  superseded: { label: "Remplacée", tone: "grey" },
+  queued: { label: "En attente", tone: "blue", icon: "history", dot: "running" },
+  building: { label: "En cours", tone: "blue", icon: "history", dot: "running" },
+  live: { label: "En ligne", tone: "green", icon: "check", dot: "live" },
+  failed: { label: "Échec", tone: "red", icon: "x", dot: "failed" },
+  superseded: { label: "Remplacée", tone: "grey", icon: "globe", dot: "" },
 };
 
 export function HistoryView() {
@@ -39,53 +41,75 @@ export function HistoryView() {
   };
 
   return (
-    <section className="of-view">
-      <header className="of-view__header">
-        <div>
-          <h1>Historique des publications</h1>
-          <p className="of-muted">
-            Chaque publication est conservée : vous pouvez remettre en ligne une version précédente
-            en un clic.
-          </p>
-        </div>
-      </header>
-      {releases.length === 0 ? (
-        <p className="of-empty">Le site n'a pas encore été publié depuis l'admin.</p>
-      ) : (
-        <ul className="of-list">
-          {releases.map((release) => {
-            const status = STATUS[release.status];
-            return (
-              <li key={release.id} className="of-list__item">
-                <div className="of-list__main">
-                  <strong>{formatDate(release.createdAt)}</strong>
-                  <span className="of-muted">
-                    {release.pageCount} page(s) · par {release.createdBy}
-                    {release.restoredAt ? ` · restaurée le ${formatDate(release.restoredAt)}` : ""}
+    <>
+      <PageHead title="Historique" />
+      <section className="of-view of-view--narrow">
+        <p className="of-view__intro">
+          Chaque publication est conservée : vous pouvez remettre en ligne une version précédente en
+          un clic. Vos brouillons ne sont pas modifiés.
+        </p>
+        {releases.length === 0 ? (
+          <EmptyState icon="history" title="Aucune publication pour l'instant">
+            <p>Le site n'a pas encore été publié depuis l'admin.</p>
+          </EmptyState>
+        ) : (
+          <ol className="of-timeline" aria-label="Publications">
+            {releases.map((release) => {
+              const status = STATUS[release.status];
+              return (
+                <li key={release.id} className="of-timeline__item">
+                  <span
+                    className={`of-timeline__dot${status.dot ? ` of-timeline__dot--${status.dot}` : ""}`}
+                    aria-hidden
+                  >
+                    {status.dot === "running" ? (
+                      <span className="of-spinner of-spinner--small" />
+                    ) : (
+                      <Icon name={status.icon} size={12} />
+                    )}
                   </span>
-                  {release.error && <span className="of-error">{release.error}</span>}
-                </div>
-                <div className="of-row">
-                  <StatusChip tone={status.tone}>{status.label}</StatusChip>
-                  {release.logUrl && (
-                    <a
-                      className="of-btn of-btn--ghost"
-                      href={release.logUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Journal
-                    </a>
-                  )}
-                  {release.hostingVersion && release.status === "superseded" && (
-                    <Button onClick={() => setRestoring(release)}>Remettre en ligne</Button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  <div className="of-timeline__card">
+                    <div className="of-list__main">
+                      <span className="of-list__title">{formatDate(release.createdAt)}</span>
+                      <span className="of-list__meta">
+                        <span>{timeAgo(release.createdAt)}</span>
+                        <span>
+                          {release.pageCount} page{release.pageCount > 1 ? "s" : ""}
+                        </span>
+                        <span>par {release.createdBy}</span>
+                        {release.restoredAt && (
+                          <span>restaurée le {formatDate(release.restoredAt)}</span>
+                        )}
+                      </span>
+                      {release.error && (
+                        <span className="of-error" style={{ fontSize: 12.5 }}>
+                          {release.error}
+                        </span>
+                      )}
+                    </div>
+                    <StatusChip tone={status.tone}>{status.label}</StatusChip>
+                    {release.logUrl && (
+                      <a
+                        className="of-btn of-btn--ghost of-btn--sm"
+                        href={release.logUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Journal
+                      </a>
+                    )}
+                    {release.hostingVersion && release.status === "superseded" && (
+                      <Button size="sm" icon="reset" onClick={() => setRestoring(release)}>
+                        Remettre en ligne
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </section>
       <Dialog
         open={Boolean(restoring)}
         title="Remettre cette version en ligne ?"
@@ -107,6 +131,6 @@ export function HistoryView() {
           la prochaine publication les remettra en ligne.
         </p>
       </Dialog>
-    </section>
+    </>
   );
 }

@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { useWebMcpState } from "./agent.js";
 import { useAdmin } from "./context.js";
 import { call, errorMessage } from "./firebase.js";
-import { Button, FormField } from "./ui.js";
+import { Icon } from "./icons.js";
+import { Button, FormField, StatusChip } from "./ui.js";
 
 type KeyEntry = AgentTokenDoc & { id: string };
 
@@ -28,7 +29,8 @@ function CopyField({ label, value }: { label: string; value: string }) {
       <div className="of-copy__row">
         <code className="of-copy__value">{value}</code>
         <Button
-          variant="ghost"
+          variant="secondary"
+          icon="copy"
           onClick={() =>
             navigator.clipboard.writeText(value).then(
               () => notify("success", "Copié."),
@@ -106,27 +108,45 @@ export function AssistantSettings() {
   return (
     <div className="of-assistant">
       <section className="of-card of-form">
-        <h2>Modifier le site en discutant avec une IA</h2>
-        <p>
-          Connectez votre assistant (Claude, ChatGPT ou tout outil compatible MCP) à votre site :
-          demandez-lui « change le titre de l'accueil », « ajoute une question à la FAQ » ou « mets
-          les titres en bleu sur mobile ». Il voit vos pages, vos sections et vos réglages.
-        </p>
-        <p className="of-muted">
-          Ses modifications sont des brouillons, visibles en direct dans l'éditeur : rien n'est en
-          ligne tant que vous (ou lui, avec votre accord) ne publiez pas. Il n'a accès à rien
-          d'autre que ce site.
+        <div>
+          <h2>Modifier le site en discutant avec une IA</h2>
+          <p className="of-card__lead">
+            Connectez Claude, ChatGPT ou tout assistant compatible MCP, puis demandez-lui « change
+            le titre de l'accueil », « ajoute une question à la FAQ » ou « mets les titres en bleu
+            sur mobile ».
+          </p>
+        </div>
+        <ol className="of-steps">
+          <li>Créez une clé d'accès ci-dessous et donnez-lui un nom.</li>
+          <li>Copiez les réglages proposés dans votre assistant.</li>
+          <li>
+            Discutez : ses modifications sont des brouillons, visibles en direct dans l'éditeur.
+            Rien n'est en ligne avant la publication.
+          </li>
+        </ol>
+        <p className="of-callout">
+          <Icon name="info" className="of-icon--first-line" />
+          <span>
+            L'assistant n'a accès qu'à ce site (pages, sections, réglages), jamais au code ni aux
+            autres données du projet. Une clé se révoque d'un clic.
+          </span>
         </p>
         <CopyField label="Adresse du serveur MCP" value={endpoint} />
       </section>
 
       <section className="of-card of-form">
-        <h2>Clés d'accès</h2>
+        <div>
+          <h2>Clés d'accès</h2>
+          <p className="of-card__lead">Une clé par assistant ou par appareil.</p>
+        </div>
         {created ? (
           <div className="of-key-created" role="status">
-            <p>
-              <strong>Clé « {created.label} » créée.</strong> Copiez-la maintenant : elle ne sera
-              plus affichée.
+            <p className="of-row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
+              <Icon name="circleCheck" className="of-icon--first-line" />
+              <span>
+                <strong>Clé « {created.label} » créée.</strong> Copiez-la maintenant : elle ne sera
+                plus affichée.
+              </span>
             </p>
             <CopyField label="Clé" value={created.token} />
             <h3>Claude (application ou claude.ai)</h3>
@@ -153,7 +173,9 @@ export function AssistantSettings() {
               })}
             />
             <div className="of-row">
-              <Button onClick={() => setCreated(undefined)}>J'ai copié la clé</Button>
+              <Button variant="primary" icon="check" onClick={() => setCreated(undefined)}>
+                J'ai copié la clé
+              </Button>
             </div>
           </div>
         ) : (
@@ -164,52 +186,64 @@ export function AssistantSettings() {
               void create();
             }}
           >
-            <FormField
-              label="Nom de la clé"
-              hint="Pour la reconnaître : « Claude sur mon ordinateur »…"
-            >
+            <FormField label="Nom de la clé">
               <input
                 className="of-input"
                 value={label}
                 maxLength={80}
                 required
+                autoComplete="off"
                 onChange={(e) => setLabel(e.target.value)}
               />
             </FormField>
-            <Button type="submit" variant="primary" busy={busy}>
+            <Button type="submit" variant="primary" icon="key" busy={busy}>
               Créer une clé
             </Button>
           </form>
+        )}
+        {!created && (
+          <p className="of-field__hint" style={{ marginTop: -10 }}>
+            Pour la reconnaître : « Claude sur mon ordinateur », « ChatGPT »…
+          </p>
         )}
         {keys.length > 0 ? (
           <ul className="of-list">
             {keys.map((key) => (
               <li key={key.id} className="of-list__item">
+                <span className="of-list__icon" aria-hidden>
+                  <Icon name="key" />
+                </span>
                 <div className="of-list__main">
-                  <strong>{key.label}</strong>
-                  <span className="of-muted">
-                    {key.prefix}… · créée le {formatDate(key.createdAt)} · dernière utilisation :{" "}
-                    {formatDate(key.lastUsedAt)}
+                  <span className="of-list__title">{key.label}</span>
+                  <span className="of-list__meta">
+                    <span className="of-mono">{key.prefix}…</span>
+                    <span>créée le {formatDate(key.createdAt)}</span>
+                    <span>utilisée : {formatDate(key.lastUsedAt)}</span>
                   </span>
                 </div>
-                <Button variant="danger" onClick={() => void revoke(key)}>
+                <Button variant="danger-ghost" size="sm" onClick={() => void revoke(key)}>
                   Révoquer
                 </Button>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="of-muted">Aucune clé pour l'instant.</p>
+          <p className="of-subtle">Aucune clé pour l'instant.</p>
         )}
       </section>
 
       <section className="of-card of-form">
-        <h2>Assistant du navigateur (WebMCP)</h2>
+        <div className="of-row of-row--spread">
+          <h2>Assistant du navigateur (WebMCP)</h2>
+          <StatusChip tone={webMcp.status === "active" ? "green" : "grey"}>
+            {webMcp.status === "active" ? "Actif" : "Non disponible"}
+          </StatusChip>
+        </div>
         {webMcp.status === "active" ? (
-          <p>
-            <span className="of-chip of-chip--green">Actif</span> {webMcp.tools} outils sont
-            proposés à l'assistant IA de votre navigateur tant que l'admin est ouverte. Il agit avec
-            votre session, et vous confirmez vous-même la publication et les suppressions.
+          <p className="of-muted">
+            {webMcp.tools} outils sont proposés à l'assistant IA de votre navigateur tant que
+            l'admin est ouverte. Il agit avec votre session, et vous confirmez vous-même la
+            publication et les suppressions.
           </p>
         ) : (
           <p className="of-muted">

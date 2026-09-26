@@ -120,13 +120,17 @@ try {
   await page
     .getByText("Le site est en ligne avec vos dernières modifications.")
     .waitFor({ timeout: 300_000 });
-  await page.getByRole("button", { name: "Terminer" }).click();
+  await page.getByRole("button", { name: "Retour aux pages" }).click();
   // Dismiss the notices so they do not cover the next screens.
   const notices = page.locator(".of-notices").getByRole("button", { name: "Fermer" });
   while ((await notices.count()) > 0) await notices.first().click();
 
-  // 3. Page settings: address and search engine fields.
-  await page.getByRole("button", { name: "Paramètres" }).first().click();
+  // 3. Page settings: address and search engine fields (from the row's « ⋯ » menu).
+  await page
+    .getByRole("button", { name: /^Plus d'actions/ })
+    .first()
+    .click();
+  await page.getByRole("menuitem", { name: /^Paramètres/ }).click();
   await page.getByRole("dialog").waitFor();
   await page.waitForTimeout(400);
   await shoot(page, "seo", 1200);

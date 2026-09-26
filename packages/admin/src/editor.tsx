@@ -18,13 +18,15 @@ import {
   EDITOR_VIEWPORTS,
   type EditorChrome,
   EditorChromeContext,
+  editorUi,
   PAGE_EDITOR_OVERRIDES,
+  PAGE_EDITOR_PLUGINS,
 } from "./editor-ui.js";
 import { prepareEditorConfig } from "./fields.js";
 import { errorMessage } from "./firebase.js";
 import { type Focus, FocusContext, type FocusStore } from "./focus.js";
 import { FR_DICTIONARY } from "./i18n.js";
-import { Button, Spinner } from "./ui.js";
+import { Button, EmptyState, Spinner } from "./ui.js";
 
 export function EditorView({ pageId }: { pageId: string }) {
   const { config, services, user, notify, navigate } = useAdmin();
@@ -79,17 +81,20 @@ export function EditorView({ pageId }: { pageId: string }) {
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
     () => ({
+      kind: "page",
       saveState: autosave.state,
       saveError: autosave.error,
       retry: () => void flush(),
-      finish: async () => {
+      open: async (next) => {
         await flush();
-        navigate({ view: "pages" });
+        navigate(next ? { view: "editor", pageId: next } : { view: "pages" });
       },
       pageId,
     }),
     [autosave.state, autosave.error, flush, navigate, pageId],
   );
+  // Read once by Puck (initial screen: the closest to this device).
+  const ui = useMemo(() => editorUi(), []);
 
   // Changes made by an AI assistant through the MCP server appear live in the editor.
   useEffect(() => {
@@ -110,9 +115,13 @@ export function EditorView({ pageId }: { pageId: string }) {
   if (page === undefined) return <Spinner label="Ouverture de la page…" />;
   if (page === null) {
     return (
-      <section className="of-view">
-        <p className="of-error">Cette page n'existe plus.</p>
-        <Button onClick={() => navigate({ view: "pages" })}>Retour aux pages</Button>
+      <section className="of-view of-view--narrow" style={{ paddingTop: 64 }}>
+        <EmptyState icon="fileText" title="Cette page n'existe plus">
+          <p>Elle a peut-être été supprimée depuis un autre appareil.</p>
+          <Button icon="arrowLeft" onClick={() => navigate({ view: "pages" })}>
+            Retour aux pages
+          </Button>
+        </EmptyState>
       </section>
     );
   }
@@ -130,10 +139,12 @@ export function EditorView({ pageId }: { pageId: string }) {
             dictionary={FR_DICTIONARY}
             headerTitle={page.title}
             headerPath={slugToPath(page.slug)}
-            height="calc(100dvh - var(--of-topbar-height))"
+            height="100dvh"
             iframe={EDITOR_IFRAME}
             viewports={EDITOR_VIEWPORTS}
+            ui={ui}
             metadata={metadata}
+            plugins={PAGE_EDITOR_PLUGINS}
             overrides={PAGE_EDITOR_OVERRIDES}
           />
         </div>

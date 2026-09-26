@@ -4,8 +4,9 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { useAdmin } from "./context.js";
 import { ImageInput, VideoInput } from "./fields.js";
 import { getDeep, resolveField, useFocus } from "./focus.js";
+import { Icon } from "./icons.js";
 import { StylePanel } from "./style-panel.js";
-import { Button } from "./ui.js";
+import { IconButton } from "./ui.js";
 
 const usePuck = createUsePuck();
 
@@ -58,10 +59,11 @@ function SelectedElement() {
   return (
     <section ref={measure} className="of-selected" aria-label="Élément sélectionné">
       <header className="of-selected__header">
-        <span className="of-selected__eyebrow">Élément sélectionné</span>
-        <Button variant="ghost" onClick={() => setFocus(null)}>
-          Fermer
-        </Button>
+        <span className="of-selected__eyebrow">
+          <Icon name="pointer" size={13} />
+          Élément cliqué
+        </span>
+        <IconButton icon="x" label="Fermer" size="sm" onClick={() => setFocus(null)} />
       </header>
       <p className="of-selected__label">{resolved.label}</p>
       {media === "image" ? (
@@ -97,15 +99,33 @@ function SelectedElement() {
  * Right panel (Puck `overrides.fields`). « Contenu »: the clicked element first, then all section
  * fields. « Style »: free style of the section or element (unless `editor.styles` is `off`).
  */
+/** Nothing selected: how to start (Webflow shows the same kind of hint in its empty panels). */
+function NothingSelected() {
+  return (
+    <div className="of-panel__empty">
+      <span className="of-empty__icon">
+        <Icon name="pointer" size={20} />
+      </span>
+      <strong>Cliquez sur un élément de la page</strong>
+      <span>
+        Un texte, une image ou une section : ses réglages s'affichent ici. Les textes s'écrivent
+        aussi directement sur la page.
+      </span>
+    </div>
+  );
+}
+
 export function FieldsPanel({ children }: { children: ReactNode }) {
   const { config } = useAdmin();
   const selected = usePuck((s) => s.selectedItem);
+  const rootFields = usePuck((s) => Object.keys(s.config.root?.fields ?? {}).length > 0);
   const [tab, setTab] = useState<"content" | "style">("content");
   if (!selected || config.editor?.styles === "off") {
     return (
       <div className="of-panel">
+        {!selected && <NothingSelected />}
         <SelectedElement />
-        {children}
+        {(selected || rootFields) && children}
       </div>
     );
   }
@@ -114,10 +134,10 @@ export function FieldsPanel({ children }: { children: ReactNode }) {
       <div className="of-panel__tabs" role="tablist" aria-label="Panneau">
         {(
           [
-            ["content", "Contenu"],
-            ["style", "Style"],
+            ["content", "Contenu", "type"],
+            ["style", "Style", "palette"],
           ] as const
-        ).map(([value, label]) => (
+        ).map(([value, label, icon]) => (
           <button
             key={value}
             type="button"
@@ -126,6 +146,7 @@ export function FieldsPanel({ children }: { children: ReactNode }) {
             className={tab === value ? "is-active" : ""}
             onClick={() => setTab(value)}
           >
+            <Icon name={icon} size={14} />
             {label}
           </button>
         ))}

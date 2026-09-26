@@ -19,6 +19,7 @@ import { EditorFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
 import { ACCEPTED_IMAGES, ACCEPTED_VIDEOS, uploadMedia } from "./data.js";
 import { errorMessage } from "./firebase.js";
+import { Icon } from "./icons.js";
 import { MediaLibrary } from "./media.js";
 import { Button } from "./ui.js";
 
@@ -72,17 +73,37 @@ export function ImageInput({
         {value?.src ? (
           <img className="of-image-field__preview" src={value.src} alt={value.alt} />
         ) : (
-          <div className="of-image-field__empty">Aucune image</div>
+          <div className="of-image-field__empty">
+            <Icon name="image" size={18} />
+            Aucune image
+          </div>
         )}
         <div className="of-row">
-          <Button busy={busy} disabled={readOnly} onClick={() => input.current?.click()}>
+          <Button
+            size="sm"
+            icon="upload"
+            busy={busy}
+            disabled={readOnly}
+            onClick={() => input.current?.click()}
+          >
             Importer une image
           </Button>
-          <Button variant="ghost" disabled={readOnly} onClick={() => setLibrary(true)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="image"
+            disabled={readOnly}
+            onClick={() => setLibrary(true)}
+          >
             Médiathèque
           </Button>
           {value?.src && (
-            <Button variant="ghost" disabled={readOnly} onClick={() => onChange(null)}>
+            <Button
+              size="sm"
+              variant="danger-ghost"
+              disabled={readOnly}
+              onClick={() => onChange(null)}
+            >
               Retirer
             </Button>
           )}
@@ -276,22 +297,44 @@ export function VideoInput({
             controls
           />
         ) : (
-          <div className="of-image-field__empty">Aucune vidéo</div>
+          <div className="of-image-field__empty">
+            <Icon name="video" size={18} />
+            Aucune vidéo
+          </div>
         )}
         <div className="of-row">
-          <Button busy={busy} disabled={readOnly} onClick={() => input.current?.click()}>
+          <Button
+            size="sm"
+            icon="upload"
+            busy={busy}
+            disabled={readOnly}
+            onClick={() => input.current?.click()}
+          >
             Importer une vidéo
           </Button>
-          <Button variant="ghost" disabled={readOnly} onClick={() => setLibrary("video")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="image"
+            disabled={readOnly}
+            onClick={() => setLibrary("video")}
+          >
             Médiathèque
           </Button>
           {value?.src && (
-            <Button variant="ghost" disabled={readOnly} onClick={() => onChange(null)}>
+            <Button
+              size="sm"
+              variant="danger-ghost"
+              disabled={readOnly}
+              onClick={() => onChange(null)}
+            >
               Retirer
             </Button>
           )}
         </div>
-        <p className="of-muted">MP4 ou WebM, 15 Mo maximum, sans son : elle est lue en boucle.</p>
+        <p className="of-field__hint">
+          MP4 ou WebM, 15 Mo maximum, sans son : elle est lue en boucle.
+        </p>
         <input
           ref={input}
           type="file"
@@ -302,7 +345,13 @@ export function VideoInput({
         {value?.src && (
           <>
             <div className="of-row">
-              <Button variant="ghost" disabled={readOnly} onClick={() => setLibrary("poster")}>
+              <Button
+                size="sm"
+                variant="ghost"
+                icon="image"
+                disabled={readOnly}
+                onClick={() => setLibrary("poster")}
+              >
                 {value.poster ? "Changer l'image d'aperçu" : "Ajouter une image d'aperçu"}
               </Button>
             </div>

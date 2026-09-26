@@ -11,20 +11,22 @@ import { createElement, useCallback, useId, useMemo, useState } from "react";
 import { AssistantSettings } from "./assistant.js";
 import { useAutosave } from "./autosave.js";
 import { ThemeStyles } from "./canvas.js";
-import { useAdmin } from "./context.js";
+import { type SettingsTab, useAdmin } from "./context.js";
 import { saveSettings, saveTheme } from "./data.js";
 import {
   EDITOR_IFRAME,
   EDITOR_VIEWPORTS,
   type EditorChrome,
   EditorChromeContext,
+  editorUi,
   SETTINGS_EDITOR_OVERRIDES,
 } from "./editor-ui.js";
 import { mapFields } from "./fields.js";
 import { errorMessage } from "./firebase.js";
 import { FR_DICTIONARY } from "./i18n.js";
+import { PageHead } from "./shell.js";
 import { ColorControl } from "./style-controls.js";
-import { Button, FormField } from "./ui.js";
+import { Button, EmptyState, FormField } from "./ui.js";
 
 const LANGS = [
   ["fr", "Français"],
@@ -76,7 +78,12 @@ function SiteForm() {
         void submit();
       }}
     >
-      <h2>Site et référencement</h2>
+      <div>
+        <h2>Identité du site</h2>
+        <p className="of-card__lead">
+          Utilisée par Google, les partages sur les réseaux sociaux et l'onglet du navigateur.
+        </p>
+      </div>
       <FormField label="Nom du site">
         <input
           className="of-input"
@@ -131,7 +138,7 @@ function SiteForm() {
   );
 }
 
-const SETTINGS_UI = { leftSideBarVisible: false };
+const SETTINGS_UI = editorUi({ leftSideBarVisible: false });
 
 /** Global content (navigation, footer…) edited with Puck's root fields, with an optional preview. */
 function GlobalContent() {
@@ -151,7 +158,13 @@ function GlobalContent() {
   const autosave = useAutosave(save);
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
-    () => ({ saveState: autosave.state, saveError: autosave.error, retry: () => void flush() }),
+    () => ({
+      kind: "settings",
+      title: "Contenu commun",
+      saveState: autosave.state,
+      saveError: autosave.error,
+      retry: () => void flush(),
+    }),
     [autosave.state, autosave.error, flush],
   );
   // The preview only depends on the site identity: keep the config stable across saves.
@@ -196,7 +209,18 @@ function GlobalContent() {
     }),
     [],
   );
-  if (!settingsConfig) return <p className="of-muted">Ce site n'a pas de contenu global.</p>;
+  if (!settingsConfig) {
+    return (
+      <>
+        <PageHead title="Contenu commun" />
+        <div className="of-view of-view--narrow">
+          <EmptyState icon="panelTop" title="Pas de contenu commun">
+            <p>Ce site ne déclare pas de contenu partagé entre les pages (menu, pied de page…).</p>
+          </EmptyState>
+        </div>
+      </>
+    );
+  }
   return (
     <EditorChromeContext.Provider value={chrome}>
       <div className="of-editor of-editor--settings">
@@ -206,7 +230,7 @@ function GlobalContent() {
           onChange={autosave.schedule}
           dictionary={FR_DICTIONARY}
           headerTitle="Contenu commun à toutes les pages"
-          height="calc(100dvh - var(--of-topbar-height) - 56px)"
+          height="100dvh"
           iframe={EDITOR_IFRAME}
           ui={SETTINGS_UI}
           viewports={EDITOR_VIEWPORTS}
@@ -342,7 +366,13 @@ function ThemeEditor({ theme }: { theme: ThemeConfig }) {
   const autosave = useAutosave(save);
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
-    () => ({ saveState: autosave.state, saveError: autosave.error, retry: () => void flush() }),
+    () => ({
+      kind: "settings",
+      title: "Thème",
+      saveState: autosave.state,
+      saveError: autosave.error,
+      retry: () => void flush(),
+    }),
     [autosave.state, autosave.error, flush],
   );
   const puckConfig = useMemo<Config>(
@@ -368,7 +398,7 @@ function ThemeEditor({ theme }: { theme: ThemeConfig }) {
           onChange={autosave.schedule}
           dictionary={FR_DICTIONARY}
           headerTitle="Thème : couleurs et polices du site"
-          height="calc(100dvh - var(--of-topbar-height) - 56px)"
+          height="100dvh"
           iframe={EDITOR_IFRAME}
           ui={SETTINGS_UI}
           viewports={EDITOR_VIEWPORTS}
@@ -379,56 +409,26 @@ function ThemeEditor({ theme }: { theme: ThemeConfig }) {
   );
 }
 
-export function SettingsView() {
+const TAB_TITLES: Record<SettingsTab, string> = {
+  global: "Contenu commun",
+  theme: "Thème",
+  site: "Site et référencement",
+  assistant: "Assistant IA",
+};
+
+/** Réglages: one view per tab of the sidebar (the tab lives in the address). */
+export function SettingsView({ tab }: { tab: SettingsTab }) {
   const { config } = useAdmin();
-  const [tab, setTab] = useState<"global" | "theme" | "site" | "assistant">("global");
-  return (
-    <section className="of-view of-view--flush">
-      <nav className="of-tabs" aria-label="Réglages">
-        <button
-          type="button"
-          className={tab === "global" ? "is-active" : ""}
-          onClick={() => setTab("global")}
-        >
-          Contenu commun (menu, pied de page…)
-        </button>
-        {config.theme && (
-          <button
-            type="button"
-            className={tab === "theme" ? "is-active" : ""}
-            onClick={() => setTab("theme")}
-          >
-            Thème
-          </button>
-        )}
-        <button
-          type="button"
-          className={tab === "site" ? "is-active" : ""}
-          onClick={() => setTab("site")}
-        >
-          Site et référencement
-        </button>
-        <button
-          type="button"
-          className={tab === "assistant" ? "is-active" : ""}
-          onClick={() => setTab("assistant")}
-        >
-          Assistant IA
-        </button>
-      </nav>
-      {tab === "global" ? (
-        <GlobalContent />
-      ) : tab === "theme" && config.theme ? (
-        <ThemeEditor theme={config.theme} />
-      ) : tab === "assistant" ? (
-        <div className="of-view">
-          <AssistantSettings />
+  if (tab === "theme" && config.theme) return <ThemeEditor theme={config.theme} />;
+  if (tab === "site" || tab === "assistant") {
+    return (
+      <>
+        <PageHead title={TAB_TITLES[tab]} />
+        <div className="of-view of-view--narrow">
+          {tab === "site" ? <SiteForm /> : <AssistantSettings />}
         </div>
-      ) : (
-        <div className="of-view">
-          <SiteForm />
-        </div>
-      )}
-    </section>
-  );
+      </>
+    );
+  }
+  return <GlobalContent />;
 }

@@ -49,6 +49,7 @@ npx openflow deploy --project mon-projet --owner client@exemple.fr
 | [Architecture](docs/architecture.md) | Paquets, rendu, édition, publication |
 | [Modèle de données](docs/modele-de-donnees.md) | Firestore, Storage, snapshot |
 | [Sécurité](docs/securite.md) | Propriétaire unique, règles, build |
+| [Interface de l'admin](docs/interface-admin.md) | Tableau de bord, éditeur, onglet Style, raccourcis, clair et sombre |
 | [Assistant IA](docs/assistant-ia.md) | Serveur MCP et WebMCP : modifier le site par la discussion |
 | [Contrat d'intégration](docs/contrat-integration.md) | Kit Claude Code, boucle de retour |
 | [Norme OFS](docs/norme/README.md) | Les règles OF-xxx vérifiées par `openflow check` |

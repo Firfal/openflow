@@ -165,8 +165,12 @@ describe("éditeur de page", () => {
   });
 
   it("selects the field of a clicked text and edits it from the panel", async () => {
-    // A text inside a list (e.g. a FAQ answer): marked `data-of="items.answer"`, `data-of-i`.
-    const marked = frame.locator("[data-puck-component] span[data-of*='.'][data-of-i]").first();
+    // A text inside a list (e.g. a FAQ answer): marked `data-of="items.answer"`, `data-of-i`. Some
+    // sections keep list texts out of view at this screen size (the landing's hero demo): skip them.
+    const marked = frame
+      .locator("[data-puck-component] span[data-of*='.'][data-of-i]")
+      .filter({ visible: true })
+      .first();
     await marked.scrollIntoViewIfNeeded();
     const { x, y } = await center(marked);
     await page.mouse.click(x, y);

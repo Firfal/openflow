@@ -19,7 +19,7 @@ Projet Firebase du client (plan Blaze)
 | `@openflow/core` | `defineConfig`, champs `imageField` et `linkField`, modèle Firestore, format du snapshot (zod), validation, règles de sécurité de référence, documentation pour les agents |
 | `@openflow/check` | Norme OFS : registre des règles, analyse statique (Babel), rendu par sentinelles (Puck `Render` sous Node), contrôle du HTML, formats agent, JSON et SARIF, hooks Claude Code |
 | `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap et robots (`@openflow/next/data`), `<OpenFlowAdmin />` (`@openflow/next/admin`) |
-| `@openflow/admin` | Application d'administration React : connexion, pages, éditeur Puck avec sauvegarde automatique, champs image et lien, réglages, publication, historique ; interface en français |
+| `@openflow/admin` | Application d'administration React : connexion, pages, médias, éditeur Puck avec sauvegarde automatique (barre unique, rail, onglets Contenu et Style), réglages, publication, historique, recherche rapide ⌘K ; interface en français, claire ou sombre (voir [interface-admin.md](interface-admin.md)) |
 | `@openflow/functions` | Cloud Functions et logique de publication (snapshot, requête Cloud Build, API REST Hosting) |
 | `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `deploy` |
 | `templates/next-starter` | Site Next.js de départ, conforme à 100 % à la norme OFS |

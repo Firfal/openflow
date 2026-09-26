@@ -1,23 +1,97 @@
-import { type ReactNode, useEffect, useId, useState } from "react";
+import {
+  type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { Icon, type IconName } from "./icons.js";
 
-/** One row of the style panel: label, control, and a reset button when a value is set. */
+/** Drag on a label to change a number (Webflow and Framer « scrub »). */
+export interface Scrub {
+  /** Value when the drag starts. */
+  value: number;
+  step: number;
+  min?: number;
+  /** `done` is false while dragging (not recorded in undo), true once, on release. */
+  onChange: (value: number, done: boolean) => void;
+}
+
+function useScrub(scrub: Scrub | undefined) {
+  const start = useRef<{ x: number; value: number; last?: number } | null>(null);
+  if (!scrub) return {};
+  return {
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
+      if (event.button !== 0) return;
+      start.current = { x: event.clientX, value: scrub.value };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
+      const drag = start.current;
+      if (!drag) return;
+      const steps = Math.round((event.clientX - drag.x) / 3);
+      if (steps === 0) return;
+      const factor = event.shiftKey ? 10 : 1;
+      let next = drag.value + steps * scrub.step * factor;
+      if (scrub.min !== undefined) next = Math.max(scrub.min, next);
+      next = Math.round(next * 1000) / 1000;
+      if (next === drag.last) return;
+      drag.last = next;
+      scrub.onChange(next, false);
+    },
+    onPointerUp: () => {
+      const last = start.current?.last;
+      start.current = null;
+      // One undo step for the whole gesture.
+      if (last !== undefined) scrub.onChange(last, true);
+    },
+    style: { cursor: "ew-resize", touchAction: "none" } as const,
+  };
+}
+
+/**
+ * One row of the style panel (Webflow-like): label on the left, control on the right, and a reset
+ * button when a value is set. The label is blue when this screen sets the value, amber when it is
+ * inherited from a larger screen.
+ */
 export function StyleRow({
   label,
   set,
+  inheritedFrom,
   onReset,
   children,
   hint,
+  scrub,
 }: {
   label: string;
   set: boolean;
+  /** Screen the value comes from (« Ordinateur »…), when this one does not set it. */
+  inheritedFrom?: string;
   onReset: () => void;
   children: (id: string) => ReactNode;
   hint?: ReactNode;
+  scrub?: Scrub;
 }) {
   const id = useId();
+  const drag = useScrub(scrub);
+  const inherited = !set && Boolean(inheritedFrom);
   return (
-    <div className={`of-style-row${set ? " is-set" : ""}`}>
-      <label className="of-style-row__label" htmlFor={id}>
+    <div className={`of-style-row${set ? " is-set" : ""}${inherited ? " is-inherited" : ""}`}>
+      <label
+        className="of-style-row__label"
+        htmlFor={id}
+        title={
+          set
+            ? "Réglé sur cet écran"
+            : inherited
+              ? `Hérité de l'écran ${inheritedFrom}`
+              : scrub
+                ? "Glisser pour changer la valeur"
+                : undefined
+        }
+        {...drag}
+      >
         {label}
       </label>
       <div className="of-style-row__control">{children(id)}</div>
@@ -29,7 +103,7 @@ export function StyleRow({
           title="Revenir à la valeur héritée"
           aria-label={`Réinitialiser : ${label}`}
         >
-          ×
+          <Icon name="reset" size={12} />
         </button>
       ) : (
         <span className="of-style-row__reset" aria-hidden />
@@ -102,6 +176,14 @@ export function LengthControl({
         onChange={(e) => {
           setDraft(e.target.value);
           commit(e.target.value, unit);
+        }}
+        onKeyDown={(e) => {
+          if (!e.shiftKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+          e.preventDefault();
+          const base = Number(draft || parseLength(placeholder, fallbackUnit).n || 0);
+          const next = String(base + (e.key === "ArrowUp" ? 10 : -10) * step);
+          setDraft(next);
+          commit(next, unit);
         }}
       />
       <select
@@ -237,22 +319,28 @@ export function SegmentedControl<T extends string>({
   label,
 }: {
   value: T | undefined;
-  options: Array<[T, string]>;
+  /** Value, label, and an optional icon (then the label is the tooltip). */
+  options: Array<[T, string] | [T, string, IconName]>;
   onChange: (value: T | undefined) => void;
   label: string;
 }) {
+  const icons = options.some((option) => option[2]);
   return (
-    <fieldset className="of-segmented of-segmented--small">
+    <fieldset
+      className={`of-segmented of-segmented--small of-segmented--block${icons ? " of-segmented--icons" : ""}`}
+    >
       <legend className="of-sr-only">{label}</legend>
-      {options.map(([v, text]) => (
+      {options.map(([v, text, icon]) => (
         <button
           key={v}
           type="button"
           aria-pressed={value === v}
+          aria-label={icon ? text : undefined}
+          title={icon ? text : undefined}
           className={value === v ? "is-active" : ""}
           onClick={() => onChange(value === v ? undefined : v)}
         >
-          {text}
+          {icon ? <Icon name={icon} size={14} /> : text}
         </button>
       ))}
     </fieldset>
@@ -358,4 +446,113 @@ export function contrastRatio(a: string, b: string): number {
   };
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
+}
+
+export type BoxSide = "top" | "right" | "bottom" | "left";
+
+/** Parses what the owner typed in a box side: `24` → `24px`, `2rem`, `0`, `auto`. */
+export function parseBoxValue(text: string, keywords: string[] = []): string | undefined | null {
+  const value = text.trim().toLowerCase().replace(",", ".");
+  if (value === "") return undefined;
+  if (keywords.includes(value)) return value;
+  if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value) === 0 ? "0" : `${Number(value)}px`;
+  if (/^-?\d+(\.\d+)?(px|rem|em|%|vw|vh)$/.test(value)) return value;
+  return null;
+}
+
+function BoxInput({
+  side,
+  label,
+  value,
+  placeholder,
+  state,
+  keywords,
+  onChange,
+}: {
+  side: BoxSide;
+  label: string;
+  value: string | undefined;
+  placeholder?: string;
+  state?: "set" | "inherited";
+  keywords?: string[];
+  onChange: (value: string | undefined) => void;
+}) {
+  const [draft, setDraft] = useState(value ?? "");
+  useEffect(() => setDraft(value ?? ""), [value]);
+  const commit = () => {
+    const parsed = parseBoxValue(draft, keywords);
+    if (parsed === null) setDraft(value ?? "");
+    else if (parsed !== value) onChange(parsed);
+  };
+  const short = (v?: string) => v?.replace(/px$/, "");
+  return (
+    <span className={`of-box__side of-box__side--${side}${state ? ` is-${state}` : ""}`}>
+      <input
+        className="of-input"
+        aria-label={label}
+        title={`${label} (ex. 24, 2rem)`}
+        value={short(draft)}
+        placeholder={short(placeholder) ?? "–"}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            const current = parseLength(parseBoxValue(draft || placeholder || "0") ?? "0", "px");
+            const step = (e.key === "ArrowUp" ? 1 : -1) * (e.shiftKey ? 10 : 1);
+            const n = Number(current.n || 0) + step;
+            // Margins (with keywords such as `auto`) may be negative, paddings may not.
+            const next = n === 0 || (n < 0 && !keywords) ? "0" : `${n}${current.unit}`;
+            setDraft(next);
+            onChange(next);
+          }
+        }}
+      />
+    </span>
+  );
+}
+
+/**
+ * Box model (Webflow's spacing widget, simplified): the sides around a box, each a small input
+ * accepting `24`, `2rem` or `0`. Only the sides passed in `sides` are editable.
+ */
+export function BoxControl({
+  label,
+  center,
+  sides,
+  keywords,
+}: {
+  label: string;
+  center: string;
+  sides: Partial<
+    Record<
+      BoxSide,
+      {
+        label: string;
+        value: string | undefined;
+        placeholder?: string;
+        state?: "set" | "inherited";
+        onChange: (value: string | undefined) => void;
+      }
+    >
+  >;
+  keywords?: string[];
+}) {
+  return (
+    <fieldset className="of-box">
+      <legend className="of-sr-only">{label}</legend>
+      {(["top", "left", "right", "bottom"] as const).map((side) => {
+        const item = sides[side];
+        return item ? (
+          <BoxInput key={side} side={side} keywords={keywords} {...item} />
+        ) : (
+          <span key={side} className={`of-box__side of-box__side--${side}`} />
+        );
+      })}
+      <span className="of-box__center">{center}</span>
+    </fieldset>
+  );
 }

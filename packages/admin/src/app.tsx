@@ -1,7 +1,8 @@
 import { FUNCTION_NAMES, type OpenFlowConfig, OWNER_CLAIM, type SettingsDoc } from "@openflow/core";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { browserAgentContext, useWebMcp } from "./agent.js";
+import { CommandPalette } from "./command.js";
 import {
   type AdminContextValue,
   AdminProvider,
@@ -19,11 +20,14 @@ import {
 import { EditorView } from "./editor.js";
 import { call, errorMessage, type FirebaseSetup, initServices, type Services } from "./firebase.js";
 import { HistoryView } from "./history.js";
+import { Icon, type IconName } from "./icons.js";
 import { Login } from "./login.js";
+import { MediaView } from "./media.js";
 import { PagesView } from "./pages.js";
-import { PublishControl } from "./publish.js";
 import { SettingsView } from "./settings.js";
-import { Button, Spinner } from "./ui.js";
+import { Sidebar } from "./shell.js";
+import { Button, IconButton, Spinner } from "./ui.js";
+import { UiThemeContext, useUiThemeState } from "./ui-theme.js";
 
 export interface OpenFlowAdminProps {
   /** The site's `openflow.config.tsx` default export. */
@@ -52,77 +56,41 @@ async function checkOwner(services: Services, user: User): Promise<string | unde
     : "Ce compte n'a pas accès à l'administration.";
 }
 
+const NOTICE_ICONS: Record<Notice["kind"], IconName> = {
+  success: "circleCheck",
+  error: "circleAlert",
+  info: "info",
+};
+
 function Notices({ notices, dismiss }: { notices: Notice[]; dismiss: (id: number) => void }) {
   return (
     <div className="of-notices" aria-live="polite">
       {notices.map((notice) => (
-        <div key={notice.id} className={`of-notice of-notice--${notice.kind}`}>
+        <div
+          key={notice.id}
+          className={`of-notice of-notice--${notice.kind}`}
+          role={notice.kind === "error" ? "alert" : undefined}
+        >
+          <Icon name={NOTICE_ICONS[notice.kind]} className="of-icon--first-line" />
           <span>{notice.text}</span>
-          <button
-            type="button"
-            className="of-icon-btn"
-            aria-label="Fermer"
-            onClick={() => dismiss(notice.id)}
-          >
-            ×
-          </button>
+          <IconButton icon="x" label="Fermer" size="sm" onClick={() => dismiss(notice.id)} />
         </div>
       ))}
     </div>
   );
 }
 
+/** Dashboard (sidebar + view) or, for a page, the full-screen editor. */
 function Shell() {
-  const { route, navigate, user, services, settings, config } = useAdmin();
-  const siteName = settings?.site?.name ?? config.site.name;
-  const tabs = [
-    ["pages", "Pages"],
-    ["settings", "Réglages"],
-    ["history", "Historique"],
-  ] as const;
+  const { route } = useAdmin();
+  if (route.view === "editor") return <EditorView key={route.pageId} pageId={route.pageId} />;
   return (
-    <div className="of-app">
-      <header className="of-topbar">
-        <div className="of-topbar__brand">
-          <span className="of-logo" aria-hidden>
-            ◆
-          </span>
-          <span>{siteName}</span>
-        </div>
-        <nav className="of-topbar__nav" aria-label="Navigation">
-          {tabs.map(([view, label]) => (
-            <button
-              key={view}
-              type="button"
-              aria-current={
-                route.view === view || (view === "pages" && route.view === "editor")
-                  ? "page"
-                  : undefined
-              }
-              onClick={() => navigate({ view })}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div className="of-topbar__actions">
-          <a className="of-btn of-btn--ghost" href="/" target="_blank" rel="noreferrer">
-            Voir le site ↗
-          </a>
-          <PublishControl />
-          <Button
-            variant="ghost"
-            title={user.email ?? undefined}
-            onClick={() => signOut(services.auth)}
-          >
-            Se déconnecter
-          </Button>
-        </div>
-      </header>
+    <div className="of-shell">
+      <Sidebar />
       <main className="of-main">
         {route.view === "pages" && <PagesView />}
-        {route.view === "editor" && <EditorView key={route.pageId} pageId={route.pageId} />}
-        {route.view === "settings" && <SettingsView />}
+        {route.view === "media" && <MediaView />}
+        {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
         {route.view === "history" && <HistoryView />}
       </main>
     </div>
@@ -184,13 +152,24 @@ function OwnerApp({
   return (
     <AdminProvider value={value}>
       <Shell />
+      <CommandPalette />
       <Notices notices={notices} dismiss={dismiss} />
     </AdminProvider>
   );
 }
 
-/** Full OpenFlow admin: owner authentication, pages, visual editor, settings, publication. */
-export function OpenFlowAdminApp({ config, firebase }: OpenFlowAdminProps) {
+function Blocked({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <main className="of-login">
+      <div className="of-card of-login__card">
+        <h1>{title}</h1>
+        <div className="of-login__body">{children}</div>
+      </div>
+    </main>
+  );
+}
+
+function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
   const [services, setServices] = useState<Services>();
   const [fatal, setFatal] = useState<string>();
   const [owner, setOwner] = useState<OwnerState>({ status: "loading" });
@@ -216,12 +195,9 @@ export function OpenFlowAdminApp({ config, firebase }: OpenFlowAdminProps) {
 
   if (fatal) {
     return (
-      <main className="of-login">
-        <div className="of-card">
-          <h1>Administration indisponible</h1>
-          <p className="of-error">{fatal}</p>
-        </div>
-      </main>
+      <Blocked title="Administration indisponible">
+        <p className="of-error">{fatal}</p>
+      </Blocked>
     );
   }
   if (!services || owner.status === "loading") return <Spinner />;
@@ -230,17 +206,26 @@ export function OpenFlowAdminApp({ config, firebase }: OpenFlowAdminProps) {
   if (owner.status === "checking") return <Spinner label="Vérification de vos droits…" />;
   if (owner.status === "denied") {
     return (
-      <main className="of-login">
-        <div className="of-card of-login__card">
-          <h1>Accès refusé</h1>
-          <p>
-            Le compte <strong>{owner.user.email}</strong> n'est pas le propriétaire de ce site.
-          </p>
-          <p className="of-muted">{owner.reason}</p>
-          <Button onClick={() => signOut(services.auth)}>Changer de compte</Button>
-        </div>
-      </main>
+      <Blocked title="Accès refusé">
+        <p>
+          Le compte <strong>{owner.user.email}</strong> n'est pas le propriétaire de ce site.
+        </p>
+        <p className="of-subtle">{owner.reason}</p>
+        <Button onClick={() => signOut(services.auth)}>Changer de compte</Button>
+      </Blocked>
     );
   }
   return <OwnerApp config={config} services={services} user={owner.user} />;
+}
+
+/** Full OpenFlow admin: owner authentication, pages, visual editor, settings, publication. */
+export function OpenFlowAdminApp(props: OpenFlowAdminProps) {
+  const theme = useUiThemeState();
+  return (
+    <UiThemeContext.Provider value={theme}>
+      <div className="of-root">
+        <AdminRoot {...props} />
+      </div>
+    </UiThemeContext.Provider>
+  );
 }

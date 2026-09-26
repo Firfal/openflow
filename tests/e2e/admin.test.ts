@@ -151,7 +151,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     );
     expect(media.path).toMatch(/^openflow\/media\/.+-photo-test\.png$/);
     await page.getByText("Enregistré", { exact: true }).waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "Terminer" }).click();
+    await page.getByRole("button", { name: "Retour aux pages" }).click();
   });
 
   it("styles the title for mobile only, from the Style tab", async () => {
@@ -185,7 +185,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       "style enregistré dans Firestore",
     );
     expect(saved).toBe("#ff0000");
-    await page.getByRole("button", { name: "Terminer" }).click();
+    await page.getByRole("button", { name: "Retour aux pages" }).click();
   });
 
   it("changes a theme colour in Réglages > Thème, with a live preview", async () => {

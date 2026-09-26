@@ -4,11 +4,16 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import type { PageEntry, ReleaseEntry } from "./data.js";
 import type { Services } from "./firebase.js";
 
+export type SettingsTab = "global" | "theme" | "site" | "assistant";
+
 export type Route =
   | { view: "pages" }
   | { view: "editor"; pageId: string }
-  | { view: "settings" }
+  | { view: "settings"; tab?: SettingsTab }
+  | { view: "media" }
   | { view: "history" };
+
+const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "assistant"];
 
 export interface Notice {
   id: number;
@@ -50,8 +55,12 @@ function readRoute(): Route {
   const params = new URLSearchParams(window.location.search);
   const view = params.get("view");
   const pageId = params.get("page");
+  const tab = params.get("tab") as SettingsTab | null;
   if (view === "editor" && pageId) return { view: "editor", pageId };
-  if (view === "settings" || view === "history") return { view };
+  if (view === "settings") {
+    return tab && SETTINGS_TABS.includes(tab) ? { view, tab } : { view };
+  }
+  if (view === "history" || view === "media") return { view };
   return { view: "pages" };
 }
 
@@ -59,6 +68,7 @@ function routeToSearch(route: Route): string {
   const params = new URLSearchParams();
   if (route.view !== "pages") params.set("view", route.view);
   if (route.view === "editor") params.set("page", route.pageId);
+  if (route.view === "settings" && route.tab) params.set("tab", route.tab);
   const search = params.toString();
   return search ? `?${search}` : window.location.pathname;
 }

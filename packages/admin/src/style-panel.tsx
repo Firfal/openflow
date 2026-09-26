@@ -13,13 +13,16 @@ import { createUsePuck, type Fields } from "@puckeditor/core";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { resolveField, useFocus } from "./focus.js";
+import { Icon, type IconName } from "./icons.js";
 import { MediaLibrary } from "./media.js";
 import {
+  BoxControl,
   ColorControl,
   contrastRatio,
   LengthControl,
   NumberControl,
   RangeControl,
+  type Scrub,
   SegmentedControl,
   SelectControl,
   StyleRow,
@@ -31,10 +34,10 @@ import { Button } from "./ui.js";
 const usePuck = createUsePuck();
 
 /** Screens of the editor (Puck viewports): the style panel edits the one shown. */
-export const SCREENS: Array<{ bp: Breakpoint; label: string; width: number }> = [
-  { bp: "base", label: "Ordinateur", width: 1280 },
-  { bp: "tablet", label: "Tablette", width: 768 },
-  { bp: "mobile", label: "Mobile", width: 390 },
+export const SCREENS: Array<{ bp: Breakpoint; label: string; width: number; icon: IconName }> = [
+  { bp: "base", label: "Ordinateur", width: 1280, icon: "monitor" },
+  { bp: "tablet", label: "Tablette", width: 768, icon: "tablet" },
+  { bp: "mobile", label: "Mobile", width: 390, icon: "smartphone" },
 ];
 
 type Target = "section" | "text" | "media";
@@ -126,13 +129,67 @@ function readComputed(inline?: Element, box?: Element): Computed | undefined {
   };
 }
 
-function Group({ title, children }: { title: string; children: ReactNode }) {
+function Group({
+  title,
+  active,
+  children,
+}: {
+  title: string;
+  /** This screen sets values in the group: a dot next to the title. */
+  active?: boolean;
+  children: ReactNode;
+}) {
   return (
     <details className="of-style-group" open>
-      <summary>{title}</summary>
+      <summary>
+        {title}
+        {active && <span className="of-style-group__dot" title="Réglages sur cet écran" />}
+        <Icon name="chevronDown" size={14} className="of-style-group__chevron" />
+      </summary>
       <div className="of-style-group__body">{children}</div>
     </details>
   );
+}
+
+const GROUPS = {
+  typography: [
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "lineHeight",
+    "letterSpacing",
+    "textAlign",
+    "textTransform",
+    "fontStyle",
+    "textDecoration",
+  ],
+  colors: [
+    "color",
+    "backgroundColor",
+    "backgroundImage",
+    "overlayColor",
+    "overlayOpacity",
+    "backgroundPosition",
+    "backgroundSize",
+  ],
+  spacing: [
+    "marginTop",
+    "marginBottom",
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft",
+  ],
+  size: ["maxWidth", "minHeight"],
+  effects: ["borderWidth", "borderColor", "borderRadius", "shadow", "opacity", "objectFit"],
+  visibility: ["hidden"],
+} satisfies Record<string, StyleProperty[]>;
+
+/** Number and unit of a stored length (`24px` → 24, `px`), for scrubbing. */
+function lengthParts(value: string | undefined): { n: number; unit: string } | undefined {
+  const match = /^(-?\d*\.?\d+)(px|rem|em|%|vw|vh)$/.exec(value ?? "");
+  if (match) return { n: Number(match[1]), unit: match[2] ?? "px" };
+  return value === "0" ? { n: 0, unit: "px" } : undefined;
 }
 
 /**
@@ -207,7 +264,7 @@ export function StylePanel() {
   );
 
   if (!selected || !selectedId) {
-    return <p className="of-style-empty">Sélectionnez une section ou un élément de la page.</p>;
+    return <p className="of-style-empty">Cliquez sur une section ou un élément de la page.</p>;
   }
 
   const style: SectionStyle = sanitizeStyle(styleProp) ?? {};
@@ -220,7 +277,7 @@ export function StylePanel() {
         ? { ...responsive.base }
         : { ...responsive.base, ...responsive.tablet };
 
-  const commit = (nextResponsive: ResponsiveStyle) => {
+  const commit = (nextResponsive: ResponsiveStyle, record = true) => {
     const next: SectionStyle = path
       ? { ...style, fields: { ...style.fields, [path]: nextResponsive } }
       : { ...style, section: nextResponsive };
@@ -235,13 +292,18 @@ export function StylePanel() {
       destinationIndex: selector.index,
       destinationZone: selector.zone,
       data: { ...selected, props },
+      recordHistory: record,
     });
   };
-  const set = <K extends StyleProperty>(key: K, value: StyleValues[K] | undefined) => {
+  const set = <K extends StyleProperty>(
+    key: K,
+    value: StyleValues[K] | undefined,
+    record = true,
+  ) => {
     const next: StyleValues = { ...values };
     if (value === undefined) delete next[key];
     else next[key] = value;
-    commit({ ...responsive, [bp]: next });
+    commit({ ...responsive, [bp]: next }, record);
   };
   const setMany = (patch: Partial<StyleValues>) => {
     const next: Record<string, unknown> = { ...values };
@@ -252,22 +314,53 @@ export function StylePanel() {
     commit({ ...responsive, [bp]: next as StyleValues });
   };
 
+  /** Screen a value comes from, when this screen inherits it (Webflow's amber labels). */
+  const sourceOf = (key: StyleProperty): string | undefined => {
+    if (values[key] !== undefined || bp === "base") return undefined;
+    if (bp === "mobile" && responsive.tablet?.[key] !== undefined) return "Tablette";
+    return responsive.base?.[key] !== undefined ? "Ordinateur" : undefined;
+  };
+  const sideState = (key: StyleProperty) =>
+    values[key] !== undefined
+      ? ("set" as const)
+      : sourceOf(key)
+        ? ("inherited" as const)
+        : undefined;
+  const active = (keys: StyleProperty[]) => keys.some((key) => values[key] !== undefined);
   const row = <K extends StyleProperty>(
     key: K,
     label: string,
     control: (id: string, value: StyleValues[K] | undefined) => ReactNode,
     hint?: ReactNode,
+    scrub?: Scrub,
   ) => (
     <StyleRow
       key={key}
       label={label}
       set={values[key] !== undefined}
+      inheritedFrom={sourceOf(key)}
       onReset={() => set(key, undefined)}
       hint={hint}
+      scrub={scrub}
     >
       {(id) => control(id, values[key])}
     </StyleRow>
   );
+  /** Scrubbing a length from its label (current value, else the inherited or computed one). */
+  const lengthScrub = (key: StyleProperty, current?: string, step = 1): Scrub | undefined => {
+    const parts = lengthParts(values[key] as string | undefined) ??
+      lengthParts(inherited[key] as string | undefined) ??
+      lengthParts(current) ?? { n: 0, unit: "px" };
+    // Whole pixels, percents and viewport units; fine steps for relative units.
+    const relative = parts.unit === "rem" || parts.unit === "em";
+    const unitStep = relative ? (key === "letterSpacing" ? 0.01 : 0.05) : step;
+    return {
+      value: parts.n,
+      step: unitStep,
+      min: key === "letterSpacing" || key.startsWith("margin") ? undefined : 0,
+      onChange: (n, done) => set(key, (n === 0 ? "0" : `${n}${parts.unit}`) as never, done),
+    };
+  };
   const placeholder = (key: StyleProperty, current?: string) => {
     const value = inherited[key];
     return value !== undefined ? String(value) : current;
@@ -277,16 +370,29 @@ export function StylePanel() {
     label: string,
     options: { keywords?: string[]; units?: string[]; current?: string } = {},
   ) =>
-    row(key, label, (id, value) => (
-      <LengthControl
-        id={id}
-        value={value as string | undefined}
-        placeholder={placeholder(key, options.current)}
-        keywords={options.keywords}
-        units={options.units}
-        onChange={(v) => set(key, v as never)}
-      />
-    ));
+    row(
+      key,
+      label,
+      (id, value) => (
+        <LengthControl
+          id={id}
+          value={value as string | undefined}
+          placeholder={placeholder(key, options.current)}
+          keywords={options.keywords}
+          units={options.units}
+          onChange={(v) => set(key, v as never)}
+        />
+      ),
+      undefined,
+      lengthScrub(key, options.current),
+    );
+  const side = (key: StyleProperty, label: string) => ({
+    label,
+    value: values[key] as string | undefined,
+    placeholder: inherited[key] as string | undefined,
+    state: sideState(key),
+    onChange: (v: string | undefined) => set(key, v as never),
+  });
 
   const screen = SCREENS.find((s) => s.bp === bp) ?? SCREENS[0]!;
   const setScreen = (next: (typeof SCREENS)[number]) =>
@@ -327,7 +433,7 @@ export function StylePanel() {
         )}
       </nav>
 
-      <fieldset className="of-segmented of-style__screens">
+      <fieldset className="of-segmented of-segmented--small of-style__screens">
         <legend className="of-sr-only">Écran</legend>
         {SCREENS.map((s) => (
           <button
@@ -337,19 +443,23 @@ export function StylePanel() {
             className={s.bp === bp ? "is-active" : ""}
             onClick={() => setScreen(s)}
           >
+            <Icon name={s.icon} size={13} />
             {s.label}
           </button>
         ))}
       </fieldset>
       <p className="of-style__note">
-        {bp === "base"
-          ? "Réglages pour tous les écrans : la tablette et le mobile peuvent les modifier."
-          : `Réglages propres à l'écran ${screen.label.toLowerCase()} (les autres écrans ne changent pas).`}
-        {isList && " Ce style s'applique à tous les éléments de la liste."}
+        <Icon name="info" size={13} className="of-icon--first-line" />
+        <span>
+          {bp === "base"
+            ? "Pour tous les écrans : la tablette et le mobile peuvent changer ces réglages."
+            : `Seulement sur ${screen.label.toLowerCase()}. En orange : valeurs reprises d'un écran plus grand.`}
+          {isList && " S'applique à tous les éléments de la liste."}
+        </span>
       </p>
 
       {text && (
-        <Group title="Typographie">
+        <Group title="Typographie" active={active(GROUPS.typography)}>
           {row("fontFamily", "Police", (id, value) => (
             <SelectControl
               id={id}
@@ -371,27 +481,38 @@ export function StylePanel() {
               onChange={(v) => set("fontWeight", v)}
             />
           ))}
-          {row("lineHeight", "Interligne", (id, value) => (
-            <NumberControl
-              id={id}
-              value={value}
-              min={0.5}
-              max={4}
-              step={0.05}
-              placeholder={placeholder("lineHeight", "ex. 1,4")}
-              onChange={(v) => set("lineHeight", v)}
-            />
-          ))}
-          {length("letterSpacing", "Espacement des lettres", { units: ["em", "px"] })}
+          {row(
+            "lineHeight",
+            "Interligne",
+            (id, value) => (
+              <NumberControl
+                id={id}
+                value={value}
+                min={0.5}
+                max={4}
+                step={0.05}
+                placeholder={placeholder("lineHeight", "ex. 1,4")}
+                onChange={(v) => set("lineHeight", v)}
+              />
+            ),
+            undefined,
+            {
+              value: values.lineHeight ?? inherited.lineHeight ?? 1.4,
+              step: 0.05,
+              min: 0.5,
+              onChange: (n, done) => set("lineHeight", Math.min(4, Math.max(0.5, n)), done),
+            },
+          )}
+          {length("letterSpacing", "Lettres", { units: ["em", "px"] })}
           {row("textAlign", "Alignement", (_id, value) => (
             <SegmentedControl
               label="Alignement"
               value={value}
               options={[
-                ["left", "Gauche"],
-                ["center", "Centre"],
-                ["right", "Droite"],
-                ["justify", "Justifié"],
+                ["left", "Gauche", "alignLeft"],
+                ["center", "Centre", "alignCenter"],
+                ["right", "Droite", "alignRight"],
+                ["justify", "Justifié", "alignJustify"],
               ]}
               onChange={(v) => set("textAlign", v)}
             />
@@ -435,7 +556,10 @@ export function StylePanel() {
         </Group>
       )}
 
-      <Group title={target === "section" ? "Couleurs et fond" : "Couleurs"}>
+      <Group
+        title={target === "section" ? "Couleurs et fond" : "Couleurs"}
+        active={active(GROUPS.colors)}
+      >
         {text &&
           row(
             "color",
@@ -485,7 +609,7 @@ export function StylePanel() {
                   {(values.backgroundImage ?? inherited.backgroundImage) && (
                     <img src={values.backgroundImage ?? inherited.backgroundImage} alt="" />
                   )}
-                  <Button id={id} onClick={() => setLibrary(true)}>
+                  <Button id={id} size="sm" icon="image" onClick={() => setLibrary(true)}>
                     {values.backgroundImage ? "Remplacer le fond" : "Choisir une image"}
                   </Button>
                 </div>
@@ -555,37 +679,42 @@ export function StylePanel() {
         )}
       </Group>
 
-      <Group title="Espacements">
-        {target === "section" ? (
-          <>
-            {length("paddingTop", "Marge intérieure en haut")}
-            {length("paddingBottom", "Marge intérieure en bas")}
-            {length("paddingLeft", "Marge intérieure à gauche")}
-            {length("paddingRight", "Marge intérieure à droite")}
-          </>
-        ) : (
-          <>
-            {length("marginTop", "Espace au-dessus", { keywords: ["auto"] })}
-            {length("marginBottom", "Espace au-dessous", { keywords: ["auto"] })}
-            {target === "text" && (
-              <>
-                {length("paddingTop", "Marge intérieure en haut")}
-                {length("paddingBottom", "Marge intérieure en bas")}
-                {length("paddingLeft", "Marge intérieure à gauche")}
-                {length("paddingRight", "Marge intérieure à droite")}
-              </>
-            )}
-          </>
+      <Group title="Espacements" active={active(GROUPS.spacing)}>
+        {target !== "section" && (
+          <BoxControl
+            label="Espace autour"
+            center="Espace autour"
+            keywords={["auto"]}
+            sides={{
+              top: side("marginTop", "Espace au-dessus"),
+              bottom: side("marginBottom", "Espace au-dessous"),
+            }}
+          />
         )}
+        {target !== "media" && (
+          <BoxControl
+            label="Marges intérieures"
+            center={target === "section" ? "Section" : "Marges intérieures"}
+            sides={{
+              top: side("paddingTop", "Marge intérieure en haut"),
+              right: side("paddingRight", "Marge intérieure à droite"),
+              bottom: side("paddingBottom", "Marge intérieure en bas"),
+              left: side("paddingLeft", "Marge intérieure à gauche"),
+            }}
+          />
+        )}
+        <p className="of-style-row__hint of-subtle" style={{ fontSize: 11.5 }}>
+          En pixels (24), ou avec une unité (2rem). ↑ ↓ pour ajuster, ⇧ pour aller plus vite.
+        </p>
       </Group>
 
-      <Group title="Dimensions">
+      <Group title="Dimensions" active={active(GROUPS.size)}>
         {length("maxWidth", "Largeur maximale", { keywords: ["none"], units: ["px", "%", "rem"] })}
         {target === "section" &&
           length("minHeight", "Hauteur minimale", { units: ["px", "vh", "rem"] })}
       </Group>
 
-      <Group title="Bordure et effets">
+      <Group title="Bordure et effets" active={active(GROUPS.effects)}>
         {length("borderWidth", "Épaisseur de bordure", { units: ["px"] })}
         {row("borderColor", "Couleur de bordure", (id, value) => (
           <ColorControl
@@ -632,7 +761,7 @@ export function StylePanel() {
           ))}
       </Group>
 
-      <Group title="Visibilité">
+      <Group title="Visibilité" active={active(GROUPS.visibility)}>
         {row("hidden", `Masquer sur l'écran ${screen.label.toLowerCase()}`, (id, value) => (
           <input
             id={id}
@@ -650,13 +779,16 @@ export function StylePanel() {
       <div className="of-style__footer">
         <Button
           variant="ghost"
+          size="sm"
+          icon="reset"
           disabled={Object.keys(values).length === 0}
           onClick={() => commit({ ...responsive, [bp]: {} })}
         >
           Réinitialiser cet écran
         </Button>
         <Button
-          variant="ghost"
+          variant="danger-ghost"
+          size="sm"
           disabled={Object.keys(responsive).length === 0}
           onClick={() => commit({})}
         >

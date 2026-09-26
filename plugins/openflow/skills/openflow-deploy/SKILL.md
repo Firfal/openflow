@@ -81,9 +81,12 @@ Rédige une fiche courte, en français et sans jargon :
 - l'adresse de l'admin : `https://<domaine>/admin/` ;
 - la connexion : il saisit son e-mail (`<email>`) et clique sur le lien reçu, ou utilise Google ;
 - modifier une page : Pages > Modifier, puis il clique sur un texte pour l'éditer ; tout est enregistré automatiquement ;
-- mettre en ligne : bouton « Publier » (2 à 4 minutes) ;
+- changer une image : un clic sur l'image dans la page ; le style (couleurs, tailles, espacements) : onglet
+  « Style » à droite, écran par écran (Ordinateur, Tablette, Mobile) ;
+- s'y retrouver : le panneau « Aide » de l'éditeur, et la recherche rapide ⌘K (Ctrl K sous Windows) ;
+- mettre en ligne : bouton « Publier » (2 à 4 minutes), qui indique le nombre de modifications en attente ;
 - revenir en arrière : Historique > « Remettre en ligne » ;
-- les réglages communs (menu, coordonnées, couleur) : onglet Réglages.
+- les réglages communs (menu, coordonnées, couleur) : Réglages > Contenu commun, puis Thème.
 
 ## Évolutions ultérieures du code
 
