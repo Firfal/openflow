@@ -418,7 +418,7 @@ export function prepareEditorConfig(config: OpenFlowConfig): Config {
   );
   const userRoot = config.root;
   const root =
-    userRoot || config.layout
+    userRoot || config.layout || config.theme
       ? {
           ...userRoot,
           fields: userRoot?.fields ? mapFields(userRoot.fields) : undefined,

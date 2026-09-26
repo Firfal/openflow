@@ -1,5 +1,7 @@
+import { buildPageCss, buildThemeCss } from "@openflow/core";
+import { createUsePuck } from "@puckeditor/core";
 import type { ReactNode } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAdmin } from "./context.js";
 import { type Focus, useFocus } from "./focus.js";
 
@@ -150,9 +152,23 @@ function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
 
 type FrameProps = { children: ReactNode; document?: Document };
 
+const usePuck = createUsePuck();
+
+/** Free style of the page (`_style` of each section), rendered as on the published site. */
+function PageStyles() {
+  const data = usePuck((s) => s.appState.data);
+  const css = useMemo(() => buildPageCss(data, { editing: true }), [data]);
+  return css ? <style data-openflow-style="">{css}</style> : null;
+}
+
 export function CanvasFrame({ children, document }: FrameProps) {
   useCanvasBehaviour(document, true);
-  return <>{children}</>;
+  return (
+    <>
+      <PageStyles />
+      {children}
+    </>
+  );
 }
 
 /** Settings preview: the header and footer are what is being edited, so no notice. */
@@ -161,17 +177,29 @@ export function SettingsCanvasFrame({ children, document }: FrameProps) {
   return <>{children}</>;
 }
 
+/** Theme tokens chosen by the owner (`:root` variables), as on the published site. */
+export function ThemeStyles({ theme }: { theme: Record<string, string> | undefined }) {
+  const css = buildThemeCss(theme);
+  return css ? <style data-openflow-theme="">{css}</style> : null;
+}
+
 /** The site layout (header, footer, theme) around the page being edited. */
 export function EditorFrame({ children }: { children: ReactNode }) {
   const { config, settings } = useAdmin();
   const Layout = config.layout;
-  if (!Layout) return <>{children}</>;
   const values = { ...(config.settings?.defaultProps ?? {}), ...(settings?.values ?? {}) };
   const site = { ...config.site, ...(settings?.site ?? {}) };
   return (
-    <Layout settings={values} site={site} editing>
-      {children}
-    </Layout>
+    <>
+      <ThemeStyles theme={settings?.theme} />
+      {Layout ? (
+        <Layout settings={values} site={site} editing>
+          {children}
+        </Layout>
+      ) : (
+        children
+      )}
+    </>
   );
 }
 

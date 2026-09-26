@@ -18,8 +18,10 @@
   --site-accent: #334155;
 }
 
+/* Réglages > Thème (`theme` in openflow.config.tsx): a custom colour (--color-brand) and font
+   (--font-body) chosen by the owner replace the preset above and the system font. */
 @theme inline {
-  --color-accent: var(--site-accent);
+  --color-accent: var(--color-brand, var(--site-accent));
 }
 
 html {
@@ -27,6 +29,6 @@ html {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
   -webkit-font-smoothing: antialiased;
 }

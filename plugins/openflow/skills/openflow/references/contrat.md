@@ -9,7 +9,8 @@ Le propriétaire du site **n'est pas développeur**. Il modifie son site depuis 
 - il clique sur un texte de la page pour le réécrire ;
 - il clique sur une image ou une vidéo de la page pour la remplacer depuis la médiathèque ;
 - il ajoute, déplace, duplique ou supprime des **sections** ;
-- il édite les réglages communs (menu, pied de page, couleur) ;
+- il change le style d'une section ou d'un élément, écran par écran (onglet « Style ») ;
+- il édite les réglages communs (menu, pied de page) et le thème (couleurs et polices) ;
 - il clique sur « Publier » : le site est reconstruit en HTML statique sur Firebase Hosting.
 
 Le développeur (ou l'agent) écrit **le design et les sections**. Le propriétaire gère **le contenu**. La
@@ -131,6 +132,35 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
   ajoute à la médiathèque (« Fichiers du site ») : le propriétaire peut les remplacer, puis y revenir.
 - **Vidéo.** `videoField()` et `videoProps()` : vidéo muette, en boucle, avec un bouton pause, et sans lecture
   automatique si le visiteur préfère réduire les animations. Voir `champs.md`.
+
+## Style libre et thème
+
+Le propriétaire peut modifier le style de chaque section et de chaque élément (onglet « Style » de
+l'éditeur). OpenFlow stocke ces réglages dans la prop réservée `_style` et génère le CSS lui-même : tu
+n'as rien à coder, mais la section doit s'y prêter.
+
+- **Une seule racine par section** (OF-110) : le style « Section » s'applique à cet élément.
+- **Un texte seul dans son élément** : `<h2>{title}</h2>` plutôt que `<h2>{title} {suffix}</h2>`. Le style
+  d'un texte (alignement, marges, fond) s'applique à l'élément qui le contient.
+- **Pas de `!important`** dans les classes des sections : il empêcherait le propriétaire de changer le style.
+- **Aucun champ dont le nom commence par `_`** (OF-203) : ces noms sont réservés à OpenFlow.
+- Pour un site où seul le contenu doit changer : `editor: { styles: "off" }` dans `defineConfig`.
+
+Le **thème** expose au propriétaire les variables de `app/globals.css` (Réglages > Thème) :
+
+```tsx
+theme: {
+  colors: [{ token: "ink", label: "Encre (fonds sombres, texte)", value: "#0f1e33" }], // --color-ink
+  fonts: [{ token: "display", label: "Police des titres", value: "var(--font-bricolage)" }], // --font-display
+  fontOptions: [{ label: "Bricolage Grotesque", value: "var(--font-bricolage)" }],
+},
+```
+
+- Chaque jeton correspond à une variable déclarée dans `@theme` (pas `@theme inline`, dont les valeurs sont
+  recopiées dans les classes et ne peuvent plus changer), et `value` reprend sa valeur actuelle.
+- Les polices proposées (`fontOptions`) sont des variables des polices déjà chargées par le site. Un jeton de
+  police ne doit pas pointer vers lui-même : déclare les polices sous leur nom
+  (`--font-bricolage: "Bricolage Grotesque", …`) et les rôles à part (`--font-display: var(--font-bricolage)`).
 
 ## Contenu de départ (seed)
 

@@ -154,6 +154,69 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Terminer" }).click();
   });
 
+  it("styles the title for mobile only, from the Style tab", async () => {
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    const home = page.locator("li", {
+      has: page.getByRole("button", { name: "Accueil", exact: true }),
+    });
+    await home.getByRole("button", { name: "Modifier" }).click();
+    const frame = page.frameLocator("#preview-frame");
+    const title = frame.locator('h1 [data-of="title"]');
+    await title.waitFor({ timeout: 120_000 });
+    const box = (await title.boundingBox())!;
+    await page.mouse.click(box.x + 10, box.y + box.height / 2);
+    // Puck renders the fields panel twice (desktop and mobile layouts): take the visible one.
+    const panel = page.locator(".of-panel:visible");
+    await panel.getByRole("tab", { name: "Style" }).click();
+    await panel.locator(".of-style__crumbs .is-current").getByText("Titre").waitFor();
+    await panel.getByRole("button", { name: "Mobile", exact: true }).click();
+    await panel.getByLabel("Couleur du texte").fill("#ff0000");
+    const color = () => title.evaluate((el) => getComputedStyle(el).color);
+    await expect.poll(color, { timeout: 10_000 }).toBe("rgb(255, 0, 0)");
+    await page.screenshot({ path: path.join(SCREENSHOTS, "02b-style.png") });
+    await panel.getByRole("button", { name: "Ordinateur", exact: true }).click();
+    await expect.poll(color, { timeout: 10_000 }).not.toBe("rgb(255, 0, 0)");
+    const saved = await waitFor(
+      async () => {
+        const data = (await db.doc("of_pages/accueil").get()).data();
+        return data?.data?.content?.[0]?.props?._style?.fields?.title?.mobile?.color;
+      },
+      30_000,
+      "style enregistré dans Firestore",
+    );
+    expect(saved).toBe("#ff0000");
+    await page.getByRole("button", { name: "Terminer" }).click();
+  });
+
+  it("changes a theme colour in Réglages > Thème, with a live preview", async () => {
+    await page.getByRole("button", { name: "Réglages" }).click();
+    await page.getByRole("button", { name: "Thème", exact: true }).click();
+    // Puck renders the fields panel twice (desktop and mobile layouts): take the visible one.
+    const colour = page.getByLabel(/Couleur principale personnalisée/).filter({ visible: true });
+    await colour.fill("#123456");
+    const preview = page.frameLocator("#preview-frame");
+    await expect
+      .poll(
+        () =>
+          preview
+            .locator("html")
+            .evaluate((el) => getComputedStyle(el).getPropertyValue("--color-brand").trim()),
+        { timeout: 30_000 },
+      )
+      .toBe("#123456");
+    const theme = await waitFor(
+      async () => {
+        const value = (await db.doc("of_site/settings").get()).data()?.theme?.["color-brand"];
+        return value === "#123456" ? value : undefined;
+      },
+      30_000,
+      "thème enregistré",
+    );
+    expect(theme).toBe("#123456");
+    await page.screenshot({ path: path.join(SCREENSHOTS, "04-theme.png") });
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -176,6 +239,10 @@ describe("admin OpenFlow (émulateurs)", () => {
     // Published sections carry the same element markers as the editor (click-to-select, styles).
     expect(html).toMatch(/data-of-s="[^"]+"/);
     expect(html).toMatch(/data-of="title"/);
+    // Free style (mobile only) and theme tokens, as in the editor.
+    expect(html).toContain('@media (max-width:767.98px){[data-of-s="');
+    expect(html).toContain("color:#ff0000");
+    expect(html).toContain(":root{--color-brand:#123456}");
     expect(existsSync(path.join(site, "out", "admin", "index.html"))).toBe(true);
     await page
       .getByText("Le site est en ligne avec vos dernières modifications.")

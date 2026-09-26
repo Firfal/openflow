@@ -29,4 +29,15 @@ export default defineConfig({
     defaultProps: settingsDefaults,
   },
   layout: SiteLayout,
+  // Réglages > Thème: variables of app/globals.css the owner can set.
+  theme: {
+    colors: [
+      {
+        token: "brand",
+        label: "Couleur principale personnalisée (remplace la couleur choisie dans Contenu commun)",
+        value: "#b45309",
+      },
+    ],
+    fonts: [{ token: "body", label: "Police du site", value: "system-ui" }],
+  },
 });

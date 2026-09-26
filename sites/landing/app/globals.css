@@ -2,9 +2,14 @@
 
 /* Design tokens: see DESIGN.md ("l'atelier d'édition"). */
 @theme {
-  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
+  /* Embedded fonts, and the roles using them (the owner can swap them in Réglages > Thème:
+     `theme` in openflow.config.tsx). */
+  --font-bricolage: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-plex: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-jetbrains: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, monospace;
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-plex);
+  --font-mono: var(--font-jetbrains);
 
   --color-ink: #0f1e33;
   --color-ink-2: #1a2d4a;

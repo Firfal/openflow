@@ -30,15 +30,19 @@ n'offrent pas d'édition visuelle simple.
 | Acteur | Ce qu'il fait | Ce qu'OpenFlow lui apporte |
 |---|---|---|
 | Agence ou freelance, avec Claude Code | Crée, livre et fait évoluer les sites | Un template, des skills, des hooks et une norme : le site est éditable du premier coup |
-| Propriétaire du site | Modifie ses contenus et publie | Un admin simple, en français, sans jargon et sans risque de casser le design |
+| Propriétaire du site | Modifie ses contenus, ajuste le style et publie | Un admin simple, en français, sans jargon, qui montre le site tel qu'il sera publié |
 | Visiteur | Consulte le site | Un site statique rapide et accessible |
 
 ## Principes
 
 - **Séparer le code du contenu.** Le code (design, sections) appartient à l'agence ; le contenu
   appartient au propriétaire. Un redéploiement du code n'écrase jamais le contenu.
-- **Permettre de modifier sans risque de casser le design.** Le propriétaire compose avec des sections
-  conçues pour lui ; il ne peut pas casser le design.
+- **Laisser le propriétaire maître de son site, avec des garde-fous.** Il compose avec des sections
+  conçues pour lui et peut aussi changer le style de chaque section et de chaque élément (couleur,
+  police, taille, espacements, fond, visibilité par écran), comme dans Webflow. Il peut donc s'écarter
+  du design d'origine : c'est un choix assumé. Les garde-fous restent : valeurs en liste blanche (aucun
+  CSS libre), contraste signalé, annulation, réinitialisation par élément, et le réglage
+  `editor.styles: "off"` pour un site où seul le contenu doit changer.
 - **Rester statique par défaut.** Aucun serveur à maintenir ; chaque publication est une version
   reproductible (code + snapshot), et le retour arrière est instantané.
 - **Contrôler de façon déterministe.** Les contrôles de conformité sont faits par un outil, pas par

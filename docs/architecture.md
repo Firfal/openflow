@@ -32,6 +32,14 @@ Projet Firebase du client (plan Blaze)
   avec `dynamicParams = false`). Chaque page est rendue par `<Render config data>` de Puck, après
   application des `defaultProps`.
 - Les réglages globaux alimentent `app/(site)/layout.tsx` (en-tête, pied de page, thème).
+- Chaque section est entourée d'un `<div data-of-s="id" style="display:contents">`, et chaque texte, image
+  ou vidéo éditable porte `data-of="chemin"` (`prepareRenderConfig`). L'éditeur utilise les mêmes marqueurs.
+- **Style libre** : la prop réservée `_style` de chaque section est transformée en CSS par `buildPageCss`
+  (`packages/core/src/style.ts`), une fonction pure qui n'accepte que des valeurs en liste blanche. La feuille
+  est placée dans le `<head>` (balise `<style precedence>` de React 19). Hors couche CSS, elle l'emporte sur
+  les classes Tailwind sans `!important`. Écrans : tablette jusqu'à 1023 px, mobile jusqu'à 767 px.
+- **Thème** : les jetons choisis par le propriétaire (`config.theme`) sont émis dans `:root` par
+  `createOpenFlowLayout` (`buildThemeCss`) et remplacent les variables `--color-*` et `--font-*` du site.
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `OPENFLOW_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 
@@ -43,6 +51,10 @@ Projet Firebase du client (plan Blaze)
   connecte aux émulateurs.
 - L'éditeur est Puck, configuré avec **les mêmes sections** que le site public : ce qu'on voit est
   exactement ce qui sera publié. Les styles du site sont synchronisés dans l'iframe de l'éditeur.
+- Le propriétaire clique sur un texte, une image ou une vidéo de la page : le champ correspondant s'ouvre
+  en tête du panneau de droite (une image ou une vidéo ouvre directement la médiathèque). L'onglet « Style »
+  modifie le style de la section ou de l'élément pour l'écran affiché (Ordinateur, Tablette, Mobile).
+  La feuille de style est recalculée à chaque modification et injectée dans l'iframe de l'éditeur.
 - Chaque modification est sauvegardée automatiquement dans `of_pages/{id}.data` (debounce de 800 ms). Toutes les
   sauvegardes en attente sont forcées avant une publication.
 

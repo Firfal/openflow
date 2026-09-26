@@ -32,49 +32,6 @@ export const FUNCTION_NAMES = {
   restoreRelease: "openflowRestoreRelease",
 } as const;
 
-/** Default Firebase project id used with the local emulators. */
-export const DEMO_PROJECT_ID = "demo-openflow";
-
-/** Maximum Firestore document size is 1 MiB; warn well before it. */
-export const PAGE_SIZE_WARNING_BYTES = 800 * 1024;
-
-export type PageStatus = "draft" | "published";
-
-export interface PageSeo {
-  title?: string;
-  description?: string;
-  ogImage?: string;
-  noindex?: boolean;
-}
-
-/** `of_pages/{pageId}` — the working copy (draft) of a page. */
-export interface PageDoc {
-  slug: string;
-  title: string;
-  status: PageStatus;
-  seo: PageSeo;
-  data: Data;
-  updatedAt: string;
-  updatedBy?: string;
-}
-
-/** Site-level settings edited in "Site et SEO". */
-export interface SiteSettings {
-  name: string;
-  lang: string;
-  url?: string;
-  description?: string;
-  ogImage?: string;
-}
-
-/** `of_site/settings`. */
-export interface SettingsDoc {
-  site: SiteSettings;
-  values: Record<string, unknown>;
-  updatedAt: string;
-  updatedBy?: string;
-}
-
 export type ReleaseStatus = "queued" | "building" | "live" | "failed" | "superseded";
 
 /** `of_releases/{releaseId}` — written by Cloud Functions only. */

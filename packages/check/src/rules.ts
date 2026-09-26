@@ -185,7 +185,7 @@ return img && <img {...img} className="rounded-xl" />;`,
     level: "render",
     status: "active",
     why: "`openflow.config.tsx` est partagé par le site public et l'admin ; une erreur empêche l'un ou l'autre de fonctionner.",
-    fix: "Utilisez `defineConfig({ site: { name, lang }, components, settings })`, des noms de sections en PascalCase, et des catégories qui référencent des sections existantes.",
+    fix: "Utilisez `defineConfig({ site: { name, lang }, components, settings })`, des noms de sections en PascalCase, et des catégories qui référencent des sections existantes. Les noms de champs commençant par `_` sont réservés à OpenFlow (`_style` porte le style libre).",
   },
   {
     id: "OF-301",

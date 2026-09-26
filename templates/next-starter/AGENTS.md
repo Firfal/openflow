@@ -35,6 +35,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
    Ajoute plutôt un nouveau champ avec une valeur par défaut.
 9. Styles : classes Tailwind et jetons du thème déclarés dans `app/globals.css` (`@theme`). N'écris pas de couleur
    en dur quand un jeton existe. Dans le modèle de départ, la couleur principale se règle dans Réglages (`bg-accent`, `text-accent`).
+   Le propriétaire peut changer les jetons déclarés dans `theme` (config) et le style de chaque section (onglet
+   « Style », prop réservée `_style`) : pas de `!important`, une seule racine par section, aucun champ nommé `_…`.
 10. Aucun accès à Firebase ou Firestore dans `openflow/` ni dans `app/(site)` : le contenu arrive par les props et par `getSettings()`.
 
 Pour une nouvelle section : crée `openflow/components/MaSection.tsx`, ajoute-la à `components` et à une

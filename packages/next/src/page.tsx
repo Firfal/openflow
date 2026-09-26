@@ -1,5 +1,6 @@
 import {
   applyDefaults,
+  buildPageCss,
   findPage,
   type OpenFlowConfig,
   paramsToSlug,
@@ -74,16 +75,25 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
   async function Page({ params }: { params: Params }) {
     const { snapshot, page } = await load(params);
     if (!page) notFound();
+    // Free style of the sections (`_style`), hoisted into <head> by React.
+    const css = buildPageCss(page.data);
     return (
-      <Render
-        config={renderConfig}
-        data={applyDefaults(page.data, config)}
-        metadata={{
-          site: snapshot.site,
-          settings: snapshot.settings,
-          page: { id: page.id, slug: page.slug, title: page.title },
-        }}
-      />
+      <>
+        {css && (
+          <style href={`openflow-page-${page.id}`} precedence="openflow">
+            {css}
+          </style>
+        )}
+        <Render
+          config={renderConfig}
+          data={applyDefaults(page.data, config)}
+          metadata={{
+            site: snapshot.site,
+            settings: snapshot.settings,
+            page: { id: page.id, slug: page.slug, title: page.title },
+          }}
+        />
+      </>
     );
   }
 

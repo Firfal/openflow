@@ -103,13 +103,21 @@ export function getOpenFlowFieldKind(field: Field | undefined): OpenFlowFieldKin
   return kind === "image" || kind === "link" || kind === "video" ? kind : undefined;
 }
 
-/** Props to spread on an `<a>` element for a {@link LinkValue}. */
+/** Link targets allowed on the site: web pages, e-mail, phone, and paths of the site. */
+const SAFE_HREF = /^(?:https?:|mailto:|tel:|[/#?])/i;
+
+/** True for an `href` OpenFlow renders (never `javascript:`, `data:`…). */
+export function isSafeHref(href: string): boolean {
+  return SAFE_HREF.test(href.trim());
+}
+
+/** Props to spread on an `<a>` element for a {@link LinkValue}. Unsafe targets become `#`. */
 export function linkProps(link: LinkValue | null | undefined): {
   href: string;
   target?: string;
   rel?: string;
 } {
-  if (!link?.href) return { href: "#" };
+  if (!link?.href || !isSafeHref(link.href)) return { href: "#" };
   return link.newTab
     ? { href: link.href, target: "_blank", rel: "noopener noreferrer" }
     : {

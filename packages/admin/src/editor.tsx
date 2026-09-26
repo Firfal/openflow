@@ -6,6 +6,7 @@ import { useAdmin } from "./context.js";
 import { getPage, type PageEntry, savePageData } from "./data.js";
 import {
   EDITOR_IFRAME,
+  EDITOR_VIEWPORTS,
   type EditorChrome,
   EditorChromeContext,
   PAGE_EDITOR_OVERRIDES,
@@ -105,6 +106,7 @@ export function EditorView({ pageId }: { pageId: string }) {
             headerPath={slugToPath(page.slug)}
             height="calc(100dvh - var(--of-topbar-height))"
             iframe={EDITOR_IFRAME}
+            viewports={EDITOR_VIEWPORTS}
             metadata={metadata}
             overrides={PAGE_EDITOR_OVERRIDES}
           />

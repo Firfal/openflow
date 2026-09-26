@@ -1,8 +1,10 @@
 import { getOpenFlowFieldKind, type ImageValue, type VideoValue } from "@openflow/core";
 import { AutoField, createUsePuck, type Fields, setDeep } from "@puckeditor/core";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { useAdmin } from "./context.js";
 import { ImageInput, VideoInput } from "./fields.js";
 import { getDeep, resolveField, useFocus } from "./focus.js";
+import { StylePanel } from "./style-panel.js";
 import { Button } from "./ui.js";
 
 const usePuck = createUsePuck();
@@ -91,12 +93,51 @@ function SelectedElement() {
   );
 }
 
-/** Right panel (Puck `overrides.fields`): the clicked element first, then all section fields. */
+/**
+ * Right panel (Puck `overrides.fields`). « Contenu »: the clicked element first, then all section
+ * fields. « Style »: free style of the section or element (unless `editor.styles` is `off`).
+ */
 export function FieldsPanel({ children }: { children: ReactNode }) {
+  const { config } = useAdmin();
+  const selected = usePuck((s) => s.selectedItem);
+  const [tab, setTab] = useState<"content" | "style">("content");
+  if (!selected || config.editor?.styles === "off") {
+    return (
+      <div className="of-panel">
+        <SelectedElement />
+        {children}
+      </div>
+    );
+  }
   return (
     <div className="of-panel">
-      <SelectedElement />
-      {children}
+      <div className="of-panel__tabs" role="tablist" aria-label="Panneau">
+        {(
+          [
+            ["content", "Contenu"],
+            ["style", "Style"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={tab === value}
+            className={tab === value ? "is-active" : ""}
+            onClick={() => setTab(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === "content" ? (
+        <>
+          <SelectedElement />
+          {children}
+        </>
+      ) : (
+        <StylePanel />
+      )}
     </div>
   );
 }

@@ -781,3 +781,269 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Right panel: Contenu / Style tabs */
+.of-panel__tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 12px 0;
+  padding: 3px;
+  border-radius: var(--of-radius);
+  background: var(--of-bg);
+  font-family: var(--of-font);
+}
+
+.of-panel__tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  color: var(--of-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.of-panel__tabs button.is-active {
+  background: var(--of-surface);
+  color: var(--of-text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+/* Style panel */
+.of-style,
+.of-style-empty {
+  padding: 12px;
+  font-family: var(--of-font);
+  font-size: 13px;
+  color: var(--of-text);
+}
+
+.of-style-empty {
+  color: var(--of-muted);
+}
+
+.of-style__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  color: var(--of-muted);
+}
+
+.of-style__crumbs button {
+  border: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--of-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.of-style__crumbs button:hover {
+  background: #edf1ff;
+}
+
+.of-style__crumbs .is-current {
+  color: var(--of-text);
+  font-weight: 600;
+}
+
+.of-style__screens {
+  display: flex;
+  width: 100%;
+}
+
+.of-style__note {
+  margin: 8px 0 12px;
+  color: var(--of-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.of-segmented--small button {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.of-style-group {
+  border-top: 1px solid var(--of-border);
+}
+
+.of-style-group > summary {
+  padding: 10px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.of-style-group__body {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.of-style-row {
+  display: grid;
+  grid-template-columns: 1fr 22px;
+  gap: 4px 6px;
+  align-items: center;
+}
+
+.of-style-row__label {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--of-muted);
+}
+
+.of-style-row.is-set .of-style-row__label {
+  color: var(--of-primary);
+}
+
+.of-style-row__control {
+  min-width: 0;
+}
+
+.of-style-row__reset {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--of-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+button.of-style-row__reset:hover {
+  background: var(--of-bg);
+  color: var(--of-danger);
+}
+
+.of-style-row__hint {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.of-style .of-input {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.of-length {
+  display: grid;
+  grid-template-columns: 1fr 76px;
+  gap: 6px;
+}
+
+.of-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.of-range input {
+  flex: 1;
+}
+
+.of-range__value {
+  min-width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-color {
+  display: grid;
+  gap: 6px;
+}
+
+.of-color__main {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 6px;
+}
+
+.of-color__main input[type="color"] {
+  width: 36px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--of-border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.of-color__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.of-swatch {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+  cursor: pointer;
+}
+
+.of-swatch.is-active {
+  outline: 2px solid var(--of-primary);
+  outline-offset: 2px;
+}
+
+.of-contrast {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.of-contrast.is-ok {
+  background: #ebfbee;
+  color: var(--of-success);
+}
+
+.of-contrast.is-low {
+  background: #fff4e6;
+  color: var(--of-warning);
+}
+
+.of-bg-image {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.of-bg-image img {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--of-border);
+}
+
+.of-style-check {
+  width: 16px;
+  height: 16px;
+}
+
+.of-style__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--of-border);
+}
+
+.of-theme-field {
+  font-family: var(--of-font);
+  font-size: 13px;
+}

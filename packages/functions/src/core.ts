@@ -119,7 +119,7 @@ export function isOwnerToken(token: TokenInfo | undefined, owners: string[]): bo
 // ---------------------------------------------------------------------------------------------
 // Snapshot
 
-const FALLBACK_SETTINGS: Pick<SettingsDoc, "site" | "values"> = {
+const FALLBACK_SETTINGS: Pick<SettingsDoc, "site" | "values" | "theme"> = {
   site: { name: "Site", lang: "fr" },
   values: {},
 };
@@ -133,7 +133,11 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
   const settings = (settingsSnap.data() as SettingsDoc | undefined) ?? FALLBACK_SETTINGS;
   return createSnapshot({
     releaseId,
-    settings: { site: settings.site ?? FALLBACK_SETTINGS.site, values: settings.values ?? {} },
+    settings: {
+      site: settings.site ?? FALLBACK_SETTINGS.site,
+      values: settings.values ?? {},
+      theme: settings.theme ?? {},
+    },
     pages: pagesSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as PageDoc) })),
   });
 }

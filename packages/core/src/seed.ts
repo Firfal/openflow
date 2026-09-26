@@ -17,6 +17,8 @@ export const seedPageSchema = z.object({
 export const seedSettingsSchema = z.object({
   site: siteSettingsSchema.partial().default({}),
   values: z.record(z.string(), z.unknown()).default({}),
+  /** Initial theme tokens (usually empty: the site's CSS holds the design values). */
+  theme: z.record(z.string(), z.string()).default({}),
 });
 
 export const PAGE_ID = /^[a-z0-9][a-z0-9-]*$/;
@@ -25,7 +27,7 @@ export type SeedPage = z.infer<typeof seedPageSchema> & { id: string; data: Data
 export type SeedSettings = z.infer<typeof seedSettingsSchema>;
 
 export interface Seed {
-  settings: Pick<SettingsDoc, "site" | "values">;
+  settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;
 }
 
@@ -43,6 +45,7 @@ export function resolveSeedSettings(
       ...stripUndefined(seed?.site ?? {}),
     },
     values: { ...(config.settings?.defaultProps ?? {}), ...(seed?.values ?? {}) },
+    theme: seed?.theme ?? {},
   };
 }
 

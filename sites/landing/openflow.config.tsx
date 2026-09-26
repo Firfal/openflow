@@ -44,4 +44,24 @@ export default defineConfig({
     defaultProps: settingsDefaults,
   },
   layout: SiteLayout,
+  // Tokens of app/globals.css the owner can change (Réglages > Thème).
+  theme: {
+    colors: [
+      { token: "ink", label: "Encre (fonds sombres, texte)", value: "#0f1e33" },
+      { token: "paper", label: "Papier (fond clair)", value: "#eef1f6" },
+      { token: "cobalt", label: "Cobalt (boutons, liens)", value: "#2f5bff" },
+      { token: "flame", label: "Flamme (accents)", value: "#ff7a1a" },
+      { token: "graphite", label: "Graphite (texte secondaire)", value: "#4a5568" },
+      { token: "line", label: "Filets et bordures", value: "#d5dce7" },
+    ],
+    fonts: [
+      { token: "display", label: "Police des titres", value: "var(--font-bricolage)" },
+      { token: "sans", label: "Police du texte", value: "var(--font-plex)" },
+    ],
+    fontOptions: [
+      { label: "Bricolage Grotesque", value: "var(--font-bricolage)" },
+      { label: "IBM Plex Sans", value: "var(--font-plex)" },
+      { label: "JetBrains Mono", value: "var(--font-jetbrains)" },
+    ],
+  },
 });

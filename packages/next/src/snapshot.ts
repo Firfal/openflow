@@ -48,3 +48,8 @@ export async function getSettings<T = Record<string, any>>(config: OpenFlowConfi
 export async function getSite(config: OpenFlowConfig): Promise<Snapshot["site"]> {
   return (await getSnapshot(config)).site;
 }
+
+/** Theme tokens chosen by the owner (`:root` variables, see `buildThemeCss`). */
+export async function getTheme(config: OpenFlowConfig): Promise<Record<string, string>> {
+  return (await getSnapshot(config)).theme ?? {};
+}

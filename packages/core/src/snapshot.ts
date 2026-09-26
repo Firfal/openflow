@@ -2,6 +2,7 @@ import type { Data } from "@puckeditor/core";
 import { z } from "zod";
 import type { PageDoc, SettingsDoc, SiteSettings } from "./model.js";
 import { isValidSlug, slugToPath } from "./slug.js";
+import { sanitizePageStyles, sanitizeTheme } from "./style.js";
 import { ensureIds, resolvePageLinks } from "./walk.js";
 
 export const SNAPSHOT_VERSION = 1;
@@ -53,6 +54,8 @@ export const snapshotSchema = z.object({
   createdAt: z.string(),
   site: siteSettingsSchema,
   settings: z.record(z.string(), z.unknown()).default({}),
+  /** Theme tokens (`:root` variables), e.g. `{ "color-ink": "#101820" }`. */
+  theme: z.record(z.string(), z.string()).default({}),
   pages: z.array(snapshotPageSchema),
 });
 
@@ -62,7 +65,7 @@ export type Snapshot = Omit<z.infer<typeof snapshotSchema>, "pages"> & { pages: 
 export interface SnapshotInput {
   releaseId: string;
   createdAt?: string;
-  settings: Pick<SettingsDoc, "site" | "values">;
+  settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;
 }
 
@@ -104,7 +107,8 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
       slug: page.slug,
       title: page.title,
       seo: page.seo ?? {},
-      data: resolvePageLinks(ensureIds(page.data), hrefByPageId),
+      // Styles are re-validated here: only whitelisted values reach the published CSS.
+      data: sanitizePageStyles(resolvePageLinks(ensureIds(page.data), hrefByPageId)),
     }))
     .sort((a, b) => a.slug.localeCompare(b.slug));
 
@@ -115,6 +119,7 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     createdAt: input.createdAt ?? new Date().toISOString(),
     site,
     settings: resolvePageLinks(input.settings.values ?? {}, hrefByPageId),
+    theme: sanitizeTheme(input.settings.theme),
     pages,
   };
 }

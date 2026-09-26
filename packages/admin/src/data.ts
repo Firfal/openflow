@@ -126,6 +126,15 @@ export async function saveSettings(
   );
 }
 
+/** Replaces the owner's theme tokens (keys absent from `theme` are removed). */
+export async function saveTheme(db: Firestore, theme: Record<string, string>, by?: string) {
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    { theme, updatedAt: now(), updatedBy: by ?? null },
+    { mergeFields: ["theme", "updatedAt", "updatedBy"] },
+  );
+}
+
 export function subscribeReleases(
   db: Firestore,
   onData: (releases: ReleaseEntry[]) => void,

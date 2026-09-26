@@ -1,4 +1,4 @@
-import { ActionBar, createUsePuck, type Overrides } from "@puckeditor/core";
+import { ActionBar, createUsePuck, type Overrides, type Viewports } from "@puckeditor/core";
 import { createContext, type ReactNode, useContext } from "react";
 import type { SaveState } from "./autosave.js";
 import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
@@ -220,3 +220,13 @@ export const SETTINGS_EDITOR_OVERRIDES: Partial<Overrides> = {
 };
 
 export const EDITOR_IFRAME = { enabled: true, waitForStyles: true } as const;
+
+/**
+ * Screens of the editor, matching the breakpoints of the free style (tablet ≤ 1023 px,
+ * mobile ≤ 767 px). No « full width » option: the canvas always shows a real screen size.
+ */
+export const EDITOR_VIEWPORTS: Viewports = [
+  { width: 1280, height: "auto", label: "Ordinateur", icon: "Monitor" },
+  { width: 768, height: "auto", label: "Tablette", icon: "Tablet" },
+  { width: 390, height: "auto", label: "Mobile", icon: "Smartphone" },
+];

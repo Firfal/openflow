@@ -1,6 +1,7 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
 import type { OpenFlowConfig } from "./config.js";
 import { getOpenFlowFieldKind } from "./fields.js";
+import { STYLE_KEY, sanitizeStyle } from "./style.js";
 import { walkComponents } from "./walk.js";
 
 export type Severity = "error" | "warning";
@@ -59,6 +60,17 @@ export function validateConfig(config: OpenFlowConfig, file = "openflow.config.t
     issues.push(
       ...checkDefaults(component.fields, component.defaultProps, `section ${name}`, file),
     );
+    for (const key of Object.keys(component.fields ?? {})) {
+      if (key.startsWith("_")) {
+        issues.push({
+          rule: "OF-203",
+          severity: "error",
+          message: `Champ « ${key} » (section ${name}) : les noms commençant par « _ » sont réservés à OpenFlow (\`${STYLE_KEY}\` porte le style libre).`,
+          file,
+          hint: "Renommez le champ sans « _ » initial.",
+        });
+      }
+    }
   }
   for (const [category, entry] of Object.entries(config.categories ?? {})) {
     for (const component of entry?.components ?? []) {
@@ -197,6 +209,13 @@ function checkValue(field: Field, value: unknown, path: string): string | undefi
   }
 }
 
+/** JSON with sorted keys, to compare values regardless of key order. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    isObject(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v,
+  );
+}
+
 /** Validates page data against the config (OF-201): known sections, props matching fields. */
 export function validatePageData(data: Data, config: OpenFlowConfig, file?: string): Issue[] {
   const issues: Issue[] = [];
@@ -215,6 +234,19 @@ export function validatePageData(data: Data, config: OpenFlowConfig, file?: stri
     const fields = (component.fields ?? {}) as Record<string, Field>;
     for (const [key, value] of Object.entries(item.props)) {
       if (key === "id") continue;
+      if (key === STYLE_KEY) {
+        // Free style set in the admin: invalid values are dropped at publication.
+        if (canonical(sanitizeStyle(value) ?? null) !== canonical(value ?? null)) {
+          issues.push({
+            rule: "OF-201",
+            severity: "warning",
+            message: `${path}.props.${STYLE_KEY} : style en partie invalide (les valeurs hors liste blanche seront ignorées).`,
+            file,
+            hint: "Utilisez les propriétés et formats de `styleValuesSchema` (couleurs #hex, longueurs en px/rem/%).",
+          });
+        }
+        continue;
+      }
       const field = fields[key];
       if (!field) {
         issues.push({
