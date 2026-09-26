@@ -38,6 +38,11 @@ export const siteSettingsSchema = z.object({
   url: z.string().url().optional(),
   description: z.string().optional(),
   ogImage: z.string().optional(),
+  gaMeasurementId: z
+    .string()
+    .regex(/^G-[A-Z0-9]{4,20}$/, "Identifiant Google Analytics : G-XXXXXXX")
+    .optional()
+    .catch(undefined),
 });
 
 export const snapshotPageSchema = z.object({
@@ -56,6 +61,8 @@ export const snapshotSchema = z.object({
   settings: z.record(z.string(), z.unknown()).default({}),
   /** Theme tokens (`:root` variables), e.g. `{ "color-ink": "#101820" }`. */
   theme: z.record(z.string(), z.string()).default({}),
+  /** Public keys of the site's integrations (reCAPTCHA), from `of_system/integrations`. */
+  integrations: z.object({ recaptchaSiteKey: z.string().optional() }).default({}),
   pages: z.array(snapshotPageSchema),
 });
 
@@ -65,6 +72,8 @@ export type Snapshot = Omit<z.infer<typeof snapshotSchema>, "pages"> & { pages: 
 export interface SnapshotInput {
   releaseId: string;
   createdAt?: string;
+  /** Public keys of the integrations (`of_system/integrations`). */
+  integrations?: { recaptchaSiteKey?: string };
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;
 }
@@ -112,7 +121,14 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     }))
     .sort((a, b) => a.slug.localeCompare(b.slug));
 
-  const site: SiteSettings = { ...input.settings.site, lang: input.settings.site.lang || "fr" };
+  const ga = input.settings.site.gaMeasurementId?.trim().toUpperCase();
+  const site: SiteSettings = {
+    ...input.settings.site,
+    lang: input.settings.site.lang || "fr",
+    gaMeasurementId: ga && /^G-[A-Z0-9]{4,20}$/.test(ga) ? ga : undefined,
+  };
+  if (!site.gaMeasurementId) delete site.gaMeasurementId;
+  const recaptchaSiteKey = input.integrations?.recaptchaSiteKey;
   return {
     version: SNAPSHOT_VERSION,
     releaseId: input.releaseId,
@@ -120,6 +136,8 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     site,
     settings: resolvePageLinks(input.settings.values ?? {}, hrefByPageId),
     theme: sanitizeTheme(input.settings.theme),
+    integrations:
+      recaptchaSiteKey && /^[\w-]{20,60}$/.test(recaptchaSiteKey) ? { recaptchaSiteKey } : {},
     pages,
   };
 }

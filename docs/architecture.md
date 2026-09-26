@@ -6,11 +6,18 @@
 Projet Firebase du client (plan Blaze)
 ├─ Firebase Hosting  → site statique (export Next.js) + /admin (page client-only)
 ├─ Firebase Auth     → propriétaire (claim personnalisé `of_owner`)
-├─ Firestore         → brouillons des pages, réglages, historique des publications
-├─ Cloud Storage     → médias, archives du code source, snapshots publiés
-├─ Cloud Functions   → openflowClaimOwner, openflowPublish, openflowOnBuildStatus, openflowRestoreRelease
-└─ Cloud Build       → reconstruit le site à chaque « Publier »
+├─ Firestore         → brouillons des pages, réglages, historique des publications, messages
+├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
+├─ Cloud Functions   → openflowClaimOwner, openflowPublish, openflowOnBuildStatus, openflowRestoreRelease,
+│                      openflowMcp, openflowAgentConsent, openflowOptimizeMedia, openflowSubmitForm
+├─ Cloud Build       → reconstruit le site à chaque « Publier »
+└─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
+                       reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
 ```
+
+`openflow setup` prépare tout cela sur un projet neuf (APIs, bases, compte de build et ses rôles,
+connexion par e-mail, sauvegardes, alertes, clé reCAPTCHA) ; `openflow deploy` le relance à chaque
+livraison, sans rien refaire de ce qui est déjà en place.
 
 ## Paquets du dépôt
 
@@ -18,10 +25,10 @@ Projet Firebase du client (plan Blaze)
 |---|---|
 | `@openflow/core` | `defineConfig`, champs `imageField` et `linkField`, modèle Firestore, format du snapshot (zod), validation, règles de sécurité de référence, documentation pour les agents |
 | `@openflow/check` | Norme OFS : registre des règles, analyse statique (Babel), rendu par sentinelles (Puck `Render` sous Node), contrôle du HTML, formats agent, JSON et SARIF, hooks Claude Code |
-| `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap et robots (`@openflow/next/data`), `<OpenFlowAdmin />` (`@openflow/next/admin`) |
+| `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap, robots et `llms.txt` (`@openflow/next/data`), `<OpenFlowAdmin />` (`@openflow/next/admin`), `<OpenFlowForm />` (`@openflow/next/forms`), mesure d'audience avec consentement |
 | `@openflow/admin` | Application d'administration React : connexion, pages, médias, éditeur Puck avec sauvegarde automatique (barre unique, rail, panneau de droite en une colonne : contenu de l'élément, puis style), réglages, publication, historique, recherche rapide ⌘K ; interface en français, claire ou sombre (voir [interface-admin.md](interface-admin.md)) |
-| `@openflow/functions` | Cloud Functions et logique de publication (snapshot, requête Cloud Build, API REST Hosting) |
-| `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `deploy` |
+| `@openflow/functions` | Cloud Functions : publication (snapshot, requête Cloud Build, API REST Hosting), serveur MCP et OAuth, optimisation des médias (sharp, ffmpeg), formulaires |
+| `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `setup`, `mail`, `deploy` |
 | `templates/next-starter` | Site Next.js de départ, conforme à 100 % à la norme OFS |
 | `plugins/openflow` | Plugin Claude Code : skills et hooks |
 
@@ -42,6 +49,16 @@ Projet Firebase du client (plan Blaze)
   les classes Tailwind sans `!important`. Écrans : tablette jusqu'à 1023 px, mobile jusqu'à 767 px.
 - **Thème** : les jetons choisis par le propriétaire (`config.theme`) sont émis dans `:root` par
   `createOpenFlowLayout` (`buildThemeCss`) et remplacent les variables `--color-*` et `--font-*` du site.
+- **Médias optimisés** : à l'import, `openflowOptimizeMedia` (déclencheur Storage) crée des copies WebP de
+  480 à 2560 px pour les images (qualité 82) et des MP4 H.264 1080p (CRF 22) et 720p (CRF 23) pour les vidéos,
+  avec une image d'aperçu. Ces réglages ont été mesurés sur une vraie vidéo 1080p : 31,5 Mo deviennent 8 Mo
+  pour un score VMAF de 93,6, le seuil où la copie ne se distingue plus de l'original. À la publication, le
+  snapshot ajoute ces copies aux valeurs d'image et de vidéo : `imageProps` produit un `srcset` et
+  `videoProps` des `<source>` (720p sur mobile). L'original reste la solution de repli.
+- **Formulaires** : `<OpenFlowForm>` envoie à `/forms/submit` (réécriture vers `openflowSubmitForm`), qui
+  vérifie l'envoi contre la page publiée (voir [securite.md](securite.md#formulaires)).
+- **Mesure d'audience** : si le propriétaire a saisi un identifiant Google Analytics, `createOpenFlowLayout`
+  ajoute `<OpenFlowAnalytics>`, qui ne charge rien avant l'accord du visiteur.
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `OPENFLOW_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 

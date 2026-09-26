@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { PUBLICATION_FAILED_LOG } from "@openflow/core";
+import { COLLECTIONS, DOCS, FORM_SUBMISSION_LOG, PUBLICATION_FAILED_LOG } from "@openflow/core";
 import { GoogleAuth } from "google-auth-library";
 import { defaultProject } from "../firebase.js";
 import { CliError, log } from "../util.js";
@@ -106,6 +106,8 @@ export interface SetupOptions {
   alertEmail?: string;
   /** Prints what would change, changes nothing. */
   dryRun?: boolean;
+  /** Extra domains of the site (custom domain), allowed for reCAPTCHA. */
+  domains?: string[];
 }
 
 type Client = Awaited<ReturnType<GoogleAuth["getClient"]>>;
@@ -411,42 +413,118 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
       "GET",
     );
     const displayName = "OpenFlow : publication en échec";
-    if (channel && policies.alertPolicies?.some((p) => p.displayName === displayName)) {
-      log.ok(`Alerte par e-mail si une publication échoue (${alertEmail})`);
+    const messageAlert = "OpenFlow : nouveau message";
+    const hasPolicy = (name: string) => policies.alertPolicies?.some((p) => p.displayName === name);
+    if (channel && hasPolicy(displayName) && hasPolicy(messageAlert)) {
+      log.ok(`Alertes par e-mail : publication en échec, nouveau message (${alertEmail})`);
     } else {
-      await act(`Alerte par e-mail si une publication échoue (${alertEmail})`, async () => {
-        if (!channel) {
-          channel = (
-            await send<{ name: string }>(client, `${monitoring}/notificationChannels`, "POST", {
-              type: "email",
-              displayName: `OpenFlow · ${alertEmail}`,
-              labels: { email_address: alertEmail },
-            })
-          ).name;
-        }
-        if (!policies.alertPolicies?.some((p) => p.displayName === displayName)) {
-          await send(client, `${monitoring}/alertPolicies`, "POST", {
-            displayName,
-            combiner: "OR",
-            documentation: {
-              mimeType: "text/markdown",
-              content:
-                "Une publication du site a échoué. Ouvrez l'admin, rubrique Historique, pour le détail et le journal du build ; le site en ligne n'a pas changé.",
-            },
-            conditions: [
-              {
-                displayName: "Publication en échec",
-                conditionMatchedLog: {
-                  filter: `jsonPayload.message="${PUBLICATION_FAILED_LOG}"`,
-                },
+      await act(
+        `Alertes par e-mail : publication en échec, nouveau message (${alertEmail})`,
+        async () => {
+          if (!channel) {
+            channel = (
+              await send<{ name: string }>(client, `${monitoring}/notificationChannels`, "POST", {
+                type: "email",
+                displayName: `OpenFlow · ${alertEmail}`,
+                labels: { email_address: alertEmail },
+              })
+            ).name;
+          }
+          if (!policies.alertPolicies?.some((p) => p.displayName === displayName)) {
+            await send(client, `${monitoring}/alertPolicies`, "POST", {
+              displayName,
+              combiner: "OR",
+              documentation: {
+                mimeType: "text/markdown",
+                content:
+                  "Une publication du site a échoué. Ouvrez l'admin, rubrique Historique, pour le détail et le journal du build ; le site en ligne n'a pas changé.",
               },
-            ],
-            alertStrategy: { notificationRateLimit: { period: "3600s" }, autoClose: "86400s" },
-            notificationChannels: [channel],
-          });
-        }
-      });
+              conditions: [
+                {
+                  displayName: "Publication en échec",
+                  conditionMatchedLog: {
+                    filter: `jsonPayload.message="${PUBLICATION_FAILED_LOG}"`,
+                  },
+                },
+              ],
+              alertStrategy: { notificationRateLimit: { period: "3600s" }, autoClose: "86400s" },
+              notificationChannels: [channel],
+            });
+          }
+          // A new message, when no e-mail service (openflow mail) sends it directly.
+          if (!hasPolicy(messageAlert)) {
+            await send(client, `${monitoring}/alertPolicies`, "POST", {
+              displayName: messageAlert,
+              combiner: "OR",
+              documentation: {
+                mimeType: "text/markdown",
+                content:
+                  "Un visiteur vous a écrit avec un formulaire du site. Lisez le message dans l'admin, rubrique Messages.",
+              },
+              conditions: [
+                {
+                  displayName: "Nouveau message",
+                  conditionMatchedLog: { filter: `jsonPayload.message="${FORM_SUBMISSION_LOG}"` },
+                },
+              ],
+              alertStrategy: { notificationRateLimit: { period: "300s" }, autoClose: "1800s" },
+              notificationChannels: [channel],
+            });
+          }
+        },
+      );
     }
+  }
+
+  // Forms: reCAPTCHA key (invisible, score), shared with the published site.
+  const domains = [
+    `${projectId}.web.app`,
+    `${projectId}.firebaseapp.com`,
+    ...(options.domains ?? []),
+  ];
+  const integrationsUrl = `${firestoreApi}/(default)/documents/${COLLECTIONS.system}/${DOCS.integrations}`;
+  const integrations = await get<{ fields?: { recaptchaSiteKey?: { stringValue?: string } } }>(
+    client,
+    integrationsUrl,
+  ).catch(() => undefined);
+  const recaptchaApi = `https://recaptchaenterprise.googleapis.com/v1/projects/${projectId}/keys`;
+  const existingKey = integrations?.fields?.recaptchaSiteKey?.stringValue;
+  if (existingKey) log.ok("Protection anti-spam des formulaires (reCAPTCHA)");
+  else {
+    await act("Protection anti-spam des formulaires (reCAPTCHA, invisible)", async () => {
+      const keys = await send<{ keys?: Array<{ name: string; displayName?: string }> }>(
+        client,
+        recaptchaApi,
+        "GET",
+      );
+      let name = keys.keys?.find((k) => k.displayName === "OpenFlow")?.name;
+      if (!name) {
+        name = (
+          await send<{ name: string }>(client, recaptchaApi, "POST", {
+            displayName: "OpenFlow",
+            webSettings: {
+              allowedDomains: domains,
+              integrationType: "SCORE",
+              allowAmpTraffic: false,
+            },
+          })
+        ).name;
+      }
+      const siteKey = name.split("/").at(-1)!;
+      await send(client, `${integrationsUrl}?updateMask.fieldPaths=recaptchaSiteKey`, "PATCH", {
+        fields: { recaptchaSiteKey: { stringValue: siteKey } },
+      });
+    });
+  }
+
+  // Counters of the forms' flood limit: removed by Firestore once expired (TTL).
+  const ttlUrl = `${firestoreApi}/(default)/collectionGroups/${COLLECTIONS.rateLimits}/fields/expiresAt`;
+  const ttl = await get<{ ttlConfig?: { state?: string } }>(client, ttlUrl).catch(() => undefined);
+  if (ttl?.ttlConfig) log.ok("Nettoyage automatique des compteurs anti-spam");
+  else {
+    await act("Nettoyage automatique des compteurs anti-spam (TTL)", () =>
+      send(client, `${ttlUrl}?updateMask=ttlConfig`, "PATCH", { ttlConfig: {} }),
+    );
   }
 
   if (manual.length > 0) {

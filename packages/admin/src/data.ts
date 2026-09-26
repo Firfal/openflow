@@ -4,6 +4,7 @@ import {
   DOCS,
   estimateSize,
   type MediaDoc,
+  type MessageDoc,
   PAGE_SIZE_WARNING_BYTES,
   type PageDoc,
   type ReleaseDoc,
@@ -34,6 +35,7 @@ export type PageEntry = PageDoc & { id: string };
 export type ReleaseEntry = ReleaseDoc & { id: string };
 export type MediaEntry = MediaDoc & { id: string };
 export type AgentEntry = AgentTokenDoc & { id: string };
+export type MessageEntry = MessageDoc & { id: string };
 
 const now = () => new Date().toISOString();
 export const EMPTY_PAGE_DATA: Data = { root: { props: {} }, content: [] };
@@ -116,6 +118,10 @@ export function subscribeSettings(
   );
 }
 
+/**
+ * Replaces the given parts of the settings (`site`, `values`) as a whole, so that a field the
+ * owner emptied (the Analytics ID, the address) is removed instead of kept by a deep merge.
+ */
 export async function saveSettings(
   db: Firestore,
   patch: Partial<Pick<SettingsDoc, "site" | "values">>,
@@ -123,8 +129,8 @@ export async function saveSettings(
 ) {
   await setDoc(
     doc(db, COLLECTIONS.site, DOCS.settings),
-    { ...patch, updatedAt: now(), updatedBy: by },
-    { merge: true },
+    { ...patch, updatedAt: now(), updatedBy: by ?? null },
+    { mergeFields: [...Object.keys(patch), "updatedAt", "updatedBy"] },
   );
 }
 
@@ -158,6 +164,19 @@ export function subscribeAgents(
   return onSnapshot(
     query(collection(db, COLLECTIONS.agentTokens), orderBy("createdAt", "desc")),
     (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentTokenDoc) }))),
+    onError,
+  );
+}
+
+/** Messages of the site's forms, newest first (the inbox shows the last 300). */
+export function subscribeMessages(
+  db: Firestore,
+  onData: (messages: MessageEntry[]) => void,
+  onError: (e: Error) => void,
+) {
+  return onSnapshot(
+    query(collection(db, COLLECTIONS.messages), orderBy("createdAt", "desc"), limit(300)),
+    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as MessageDoc) }))),
     onError,
   );
 }

@@ -1,7 +1,7 @@
 import type { OpenFlowConfig, SettingsDoc } from "@openflow/core";
 import type { User } from "firebase/auth";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import type { AgentEntry, PageEntry, ReleaseEntry } from "./data.js";
+import type { AgentEntry, MessageEntry, PageEntry, ReleaseEntry } from "./data.js";
 import type { Services } from "./firebase.js";
 
 export type SettingsTab = "global" | "theme" | "site";
@@ -12,6 +12,7 @@ export type Route =
   | { view: "settings"; tab?: SettingsTab }
   | { view: "media" }
   | { view: "assistant" }
+  | { view: "messages" }
   /** Consent screen of an AI assistant connecting with OAuth (`openflowMcp` sends the owner here). */
   | { view: "connect"; request: string }
   | { view: "history" };
@@ -33,6 +34,8 @@ export interface AdminContextValue {
   releases: ReleaseEntry[];
   /** AI assistants allowed on the site (OAuth connections and keys). */
   agents: AgentEntry[];
+  /** Messages of the site's forms (newest first). */
+  messages: MessageEntry[];
   route: Route;
   navigate: (route: Route) => void;
   notify: (kind: Notice["kind"], text: string) => void;
@@ -73,7 +76,7 @@ function readRoute(): Route {
       ? { view, tab: tab as SettingsTab }
       : { view };
   }
-  if (view === "history" || view === "media") return { view };
+  if (view === "history" || view === "media" || view === "messages") return { view };
   return { view: "pages" };
 }
 

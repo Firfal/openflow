@@ -67,6 +67,16 @@ export {
   STORAGE_RULES_BLOCK,
   STORAGE_RULES_FILE,
 } from "./firebase-rules.js";
+export type { FormFieldDef, FormFieldType, MessageDoc, ValidatedSubmission } from "./forms.js";
+export {
+  FORM_FIELD_TYPES,
+  FORM_FIELDS_PROP,
+  FORM_LIMITS,
+  formFieldName,
+  formFieldOptions,
+  formFieldsField,
+  validateSubmission,
+} from "./forms.js";
 export { buildLlmsFullTxt, buildLlmsTxt, htmlToMarkdown, pageText } from "./llms.js";
 export {
   collectEditablePaths,
@@ -81,6 +91,7 @@ export {
 } from "./marks.js";
 export type {
   AgentTokenDoc,
+  IntegrationsDoc,
   MediaDoc,
   PageDoc,
   PageSeo,
@@ -96,6 +107,7 @@ export {
   COLLECTIONS,
   DEMO_PROJECT_ID,
   DOCS,
+  FORM_SUBMISSION_LOG,
   FUNCTION_NAMES,
   OWNER_CLAIM,
   PAGE_SIZE_WARNING_BYTES,

@@ -1,0 +1,54 @@
+{
+  "slug": "contact",
+  "title": "Contact",
+  "status": "published",
+  "seo": {
+    "title": "Contact",
+    "description": "Écrivez-nous : nous répondons sous 48 heures."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "ContactForm",
+        "props": {
+          "id": "contact-form",
+          "title": "Contactez-nous",
+          "intro": "Une question, un projet ? Écrivez-nous : nous répondons sous 48 heures.",
+          "formFields": [
+            {
+              "label": "Nom",
+              "type": "text",
+              "required": "yes",
+              "options": ""
+            },
+            {
+              "label": "E-mail",
+              "type": "email",
+              "required": "yes",
+              "options": ""
+            },
+            {
+              "label": "Téléphone",
+              "type": "tel",
+              "required": "no",
+              "options": ""
+            },
+            {
+              "label": "Message",
+              "type": "textarea",
+              "required": "yes",
+              "options": ""
+            }
+          ],
+          "submitLabel": "Envoyer le message",
+          "successMessage": "Merci ! Votre message est bien parti, nous vous répondons rapidement.",
+          "note": "Vos coordonnées servent uniquement à vous répondre. Elles ne sont ni cédées ni utilisées à d'autres fins.",
+          "tone": "muted"
+        }
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import { check, hook } from "./commands/check.js";
 import { create } from "./commands/create.js";
 import { deploy } from "./commands/deploy.js";
 import { dev } from "./commands/dev.js";
+import { mail } from "./commands/mail.js";
 import { seed, snapshot } from "./commands/seed.js";
 import { setup } from "./commands/setup.js";
 import { CliError, cliVersion, log, siteDir } from "./util.js";
@@ -110,7 +111,20 @@ program
     "reçoit l'alerte si une publication échoue (le propriétaire par défaut)",
   )
   .option("--dry-run", "affiche ce qui serait fait, sans rien modifier")
-  .action((options) => setup(siteDir(), options));
+  .option("--domain <domaine...>", "domaine(s) personnalisé(s) du site (anti-spam des formulaires)")
+  .action((options) => setup(siteDir(), { ...options, domains: options.domain }));
+
+program
+  .command("mail")
+  .description(
+    "envoie les messages des formulaires par e-mail au propriétaire (clé Resend, gardée dans Secret Manager)",
+  )
+  .option("--project <id>", "projet Firebase")
+  .option(
+    "--from <expéditeur>",
+    "expéditeur, ex. « Boulangerie <contact@boulangerie.fr> » (domaine vérifié dans Resend)",
+  )
+  .action((options) => mail(siteDir(), options));
 
 program
   .command("deploy")

@@ -73,7 +73,9 @@ contributors: `docs/interface-admin.md`.
 
 - E2E tests select by accessible names: « Pages », « Médias », « Réglages », « Thème », « Site et
   référencement », « Assistant IA » (sidebar, exact), « Connecter Claude ou ChatGPT », « Clé d'accès »,
-  « Autoriser », « Refuser », « Déconnecter », « Historique », « Modifier », « Retour aux pages », « Publier… »,
+  « Autoriser », « Refuser », « Déconnecter », « Messages » (sidebar, prefix: the unread count follows),
+  lists « Messages reçus » / « Messages indésirables », dialog « Message de … », « Répondre »,
+  « Identifiant Google Analytics », « Historique », « Modifier », « Retour aux pages », « Publier… »,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

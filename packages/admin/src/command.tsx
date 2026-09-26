@@ -154,6 +154,14 @@ export function CommandPalette() {
         run: go(() => navigate({ view: "settings", tab: "site" })),
       },
       {
+        id: "go:messages",
+        group: "Aller à",
+        label: "Messages reçus",
+        icon: "inbox",
+        keywords: "formulaire contact boîte de réception mail",
+        run: go(() => navigate({ view: "messages" })),
+      },
+      {
         id: "go:assistant",
         group: "Aller à",
         label: "Connecter une IA (Claude, ChatGPT…)",

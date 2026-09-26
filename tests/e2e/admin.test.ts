@@ -74,6 +74,9 @@ beforeAll(async () => {
   await waitForHttp(ADMIN, 180_000);
   browser = await chromium.launch();
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.on("console", (message) => {
+    if (message.type() === "error") console.warn(`[navigateur] ${message.text()}`);
+  });
 });
 
 afterAll(async () => {
@@ -277,6 +280,70 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Historique" }).click();
     await page.getByText("En ligne", { exact: true }).first().waitFor();
     await page.screenshot({ path: path.join(SCREENSHOTS, "03-history.png") });
+  });
+
+  it("receives a visitor's message from the contact form, in « Messages »", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "contact.json"))) return;
+    const visitor = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    try {
+      await visitor.goto(`http://localhost:${PORT}/contact/`);
+      await visitor.getByLabel(/^Nom/).fill("Camille Martin");
+      await visitor.getByLabel(/^E-mail/).fill("camille@exemple.fr");
+      await visitor.getByLabel(/^Message/).fill("Bonjour,\nPouvez-vous me rappeler ?");
+      // People take a few seconds to fill a form; posts faster than that are dropped as bots.
+      await visitor.waitForTimeout(3000);
+      await visitor.getByRole("button", { name: "Envoyer le message" }).click();
+      await visitor.getByRole("status").getByText(/Merci/).waitFor({ timeout: 60_000 });
+      await visitor.screenshot({ path: path.join(SCREENSHOTS, "05-contact.png") });
+    } finally {
+      await visitor.close();
+    }
+    const message = await waitFor(
+      async () => {
+        const snap = await db.collection("of_messages").get();
+        return snap.docs[0]?.data();
+      },
+      30_000,
+      "message enregistré",
+    );
+    expect(message.page).toBe("/contact/");
+    expect(message.email).toBe("camille@exemple.fr");
+    expect(message.fields).toContainEqual({ label: "Nom", value: "Camille Martin" });
+    expect(message.read).toBe(false);
+
+    // A bot (hidden field filled, sent at once) is told « ok » but nothing is recorded.
+    const bot = await fetch("http://127.0.0.1:5001/demo-openflow/europe-west1/openflowSubmitForm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        formId: "contact-form",
+        page: "/contact/",
+        values: { nom: "Bot", "e-mail": "bot@exemple.fr", message: "Spam" },
+        website: "https://spam.example",
+        elapsed: 100,
+      }),
+    });
+    expect(bot.status).toBe(200);
+
+    await page.getByRole("button", { name: /^Messages/ }).click();
+    const list = page.getByRole("list", { name: "Messages reçus" });
+    await list.getByText("Camille Martin").click();
+    const dialog = page.getByRole("dialog", { name: "Message de Camille Martin" });
+    await dialog.getByText("Pouvez-vous me rappeler ?").waitFor();
+    expect(await dialog.getByRole("link", { name: "Répondre" }).getAttribute("href")).toMatch(
+      /^mailto:camille@exemple\.fr/,
+    );
+    await page.screenshot({ path: path.join(SCREENSHOTS, "06-messages.png") });
+    await waitFor(
+      async () => {
+        const snap = await db.collection("of_messages").get();
+        return snap.docs[0]?.data().read === true ? true : undefined;
+      },
+      30_000,
+      "message lu",
+    );
+    expect((await db.collection("of_messages").get()).size).toBe(1);
+    await dialog.getByRole("button", { name: "Fermer" }).click();
   });
 
   it("edits global settings (site name)", async () => {

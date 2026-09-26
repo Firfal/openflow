@@ -19,6 +19,10 @@ export const COLLECTIONS = {
   agentRequests: "of_agent_requests",
   /** OAuth authorization codes, hashed, single use (5 min). Server only. */
   agentCodes: "of_agent_codes",
+  /** Messages sent with the site's forms (`openflowSubmitForm`), read in the admin. */
+  messages: "of_messages",
+  /** Submissions per visitor (hashed address), against floods. Server only. */
+  rateLimits: "of_rate_limits",
 } as const;
 
 /** Well-known document ids. */
@@ -27,6 +31,8 @@ export const DOCS = {
   source: "source",
   /** `of_system/schema`: serializable site schema (sections, fields, theme) for the MCP server. */
   schema: "schema",
+  /** `of_system/integrations`: public keys prepared by `openflow setup` (reCAPTCHA). */
+  integrations: "integrations",
 } as const;
 
 /** Cloud Storage prefixes used by OpenFlow. */
@@ -47,6 +53,8 @@ export const FUNCTION_NAMES = {
   createAgentToken: "openflowCreateAgentToken",
   /** The owner's answer on the consent screen of an AI assistant (OAuth). */
   agentConsent: "openflowAgentConsent",
+  /** Receives the forms of the published site (`/forms/submit`, Hosting rewrite). */
+  submitForm: "openflowSubmitForm",
   mcp: "openflowMcp",
 } as const;
 
@@ -55,6 +63,9 @@ export const FUNCTION_NAMES = {
  * (Cloud Monitoring) e-mails the owner when it appears.
  */
 export const PUBLICATION_FAILED_LOG = "OpenFlow publication failed";
+
+/** Message logged for a new form message when no e-mail service sends it (alert of `setup`). */
+export const FORM_SUBMISSION_LOG = "OpenFlow form submission";
 
 /** `updatedBy` of the changes made by an AI assistant (the editor reloads them live). */
 export const AGENT_AUTHOR = "Assistant IA";
@@ -117,6 +128,14 @@ export interface SiteSettings {
   url?: string;
   description?: string;
   ogImage?: string;
+  /** Google Analytics 4 (`G-XXXXXXX`): loaded only after the visitor's consent. */
+  gaMeasurementId?: string;
+}
+
+/** `of_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */
+export interface IntegrationsDoc {
+  /** reCAPTCHA Enterprise site key (score, invisible) protecting the forms. */
+  recaptchaSiteKey?: string;
 }
 
 /** `of_site/settings`. */

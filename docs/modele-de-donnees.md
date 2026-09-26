@@ -7,16 +7,19 @@ propres au site. Les types TypeScript se trouvent dans `packages/core/src/model.
 
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
-| `of_site/settings` | `site` (nom, langue, url, description, ogImage), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `openflowPublish` |
+| `of_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `openflowPublish` |
 | `of_pages/{pageId}` | `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `openflowPublish` |
 | `of_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
-| `of_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` | Admin, `openflow seed` | Admin (médiathèque) |
+| `of_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` ; `variants` (copies optimisées : `url`, `width`, `height`, `size`), `poster` (aperçu d'une vidéo), `optimization` (`status` : `pending`, `done`, `skipped` ou `failed`) | Admin, `openflow seed`, `openflowOptimizeMedia` (copies) | Admin (médiathèque), `openflowPublish` |
 | `of_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `openflowPublish` |
+| `of_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires, publiée dans le snapshot | `openflow setup` | `openflowPublish` |
 | `of_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème (`buildSiteSchema`) | `openflow seed` / `deploy` | `openflowMcp` |
 | `of_agent_tokens/{id}` | IA connectées et clés d'accès : `kind` (`key` ou `oauth`), `label`, `hash` (SHA-256 de la clé ou du jeton d'accès), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` ; en OAuth, `clientId`, `expiresAt`, `refreshHash`, `refreshExpiresAt`, `redirect` | `openflowCreateAgentToken`, `openflowMcp` | Admin (liste, déconnexion) |
 | `of_agent_clients/{clientId}` | Clients OAuth enregistrés par les IA : `name`, `redirectUris`, `authMethod`, `secretHash`, `createdAt`, `lastUsedAt` | `openflowMcp` | `openflowMcp` |
 | `of_agent_requests/{id}` | Demandes d'autorisation en attente du propriétaire (10 min) | `openflowMcp` | `openflowAgentConsent` |
 | `of_agent_codes/{hash}` | Codes d'autorisation, à usage unique (5 min) | `openflowAgentConsent` | `openflowMcp` |
+| `of_messages/{id}` | Messages des formulaires : `formId`, `page`, `formTitle`, `fields` (`[{ label, value }]` dans l'ordre du formulaire), `email` (pour répondre), `createdAt`, `read`, `spam`, `score` (reCAPTCHA) | `openflowSubmitForm` ; le propriétaire ne change que `read` et `spam` | Admin (Messages) |
+| `of_rate_limits/{empreinte}` | Envois récents d'un visiteur (`start`, `count`, `expiresAt`, effacé par TTL) | `openflowSubmitForm` | `openflowSubmitForm` |
 
 Taille : une page Puck pèse généralement quelques dizaines de Ko. L'admin avertit au-delà de 800 Ko et
 refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
@@ -24,14 +27,14 @@ refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
 ### Collections prévues
 
 - `of_collections/{collection}/items/{itemId}` : contenus structurés (phase 2).
-- `of_forms/{formId}/submissions/{id}` : réponses aux formulaires (phase 3).
 - `of_pages/{id}/locales/{locale}` : surcharges de traduction (phase 3).
 
 ## Cloud Storage
 
 | Chemin | Contenu | Accès |
 |---|---|---|
-| `openflow/media/*` | Images importées par le propriétaire | Lecture publique ; écriture réservée au propriétaire (PNG, JPEG, GIF, WebP, AVIF, MP4, WebM, PDF ; 15 Mo maximum ; SVG refusé) |
+| `openflow/media/*` | Images et vidéos importées par le propriétaire | Lecture publique ; écriture réservée au propriétaire (PNG, JPEG, GIF, WebP, AVIF, PDF jusqu'à 15 Mo ; MP4, WebM, MOV jusqu'à 100 Mo ; SVG refusé) |
+| `openflow/media/optimized/*` | Copies optimisées (WebP, MP4 1080p et 720p, aperçus) | Lecture publique ; écriture par `openflowOptimizeMedia` seulement |
 | `openflow/source/*.tgz` | Archives du code du site | Aucun accès client |
 | `openflow/snapshots/{releaseId}.json` | Contenu figé de chaque publication | Aucun accès client |
 
@@ -45,6 +48,7 @@ refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
   "site": { "name": "…", "lang": "fr", "url": "https://…" },
   "settings": { "navigation": [ … ], "footerText": "…" },
   "theme": { "color-ink": "#101820", "font-display": "var(--font-plex)" },
+  "integrations": { "recaptchaSiteKey": "6Lc…" },
   "pages": [
     { "id": "accueil", "slug": "", "title": "Accueil", "seo": { … }, "data": { "root": { "props": {} }, "content": [ … ] } }
   ]
@@ -59,7 +63,13 @@ refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
 
 ## Valeurs des champs OpenFlow
 
-- Image : `{ src, alt, width?, height? }` ou `null`.
+- Image : `{ src, alt, width?, height?, variants? }` ou `null`. `variants` est ajouté à la publication à
+  partir de la médiathèque ; `imageProps` en fait un `srcset`.
+- Vidéo : `{ src, poster?, description?, variants? }` ; `videoProps` en fait des `<source>` (720p sur mobile, 1080p
+  ailleurs).
+- Formulaire (`formFieldsField`) : `[{ label, type, required, options }]`, `type` parmi `text`, `email`,
+  `tel`, `textarea`, `select`, `checkbox` ; `required` vaut `yes` ou `no` ; `options` liste les choix d'un
+  `select`, un par ligne.
 - Lien : `{ kind: "page", pageId, href, newTab? }`, `{ kind: "url", href, newTab? }`, ou `null`.
 
 ## Style libre (`_style`)

@@ -39,6 +39,15 @@ service cloud.firestore {
     match /of_agent_codes/{codeId} {
       allow read, write: if false;
     }
+    match /of_messages/{messageId} {
+      allow read, delete: if ofIsOwner();
+      allow update: if ofIsOwner()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'spam']);
+      allow create: if false;
+    }
+    match /of_rate_limits/{visitorId} {
+      allow read, write: if false;
+    }
     // END openflow
 
     // Ajoutez ici les règles propres à votre site.

@@ -5,11 +5,14 @@ import {
   COLLECTIONS,
   FUNCTION_NAMES,
   handleMcpMessage,
+  type MessageDoc,
   OWNER_CLAIM,
   PUBLICATION_FAILED_LOG,
+  parseSnapshot,
   publicStorageUrl,
   type ReleaseDoc,
   type SiteSchema,
+  type Snapshot,
   SnapshotError,
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -21,6 +24,7 @@ import { type CallableRequest, HttpsError, onCall, onRequest } from "firebase-fu
 import { defineString } from "firebase-functions/params";
 import { onMessagePublished } from "firebase-functions/pubsub";
 import { onObjectFinalized } from "firebase-functions/storage";
+import { GoogleAuth } from "google-auth-library";
 import {
   adminBackend,
   agentConfig,
@@ -47,6 +51,7 @@ import {
   startLocalBuild,
   type TokenInfo,
 } from "./core.js";
+import { handleSubmission, MAX_BODY_BYTES, messageEmail, type SubmitBody } from "./forms.js";
 import { isOriginalMedia, mediaEntry, optimizeImage, optimizeVideo } from "./media.js";
 import {
   decideRequest,
@@ -672,6 +677,135 @@ export const openflowOptimizeMedia = onObjectFinalized(
       await ref.update({
         optimization: { status: "failed", at: at(), error: String(error).slice(0, 300) },
       });
+    }
+  },
+);
+
+const google = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/cloud-platform"] });
+
+let liveCache: { releaseId: string; snapshot: Snapshot } | undefined;
+
+/** The site as published: the snapshot of the live release (cached per release). */
+async function liveSnapshot(): Promise<Snapshot | undefined> {
+  const live = await getFirestore()
+    .collection(COLLECTIONS.releases)
+    .where("status", "==", "live")
+    .limit(1)
+    .get();
+  const release = live.docs[0];
+  const file = (release?.data() as ReleaseDoc | undefined)?.snapshotPath;
+  if (!release || !file) return undefined;
+  if (liveCache?.releaseId === release.id) return liveCache.snapshot;
+  const [data] = await getStorage().bucket().file(file).download();
+  liveCache = { releaseId: release.id, snapshot: parseSnapshot(JSON.parse(data.toString("utf8"))) };
+  return liveCache.snapshot;
+}
+
+/** reCAPTCHA Enterprise assessment of a form token (score 0 to 1). */
+async function recaptchaScore(token: string, siteKey: string): Promise<number | undefined> {
+  try {
+    const client = await google.getClient();
+    const response = await client.request<{
+      tokenProperties?: { valid?: boolean; action?: string };
+      riskAnalysis?: { score?: number };
+    }>({
+      url: `https://recaptchaenterprise.googleapis.com/v1/projects/${projectId()}/assessments`,
+      method: "POST",
+      data: { event: { token: token.slice(0, 4000), siteKey, expectedAction: "contact" } },
+    });
+    if (!response.data.tokenProperties?.valid) return 0;
+    return response.data.riskAnalysis?.score;
+  } catch (error) {
+    // Never lose a message because the check is unavailable.
+    logger.warn("OpenFlow reCAPTCHA assessment failed", { error: String(error) });
+    return undefined;
+  }
+}
+
+/** Secret Manager secret holding the Resend key (`openflow mail`), optional. */
+const MAIL_SECRET = "openflow-mail-key";
+let mailKeyCache: { at: number; key?: string } | undefined;
+
+async function mailKey(): Promise<string | undefined> {
+  if (mailKeyCache && Date.now() - mailKeyCache.at < 10 * 60 * 1000) return mailKeyCache.key;
+  let key: string | undefined;
+  try {
+    const client = await google.getClient();
+    const response = await client.request<{ payload?: { data?: string } }>({
+      url: `https://secretmanager.googleapis.com/v1/projects/${projectId()}/secrets/${MAIL_SECRET}/versions/latest:access`,
+    });
+    key =
+      Buffer.from(response.data.payload?.data ?? "", "base64")
+        .toString("utf8")
+        .trim() || undefined;
+  } catch {
+    key = undefined;
+  }
+  mailKeyCache = { at: Date.now(), key };
+  return key;
+}
+
+/** E-mails a new message to the owner with Resend, when `openflow mail` configured it. */
+async function notifyOwner(message: MessageDoc): Promise<boolean> {
+  const key = emulator ? undefined : await mailKey();
+  if (!key) return false;
+  const owners = parseOwners(ownerEmail.value());
+  if (owners.length === 0) return false;
+  const email = messageEmail(message, adminUrl(await loadSiteSchema(getFirestore())));
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.OPENFLOW_MAIL_FROM || "Site web <onboarding@resend.dev>",
+      to: owners,
+      ...(message.email ? { reply_to: message.email } : {}),
+      ...email,
+    }),
+  });
+  if (!response.ok) logger.warn("OpenFlow e-mail not sent", { status: response.status });
+  return response.ok;
+}
+
+/**
+ * Forms of the published site: `POST /forms/submit` (Hosting rewrite), checked against the
+ * published page and the spam defences, then recorded for the owner (admin « Messages »).
+ */
+export const openflowSubmitForm = onRequest(
+  { region, memory: "256MiB", maxInstances: 5, invoker: "public", cors: false },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Cache-Control", "no-store");
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+    if (req.method !== "POST") {
+      res.set("Allow", "POST, OPTIONS").status(405).json({ ok: false, error: "Utilisez POST." });
+      return;
+    }
+    if (JSON.stringify(req.body ?? {}).length > MAX_BODY_BYTES) {
+      res.status(413).json({ ok: false, error: "Message trop long." });
+      return;
+    }
+    const ip =
+      String(req.headers["x-forwarded-for"] ?? req.ip ?? "")
+        .split(",")[0]
+        ?.trim() ?? "";
+    try {
+      const result = await handleSubmission((req.body ?? {}) as SubmitBody, ip, {
+        db: getFirestore(),
+        liveSnapshot,
+        recaptchaScore: emulator ? undefined : recaptchaScore,
+        notify: notifyOwner,
+        log: (message, data) => logger.info(message, data),
+        salt: projectId(),
+      });
+      res.status(result.status).json(result.body);
+    } catch (error) {
+      logger.error("OpenFlow form failed", { error: String(error) });
+      res.status(500).json({ ok: false, error: "Envoi impossible pour le moment : réessayez." });
     }
   },
 );

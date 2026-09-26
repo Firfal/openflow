@@ -5,6 +5,7 @@ import {
   COLLECTIONS,
   createSnapshot,
   DOCS,
+  type IntegrationsDoc,
   type MediaDoc,
   OWNER_CLAIM,
   type PageDoc,
@@ -133,8 +134,12 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
     db.collection(COLLECTIONS.pages).get(),
   ]);
   const settings = (settingsSnap.data() as SettingsDoc | undefined) ?? FALLBACK_SETTINGS;
+  const integrations = (
+    await db.collection(COLLECTIONS.system).doc(DOCS.integrations).get()
+  ).data() as IntegrationsDoc | undefined;
   const snapshot = createSnapshot({
     releaseId,
+    integrations: integrations ?? {},
     settings: {
       site: settings.site ?? FALLBACK_SETTINGS.site,
       values: settings.values ?? {},

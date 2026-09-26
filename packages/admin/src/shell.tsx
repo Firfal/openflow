@@ -113,7 +113,8 @@ function NavItem({
 
 /** Left navigation of the dashboard (pages, media, settings, history) and the owner menu. */
 export function Sidebar() {
-  const { route, navigate, settings, config, agents } = useAdmin();
+  const { route, navigate, settings, config, agents, messages } = useAdmin();
+  const unread = messages.filter((m) => !m.read && !m.spam).length;
   const siteName = settings?.site?.name ?? config.site.name;
   const siteUrl = useSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -152,6 +153,19 @@ export function Sidebar() {
           current={route.view === "media"}
           onClick={() => navigate({ view: "media" })}
         />
+        <NavItem
+          icon="inbox"
+          label="Messages"
+          current={route.view === "messages"}
+          onClick={() => navigate({ view: "messages" })}
+        >
+          {unread > 0 && (
+            <span className="of-nav__count">
+              {unread}
+              <span className="of-sr-only"> non lu{unread > 1 ? "s" : ""}</span>
+            </span>
+          )}
+        </NavItem>
         <NavItem
           icon="sparkles"
           label="Assistant IA"

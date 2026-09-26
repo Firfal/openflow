@@ -41,6 +41,15 @@ match /of_agent_requests/{requestId} {
 }
 match /of_agent_codes/{codeId} {
   allow read, write: if false;
+}
+match /of_messages/{messageId} {
+  allow read, delete: if ofIsOwner();
+  allow update: if ofIsOwner()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'spam']);
+  allow create: if false;
+}
+match /of_rate_limits/{visitorId} {
+  allow read, write: if false;
 }`;
 
 export const STORAGE_RULES_BLOCK = `function ofIsOwner() {

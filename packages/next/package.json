@@ -13,6 +13,10 @@
       "types": "./dist/data.d.ts",
       "import": "./dist/data.js"
     },
+    "./forms": {
+      "types": "./dist/forms.d.ts",
+      "import": "./dist/forms.js"
+    },
     "./admin": {
       "types": "./dist/admin.d.ts",
       "import": "./dist/admin.js"

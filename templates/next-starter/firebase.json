@@ -19,6 +19,10 @@
       {
         "source": "/.well-known/oauth-authorization-server",
         "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+      },
+      {
+        "source": "/forms/submit",
+        "run": { "serviceId": "openflowsubmitform", "region": "europe-west1" }
       }
     ],
     "headers": [

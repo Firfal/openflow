@@ -12,10 +12,11 @@
       {
         "label": "À propos",
         "link": { "kind": "page", "pageId": "a-propos", "href": "/a-propos/" }
-      }
+      },
+      { "label": "Contact", "link": { "kind": "page", "pageId": "contact", "href": "/contact/" } }
     ],
     "headerCtaLabel": "Nous contacter",
-    "headerCtaLink": { "kind": "url", "href": "mailto:contact@exemple.fr" },
+    "headerCtaLink": { "kind": "page", "pageId": "contact", "href": "/contact/" },
     "footerText": "Un savoir-faire local au service de vos projets.",
     "contactEmail": "contact@exemple.fr",
     "contactPhone": "01 23 45 67 89",

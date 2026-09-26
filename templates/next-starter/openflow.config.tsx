@@ -1,5 +1,6 @@
 import { defineConfig } from "@openflow/core";
 import { CallToAction } from "./openflow/components/CallToAction";
+import { ContactForm } from "./openflow/components/ContactForm";
 import { Faq } from "./openflow/components/Faq";
 import { Features } from "./openflow/components/Features";
 import { Hero } from "./openflow/components/Hero";
@@ -21,9 +22,9 @@ export default defineConfig({
   categories: {
     header: { title: "En-têtes", components: ["Hero"] },
     content: { title: "Contenu", components: ["TextImage", "Features", "Testimonials", "Faq"] },
-    conversion: { title: "Conversion", components: ["CallToAction"] },
+    conversion: { title: "Conversion", components: ["CallToAction", "ContactForm"] },
   },
-  components: { Hero, TextImage, Features, Testimonials, Faq, CallToAction },
+  components: { Hero, TextImage, Features, Testimonials, Faq, CallToAction, ContactForm },
   settings: {
     fields: settingsFields,
     defaultProps: settingsDefaults,

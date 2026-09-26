@@ -52,13 +52,18 @@ function SiteForm() {
     site.url && !/^https?:\/\/[^\s]+$/.test(site.url)
       ? "Adresse complète attendue, ex. https://www.monsite.fr"
       : undefined;
+  const gaId = site.gaMeasurementId?.trim().toUpperCase() ?? "";
+  const gaError =
+    gaId && !/^G-[A-Z0-9]{4,20}$/.test(gaId)
+      ? "Identifiant de mesure attendu, ex. G-AB12CD34EF (Google Analytics 4)."
+      : undefined;
 
   const submit = async () => {
     setBusy(true);
     try {
       await saveSettings(
         services.db,
-        { site: { ...site, url: site.url || undefined } },
+        { site: { ...site, url: site.url || undefined, gaMeasurementId: gaId || undefined } },
         user.email ?? undefined,
       );
       notify("success", "Réglages du site enregistrés. Publiez pour les mettre en ligne.");
@@ -128,8 +133,29 @@ function SiteForm() {
           ))}
         </select>
       </FormField>
+      <div>
+        <h2>Mesure d'audience</h2>
+        <p className="of-card__lead">
+          Google Analytics compte les visites. Les visiteurs choisissent d'abord d'accepter ou de
+          refuser les cookies : rien n'est mesuré sans leur accord.
+        </p>
+      </div>
+      <FormField
+        label="Identifiant Google Analytics"
+        error={gaError}
+        hint="Dans Google Analytics : Administration > Flux de données > votre site, « ID de mesure ». Laissez vide pour ne rien mesurer."
+      >
+        <input
+          className="of-input of-mono"
+          value={site.gaMeasurementId ?? ""}
+          placeholder="G-XXXXXXXXXX"
+          spellCheck={false}
+          autoCapitalize="characters"
+          onChange={(e) => setSite({ ...site, gaMeasurementId: e.target.value })}
+        />
+      </FormField>
       <div className="of-row">
-        <Button variant="primary" type="submit" busy={busy} disabled={Boolean(urlError)}>
+        <Button variant="primary" type="submit" busy={busy} disabled={Boolean(urlError || gaError)}>
           Enregistrer
         </Button>
       </div>

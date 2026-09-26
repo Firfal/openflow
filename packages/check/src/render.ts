@@ -539,19 +539,33 @@ export async function checkRender(
       continue;
     }
     const found = collect(html);
+    const merge = (variantProps: Record<string, unknown>) => {
+      try {
+        const variant = collect(render(name, variantProps));
+        for (const token of variant.text) found.text.add(token);
+        for (const token of variant.attribute) found.attribute.add(token);
+        found.leftoverText.push(...variant.leftoverText);
+      } catch {
+        // crashes are reported by the edge-case renders below
+      }
+    };
     // A field may only show for one option of a choice (e.g. an image when « Visuel » is
-    // « Image »): render every option of radio/select fields and merge what is displayed.
+    // « Image »): render every option of radio/select fields and merge what is displayed. The
+    // same for the choices of list items (e.g. the choices of a form field of type « liste »).
     for (const [key, field] of fields) {
-      if (field.type !== "radio" && field.type !== "select") continue;
-      for (const option of field.options ?? []) {
-        if (option.value === props[key]) continue;
-        try {
-          const variant = collect(render(name, { ...props, [key]: option.value }));
-          for (const token of variant.text) found.text.add(token);
-          for (const token of variant.attribute) found.attribute.add(token);
-          found.leftoverText.push(...variant.leftoverText);
-        } catch {
-          // crashes are reported by the edge-case renders below
+      if (field.type === "radio" || field.type === "select") {
+        for (const option of field.options ?? []) {
+          if (option.value !== props[key]) merge({ ...props, [key]: option.value });
+        }
+      } else if (field.type === "array" && Array.isArray(props[key])) {
+        const item = (props[key] as Array<Record<string, unknown>>)[0] ?? {};
+        for (const [sub, subField] of fieldsOf(field.arrayFields)) {
+          if (subField.type !== "radio" && subField.type !== "select") continue;
+          for (const option of subField.options ?? []) {
+            if (option.value !== item[sub]) {
+              merge({ ...props, [key]: [{ ...item, [sub]: option.value }] });
+            }
+          }
         }
       }
     }

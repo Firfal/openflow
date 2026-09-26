@@ -32,8 +32,13 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
 - `of_agent_tokens` (IA connectées et clés d'accès) : lecture et suppression (déconnexion) par le
   propriétaire ; création uniquement par les fonctions ; seules les empreintes SHA-256 sont stockées.
 - `of_agent_clients`, `of_agent_requests`, `of_agent_codes` (connexion OAuth des IA) : aucun accès client.
+- `of_messages` (messages des formulaires) : lecture et suppression par le propriétaire, qui ne peut
+  modifier que `read` et `spam` ; création uniquement par la fonction `openflowSubmitForm`.
+- `of_rate_limits` (compteurs d'envois par visiteur) : aucun accès client.
 - Storage `openflow/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
-  en type et en taille ; les SVG sont refusés pour éviter l'injection de scripts.
+  en type et en taille (images 15 Mo, vidéos 100 Mo) ; les SVG sont refusés pour éviter l'injection de
+  scripts. `openflow/media/optimized` (copies optimisées) : lecture publique, écriture par les fonctions
+  seulement.
 - Storage `openflow/source` et `openflow/snapshots` : aucun accès client.
 
 Ces règles sont testées sur les émulateurs (`tests/e2e/rules.test.ts`) : un visiteur anonyme et un
@@ -67,8 +72,50 @@ Les deux se retirent d'un clic. Les outils n'écrivent que des brouillons et ass
 réécriture Hosting vers la fonction (`run`) ne demande aucun droit supplémentaire au compte de build.
 Détails : [assistant-ia.md](assistant-ia.md#sécurité).
 
+## Formulaires
+
+La fonction `openflowSubmitForm` (`POST /forms/submit`) n'accepte un message que s'il correspond à un
+formulaire **de la page publiée** : les champs inconnus sont refusés, les champs obligatoires, les formats
+(e-mail, téléphone), les choix et les longueurs sont vérifiés côté serveur. Contre le spam, dans l'ordre :
+
+1. **Champ piège** caché aux personnes et rempli par les robots, et **temps de saisie** minimal
+   (2,5 secondes). Un robot reçoit une réponse « envoyé » et rien n'est enregistré.
+2. **Limite par visiteur** : 5 envois par 10 minutes. L'adresse IP n'est pas stockée, seulement son
+   empreinte salée ; les compteurs s'effacent seuls (TTL Firestore).
+3. **reCAPTCHA Enterprise**, invisible, quand `openflow setup` a créé la clé du site : un score inférieur à
+   0,5 range le message dans « Indésirables », sans notification. Si Google ne répond pas, le message est
+   gardé.
+
+Le propriétaire est prévenu de chaque message par e-mail, via Resend, dont la clé est dans Secret Manager
+(`openflow mail`). Sans clé, c'est l'alerte Cloud Monitoring « OpenFlow : nouveau message » qui le prévient.
+
+## Sauvegardes et alertes
+
+`openflow setup` (lancé aussi par `openflow deploy`) programme :
+- une **sauvegarde quotidienne** de Firestore, gardée 7 jours (restauration :
+  `gcloud firestore databases restore`) ;
+- une alerte par e-mail au propriétaire quand une **publication échoue** ;
+- une alerte par e-mail à l'arrivée d'un **message** quand aucun e-mail n'est configuré.
+
+## Mesure d'audience
+
+Google Analytics 4 n'est chargé qu'après l'accord du visiteur, comme l'exige la CNIL. Aucun cookie n'est
+posé avant. « Refuser » est aussi visible qu'« Accepter », le choix est gardé 6 mois et le bouton
+« Cookies » permet d'en changer ; un refus efface les cookies `_ga`. Le mode Consent de Google est réglé
+pour ne jamais autoriser la publicité.
+
+## App Check
+
+App Check n'est pas activé, volontairement. Il sert à prouver qu'un appel vient bien de l'application, ce
+qui protège les ressources ouvertes à tous. Or :
+- toutes les fonctions de l'admin exigent déjà le compte du propriétaire (claim et e-mail) ;
+- la seule fonction ouverte au public, les formulaires, vérifie directement le jeton reCAPTCHA Enterprise
+  de chaque envoi, ce qui revient au même contrôle sans ajouter de script à l'admin.
+
+L'option `OPENFLOW_ENFORCE_APP_CHECK=true` existe pour un site qui initialiserait App Check lui-même ;
+sans cela, elle bloquerait l'admin.
+
 ## Recommandations au propriétaire
 
 - Activer la **double authentification** (TOTP), qui demande de passer Firebase Auth à Identity Platform.
-- Activer **App Check** (reCAPTCHA Enterprise) : les fonctions l'exigent quand `OPENFLOW_ENFORCE_APP_CHECK=true`.
 - Utiliser une adresse e-mail dédiée et sécurisée.

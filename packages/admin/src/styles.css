@@ -844,6 +844,116 @@ select.of-input {
   color: var(--of-text-2);
 }
 
+/* « Messages »: one row per message, the whole row opens it. */
+.of-message {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--of-text-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.of-message__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--of-text);
+  font-size: 14px;
+}
+
+.of-message__sender {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.is-unread .of-message__sender {
+  font-weight: 650;
+}
+
+.of-list__item.is-unread .of-list__icon {
+  --of-icon-color: var(--of-accent-text);
+  background: var(--of-accent-soft);
+  color: var(--of-accent-text);
+}
+
+.of-message__new {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--of-accent-soft);
+  color: var(--of-accent-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.of-message__date {
+  flex: none;
+  margin-left: auto;
+  color: var(--of-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-message__excerpt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.of-messages__boxes {
+  align-self: start;
+}
+
+.of-message-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.of-message-detail dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.of-message-detail dt {
+  color: var(--of-text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.of-message-detail dd {
+  margin: 2px 0 0;
+  color: var(--of-text);
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.of-nav__count {
+  flex: none;
+  min-width: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--of-accent);
+  color: var(--of-on-accent);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .of-list__main {
   display: flex;
   flex-direction: column;

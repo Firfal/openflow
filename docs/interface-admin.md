@@ -19,8 +19,10 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - le site et son adresse ;
   - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
   - **Pages**, **Médias** ;
+  - **Messages**, avec le nombre de messages non lus ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
-  - **Réglages**, qui se déplie en trois sous-pages : Contenu commun, Thème, Site et référencement ;
+  - **Réglages**, qui se déplie en trois sous-pages : Contenu commun, Thème, Site et référencement
+    (identité, langue, et **Mesure d'audience** : l'identifiant Google Analytics `G-…`) ;
   - **Historique** ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
@@ -37,7 +39,22 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
     de la description.
 - **Médias** : toute la médiathèque. On peut l'importer (plusieurs fichiers à la fois), la filtrer (fichiers
   importés ou fichiers du site) et chercher par nom. Chaque fichier a une fiche : dimensions, poids, origine et
-  adresse à copier.
+  adresse à copier. Les images vont jusqu'à 15 Mo et les vidéos jusqu'à 100 Mo (MP4, WebM, MOV). À
+  l'import, elles sont optimisées en arrière-plan ; la fiche affiche « Optimisation » :
+  - image : des copies WebP de 480 à 2560 px de large (« 4 tailles · 310 Ko au plus »). Chaque visiteur
+    reçoit la taille adaptée à son écran ;
+  - vidéo : un MP4 1080p et un MP4 720p pour les mobiles, plus une image d'aperçu (« 1080p, 720p · 8,1 Mo
+    au lieu de 31,5 Mo »).
+
+  L'original est gardé et reste utilisé tant que l'optimisation n'est pas terminée ou si elle échoue.
+- **Messages** : ce que les visiteurs envoient avec les formulaires du site, le plus récent en premier.
+  - Deux dossiers : **Reçus** et **Indésirables** (messages que le filtre anti-spam juge suspects, sans
+    notification).
+  - Un message non lu porte « Nouveau ». L'ouvrir le marque comme lu.
+  - La fenêtre d'un message affiche chaque champ, la page d'origine et la date, avec **Répondre** (ouvre la
+    messagerie, adressée au visiteur), **Indésirable**, **Marquer comme non lu** et **Supprimer**.
+  - Chaque nouveau message est aussi envoyé par e-mail au propriétaire (voir « Formulaires » dans
+    [securite.md](securite.md)).
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic.
 - **Assistant IA** : brancher une IA qui modifie le site par la discussion
   ([assistant-ia.md](assistant-ia.md)). La page contient :
@@ -149,5 +166,6 @@ Sur Windows et Linux, <kbd>Ctrl</kbd> remplace <kbd>⌘</kbd>.
   panneaux de l'éditeur.
 - `packages/admin/src/assistant.tsx` contient la page Assistant IA et la carte du tableau de bord, et
   `connect.tsx` l'écran d'autorisation d'une IA.
+- `packages/admin/src/messages.tsx` contient la boîte de réception des formulaires.
 - Toute évolution de l'interface suit `.claude/skills/admin-ui/SKILL.md`. On la vérifie par des captures en
   clair et en sombre, puis par les tests de bout en bout (`pnpm --filter @openflow/e2e test`).

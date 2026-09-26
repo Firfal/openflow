@@ -18,6 +18,10 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 - `app/(site)/[[...slug]]/page.tsx` : toutes les pages viennent du snapshot publié. `app/admin/` : l'admin.
 - `app/llms.txt/` et `app/llms-full.txt/` : le site tel que le lisent les IA. Les réécritures `/mcp` de
   `firebase.json` : l'adresse où le propriétaire branche son IA (Claude, ChatGPT…).
+- Formulaires : la section `ContactForm` (champs `formFieldsField()`, affichage `<OpenFlowForm>` de
+  `@openflow/next/forms`). Les messages arrivent dans l'admin (« Messages ») via la réécriture
+  `/forms/submit` de `firebase.json`. Pour un autre formulaire (devis, inscription), reprends ce modèle :
+  prop `formFields`, `formId={id}` (voir `champs.md`).
 - Export statique (`output: "export"`) sur Firebase Hosting. Il n'y a **pas de serveur Next.js**.
 
 ## Contrat des sections (obligatoire)

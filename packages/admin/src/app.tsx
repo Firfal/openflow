@@ -14,9 +14,11 @@ import {
 } from "./context.js";
 import {
   type AgentEntry,
+  type MessageEntry,
   type PageEntry,
   type ReleaseEntry,
   subscribeAgents,
+  subscribeMessages,
   subscribePages,
   subscribeReleases,
   subscribeSettings,
@@ -27,6 +29,7 @@ import { HistoryView } from "./history.js";
 import { Icon, type IconName } from "./icons.js";
 import { Login } from "./login.js";
 import { MediaView } from "./media.js";
+import { MessagesView } from "./messages.js";
 import { PagesView } from "./pages.js";
 import { SettingsView } from "./settings.js";
 import { Sidebar } from "./shell.js";
@@ -96,6 +99,7 @@ function Shell() {
         {route.view === "pages" && <PagesView />}
         {route.view === "media" && <MediaView />}
         {route.view === "assistant" && <AssistantView />}
+        {route.view === "messages" && <MessagesView />}
         {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
         {route.view === "history" && <HistoryView />}
       </main>
@@ -117,6 +121,7 @@ function OwnerApp({
   const [settings, setSettings] = useState<SettingsDoc | undefined>();
   const [releases, setReleases] = useState<ReleaseEntry[]>([]);
   const [agents, setAgents] = useState<AgentEntry[]>([]);
+  const [messages, setMessages] = useState<MessageEntry[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const nextId = useRef(1);
 
@@ -140,6 +145,7 @@ function OwnerApp({
       subscribeSettings(services.db, setSettings, onError),
       subscribeReleases(services.db, setReleases, onError),
       subscribeAgents(services.db, setAgents, onError),
+      subscribeMessages(services.db, setMessages, onError),
     ];
     return () => {
       for (const unsubscribe of unsubscribers) unsubscribe();
@@ -154,9 +160,21 @@ function OwnerApp({
   const value = useMemo<AdminContextValue | null>(
     () =>
       pages
-        ? { config, services, user, pages, settings, releases, agents, route, navigate, notify }
+        ? {
+            config,
+            services,
+            user,
+            pages,
+            settings,
+            releases,
+            agents,
+            messages,
+            route,
+            navigate,
+            notify,
+          }
         : null,
-    [config, services, user, pages, settings, releases, agents, route, navigate, notify],
+    [config, services, user, pages, settings, releases, agents, messages, route, navigate, notify],
   );
   if (!value) return <Spinner label="Chargement du site…" />;
   return (
