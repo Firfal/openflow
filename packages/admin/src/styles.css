@@ -1399,6 +1399,16 @@ select.of-input {
     color var(--of-fast) var(--of-ease);
 }
 
+.of-nav__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--of-success);
+  box-shadow: 0 0 0 3px var(--of-success-soft);
+}
+
 .of-nav__item:hover {
   background: var(--of-surface-2);
   color: var(--of-text);
@@ -1867,9 +1877,11 @@ select.of-input {
   counter-reset: of-step;
 }
 
+/* Block items (not flex): bold words and code stay in the flow of the sentence. */
 .of-steps li {
-  display: flex;
-  gap: 10px;
+  position: relative;
+  min-height: 22px;
+  padding: 1px 0 0 32px;
   counter-increment: of-step;
   color: var(--of-text-2);
   font-size: 13.5px;
@@ -1877,9 +1889,11 @@ select.of-input {
 
 .of-steps li::before {
   content: counter(of-step);
+  position: absolute;
+  top: 0;
+  left: 0;
   display: grid;
   place-items: center;
-  flex: none;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -1936,6 +1950,208 @@ select.of-input {
 
 .of-key-created .of-copy__row {
   background: var(--of-surface);
+}
+
+.of-steps__body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.of-steps code,
+.of-muted code {
+  padding: 1px 5px;
+  border-radius: var(--of-radius-sm);
+  background: var(--of-surface-2);
+  font-family: var(--of-font-mono);
+  font-size: 12px;
+}
+
+.of-assistant__hero {
+  border-color: color-mix(in srgb, var(--of-accent) 28%, var(--of-border));
+  background:
+    radial-gradient(120% 90% at 100% 0%, var(--of-accent-soft) 0%, transparent 60%),
+    var(--of-surface);
+}
+
+.of-assistant__clients {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: start;
+}
+
+.of-assistant__clients button {
+  flex: 0 0 auto;
+}
+
+/* « Idées de demandes »: sentences to copy into the assistant. */
+.of-ideas {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-ideas li {
+  --of-icon-color: var(--of-text-3);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px 6px 8px;
+  border-radius: var(--of-radius);
+  color: var(--of-text-2);
+  font-size: 13.5px;
+}
+
+.of-ideas li:hover {
+  background: var(--of-surface-2);
+}
+
+.of-ideas__text {
+  flex: 1;
+  padding-top: 2px;
+}
+
+/* A card whose content opens on demand (keys for tools without sign-in). */
+.of-disclosure {
+  padding: 0;
+}
+
+.of-disclosure > summary {
+  --of-icon-color: var(--of-text-3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  font-size: 13.5px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.of-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.of-disclosure__title {
+  flex: 1;
+}
+
+.of-disclosure__chevron {
+  transition: transform var(--of-fast) var(--of-ease);
+}
+
+.of-disclosure[open] .of-disclosure__chevron {
+  transform: rotate(180deg);
+}
+
+.of-disclosure > .of-form {
+  padding: 0 20px 20px;
+}
+
+/* Suggestion card of the Pages view (until an assistant is connected). */
+.of-promo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 12px 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--of-accent) 28%, var(--of-border));
+  border-radius: var(--of-radius-lg);
+  background:
+    radial-gradient(90% 140% at 0% 0%, var(--of-accent-soft) 0%, transparent 70%), var(--of-surface);
+}
+
+.of-promo__icon {
+  --of-icon-color: var(--of-accent-text);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--of-radius-md);
+  background: var(--of-accent-soft);
+}
+
+.of-promo__text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  color: var(--of-text-2);
+  font-size: 13px;
+}
+
+.of-promo__text strong {
+  color: var(--of-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .of-promo {
+    flex-wrap: wrap;
+  }
+
+  .of-promo__text {
+    flex-basis: calc(100% - 100px);
+  }
+}
+
+/* Consent screen of an AI assistant (OAuth). */
+.of-connect {
+  display: grid;
+  gap: 16px;
+  max-width: 460px;
+}
+
+.of-connect h1 {
+  font-size: 19px;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.of-connect__marks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.of-connect__marks .of-site__mark {
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+}
+
+.of-connect__link {
+  width: 28px;
+  border-top: 2px dashed var(--of-border-strong);
+}
+
+.of-connect__ai {
+  --of-icon-color: var(--of-accent-text);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--of-radius-md);
+  background: var(--of-accent-soft);
+}
+
+.of-connect__rights {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--of-radius-md);
+  background: var(--of-surface-2);
+  list-style: none;
+  font-size: 13.5px;
+}
+
+.of-connect__rights li {
+  --of-icon-color: var(--of-success);
+  display: flex;
+  gap: 8px;
 }
 
 /* ───────────────────────── Editor ───────────────────────── */
@@ -2026,6 +2242,23 @@ select.of-input {
 .of-ebar__end {
   justify-content: flex-end;
   gap: 8px;
+}
+
+.of-ebar__ai {
+  position: relative;
+  display: inline-flex;
+}
+
+.of-ebar__ai-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--of-success);
+  box-shadow: 0 0 0 2px var(--of-surface);
+  pointer-events: none;
 }
 
 .of-ebar__sep {

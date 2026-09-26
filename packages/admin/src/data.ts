@@ -1,4 +1,5 @@
 import {
+  type AgentTokenDoc,
   COLLECTIONS,
   DOCS,
   estimateSize,
@@ -32,6 +33,7 @@ import type { Services } from "./firebase.js";
 export type PageEntry = PageDoc & { id: string };
 export type ReleaseEntry = ReleaseDoc & { id: string };
 export type MediaEntry = MediaDoc & { id: string };
+export type AgentEntry = AgentTokenDoc & { id: string };
 
 const now = () => new Date().toISOString();
 export const EMPTY_PAGE_DATA: Data = { root: { props: {} }, content: [] };
@@ -143,6 +145,19 @@ export function subscribeReleases(
   return onSnapshot(
     query(collection(db, COLLECTIONS.releases), orderBy("createdAt", "desc"), limit(30)),
     (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as ReleaseDoc) }))),
+    onError,
+  );
+}
+
+/** AI assistants allowed on the site: OAuth connections and keys, newest first. */
+export function subscribeAgents(
+  db: Firestore,
+  onData: (agents: AgentEntry[]) => void,
+  onError: (e: Error) => void,
+) {
+  return onSnapshot(
+    query(collection(db, COLLECTIONS.agentTokens), orderBy("createdAt", "desc")),
+    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentTokenDoc) }))),
     onError,
   );
 }

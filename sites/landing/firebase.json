@@ -4,7 +4,23 @@
     "cleanUrls": true,
     "trailingSlash": true,
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "/admin/**", "destination": "/admin/index.html" }],
+    "rewrites": [
+      { "source": "/admin/**", "destination": "/admin/index.html" },
+      { "source": "/mcp", "run": { "serviceId": "openflowmcp", "region": "europe-west1" } },
+      { "source": "/mcp/**", "run": { "serviceId": "openflowmcp", "region": "europe-west1" } },
+      {
+        "source": "/.well-known/oauth-protected-resource",
+        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+      },
+      {
+        "source": "/.well-known/oauth-protected-resource/**",
+        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+      },
+      {
+        "source": "/.well-known/oauth-authorization-server",
+        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+      }
+    ],
     "headers": [
       {
         "source": "/admin/**",

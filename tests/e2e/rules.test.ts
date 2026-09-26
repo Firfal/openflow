@@ -55,6 +55,9 @@ beforeEach(async () => {
     await setDoc(doc(db, "of_releases/r1"), { status: "live" });
     await setDoc(doc(db, "of_system/source"), { path: "openflow/source/x.tgz" });
     await setDoc(doc(db, "of_agent_tokens/k1"), { label: "Claude", hash: "abc", prefix: "ofk_ab" });
+    await setDoc(doc(db, "of_agent_clients/ofcli_a"), { name: "Claude", redirectUris: [] });
+    await setDoc(doc(db, "of_agent_requests/r1"), { clientId: "ofcli_a" });
+    await setDoc(doc(db, "of_agent_codes/c1"), { clientId: "ofcli_a" });
     await uploadBytes(
       ref(context.storage(), "openflow/media/photo.png"),
       new Uint8Array([1, 2, 3]),
@@ -109,6 +112,15 @@ describe("Firestore rules", () => {
     await assertFails(setDoc(doc(db, "of_agent_tokens/k2"), { hash: "mine" }));
     await assertFails(updateDoc(doc(db, "of_agent_tokens/k1"), { hash: "mine" }));
     await assertSucceeds(deleteDoc(doc(db, "of_agent_tokens/k1")));
+  });
+
+  it("keeps OAuth clients, requests and codes on the server, even from the owner", async () => {
+    const db = owner().firestore();
+    for (const path of ["of_agent_clients/ofcli_a", "of_agent_requests/r1", "of_agent_codes/c1"]) {
+      await assertFails(getDoc(doc(db, path)));
+      await assertFails(setDoc(doc(db, path), { clientId: "mine" }));
+      await assertFails(deleteDoc(doc(db, path)));
+    }
   });
 
   for (const [who, context] of [

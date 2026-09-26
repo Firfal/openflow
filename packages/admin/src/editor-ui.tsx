@@ -12,7 +12,7 @@ import {
 } from "@puckeditor/core";
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { type EditorBridge, getEditorBridge, setEditorBridge } from "./agent.js";
-import type { SaveState } from "./autosave.js";
+import { flushAllAutosaves, type SaveState } from "./autosave.js";
 import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
@@ -278,9 +278,29 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
           className="of-ebar__hide-sm"
           onClick={openCommandPalette}
         />
+        <AiButton />
         <PublishControl compact />
       </div>
     </header>
+  );
+}
+
+/** Opens « Assistant IA » (saved first); a dot says an assistant is connected. */
+function AiButton() {
+  const { agents, navigate } = useAdmin();
+  const connected = agents.length > 0;
+  return (
+    <span className="of-ebar__ai of-ebar__hide-sm">
+      <IconButton
+        icon="sparkles"
+        label={connected ? "IA connectée : gérer les assistants" : "Connecter une IA"}
+        onClick={async () => {
+          await flushAllAutosaves();
+          navigate({ view: "assistant" });
+        }}
+      />
+      {connected && <span className="of-ebar__ai-dot" aria-hidden />}
+    </span>
   );
 }
 

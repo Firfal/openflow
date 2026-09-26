@@ -82,7 +82,6 @@ const SETTINGS: Array<[SettingsTab, string]> = [
   ["global", "Contenu commun"],
   ["theme", "Thème"],
   ["site", "Site et référencement"],
-  ["assistant", "Assistant IA"],
 ];
 
 function NavItem({
@@ -114,7 +113,7 @@ function NavItem({
 
 /** Left navigation of the dashboard (pages, media, settings, history) and the owner menu. */
 export function Sidebar() {
-  const { route, navigate, settings, config } = useAdmin();
+  const { route, navigate, settings, config, agents } = useAdmin();
   const siteName = settings?.site?.name ?? config.site.name;
   const siteUrl = useSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -153,6 +152,16 @@ export function Sidebar() {
           current={route.view === "media"}
           onClick={() => navigate({ view: "media" })}
         />
+        <NavItem
+          icon="sparkles"
+          label="Assistant IA"
+          current={route.view === "assistant"}
+          onClick={() => navigate({ view: "assistant" })}
+        >
+          {agents.length > 0 && (
+            <span className="of-nav__dot" title="Une IA est connectée" aria-hidden />
+          )}
+        </NavItem>
         <NavItem
           icon="settings"
           label="Réglages"

@@ -39,6 +39,18 @@ function GoogleLogo() {
 const EMAIL_KEY = "openflow:signin-email";
 const DEV_PASSWORD = "openflow-emulator";
 
+/**
+ * The current address without the parameters Firebase adds to a sign-in link: the rest (the
+ * admin's route, e.g. the consent screen of an AI assistant) survives the sign-in.
+ */
+function addressWithoutSignInParams(): string {
+  const url = new URL(window.location.href);
+  for (const key of ["apiKey", "oobCode", "mode", "lang", "continueUrl", "tenantId"]) {
+    url.searchParams.delete(key);
+  }
+  return `${url.pathname}${url.search}`;
+}
+
 export function Login({ services, siteName }: { services: Services; siteName: string }) {
   const [email, setEmail] = useState(() => window.localStorage.getItem(EMAIL_KEY) ?? "");
   const [sent, setSent] = useState(false);
@@ -54,7 +66,7 @@ export function Login({ services, siteName }: { services: Services; siteName: st
     signInWithEmailLink(services.auth, stored, window.location.href)
       .then(() => {
         window.localStorage.removeItem(EMAIL_KEY);
-        window.history.replaceState(null, "", window.location.pathname);
+        window.history.replaceState(null, "", addressWithoutSignInParams());
       })
       .catch((e) => setError(errorMessage(e)))
       .finally(() => setBusy(false));
@@ -76,11 +88,11 @@ export function Login({ services, siteName }: { services: Services; siteName: st
     run(async () => {
       if (completing) {
         await signInWithEmailLink(services.auth, email, window.location.href);
-        window.history.replaceState(null, "", window.location.pathname);
+        window.history.replaceState(null, "", addressWithoutSignInParams());
         return;
       }
       await sendSignInLinkToEmail(services.auth, email, {
-        url: `${window.location.origin}${window.location.pathname}`,
+        url: `${window.location.origin}${addressWithoutSignInParams()}`,
         handleCodeInApp: true,
       });
       window.localStorage.setItem(EMAIL_KEY, email);

@@ -2,7 +2,9 @@ import { FUNCTION_NAMES, type OpenFlowConfig, OWNER_CLAIM, type SettingsDoc } fr
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { browserAgentContext, useWebMcp } from "./agent.js";
+import { AssistantView } from "./assistant.js";
 import { CommandPalette } from "./command.js";
+import { ConnectView } from "./connect.js";
 import {
   type AdminContextValue,
   AdminProvider,
@@ -11,8 +13,10 @@ import {
   useRouter,
 } from "./context.js";
 import {
+  type AgentEntry,
   type PageEntry,
   type ReleaseEntry,
+  subscribeAgents,
   subscribePages,
   subscribeReleases,
   subscribeSettings,
@@ -84,12 +88,14 @@ function Notices({ notices, dismiss }: { notices: Notice[]; dismiss: (id: number
 function Shell() {
   const { route } = useAdmin();
   if (route.view === "editor") return <EditorView key={route.pageId} pageId={route.pageId} />;
+  if (route.view === "connect") return <ConnectView requestId={route.request} />;
   return (
     <div className="of-shell">
       <Sidebar />
       <main className="of-main">
         {route.view === "pages" && <PagesView />}
         {route.view === "media" && <MediaView />}
+        {route.view === "assistant" && <AssistantView />}
         {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
         {route.view === "history" && <HistoryView />}
       </main>
@@ -110,6 +116,7 @@ function OwnerApp({
   const [pages, setPages] = useState<PageEntry[] | null>(null);
   const [settings, setSettings] = useState<SettingsDoc | undefined>();
   const [releases, setReleases] = useState<ReleaseEntry[]>([]);
+  const [agents, setAgents] = useState<AgentEntry[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const nextId = useRef(1);
 
@@ -132,6 +139,7 @@ function OwnerApp({
       subscribePages(services.db, setPages, onError),
       subscribeSettings(services.db, setSettings, onError),
       subscribeReleases(services.db, setReleases, onError),
+      subscribeAgents(services.db, setAgents, onError),
     ];
     return () => {
       for (const unsubscribe of unsubscribers) unsubscribe();
@@ -145,8 +153,10 @@ function OwnerApp({
 
   const value = useMemo<AdminContextValue | null>(
     () =>
-      pages ? { config, services, user, pages, settings, releases, route, navigate, notify } : null,
-    [config, services, user, pages, settings, releases, route, navigate, notify],
+      pages
+        ? { config, services, user, pages, settings, releases, agents, route, navigate, notify }
+        : null,
+    [config, services, user, pages, settings, releases, agents, route, navigate, notify],
   );
   if (!value) return <Spinner label="Chargement du site…" />;
   return (

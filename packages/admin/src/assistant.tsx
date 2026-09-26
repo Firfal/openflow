@@ -1,19 +1,13 @@
-import {
-  AGENT_TOOLS,
-  type AgentTokenDoc,
-  COLLECTIONS,
-  FUNCTION_NAMES,
-  slugify,
-} from "@openflow/core";
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { AGENT_TOOLS, COLLECTIONS, FUNCTION_NAMES, slugify } from "@openflow/core";
+import { deleteDoc, doc } from "firebase/firestore";
+import { type ReactNode, useState } from "react";
 import { useWebMcpState } from "./agent.js";
 import { useAdmin } from "./context.js";
-import { call, errorMessage } from "./firebase.js";
-import { Icon } from "./icons.js";
-import { Button, FormField, StatusChip } from "./ui.js";
-
-type KeyEntry = AgentTokenDoc & { id: string };
+import type { AgentEntry } from "./data.js";
+import { call, errorMessage, type Services } from "./firebase.js";
+import { Icon, type IconName } from "./icons.js";
+import { PageHead } from "./shell.js";
+import { Button, FormField, IconButton, StatusChip, timeAgo } from "./ui.js";
 
 function formatDate(iso?: string) {
   return iso
@@ -21,23 +15,32 @@ function formatDate(iso?: string) {
     : "jamais";
 }
 
-function CopyField({ label, value }: { label: string; value: string }) {
+/**
+ * Address of the site's MCP server: `https://<site>/mcp` (Hosting rewrite to `openflowMcp`), or the
+ * function itself with the local emulators (`openflow dev` has no Hosting).
+ */
+export function mcpEndpoint(services: Services): string {
+  if (services.emulators) {
+    return `http://${services.emulatorHost ?? "127.0.0.1"}:5001/${services.projectId}/${services.region}/${FUNCTION_NAMES.mcp}/mcp`;
+  }
+  return `${window.location.origin}/mcp`;
+}
+
+function copy(value: string, notify: (kind: "success" | "error", text: string) => void) {
+  navigator.clipboard.writeText(value).then(
+    () => notify("success", "Copié."),
+    () => notify("error", "Copie impossible : sélectionnez le texte."),
+  );
+}
+
+export function CopyField({ label, value }: { label: string; value: string }) {
   const { notify } = useAdmin();
   return (
     <div className="of-copy">
       <span className="of-field__label">{label}</span>
       <div className="of-copy__row">
         <code className="of-copy__value">{value}</code>
-        <Button
-          variant="secondary"
-          icon="copy"
-          onClick={() =>
-            navigator.clipboard.writeText(value).then(
-              () => notify("success", "Copié."),
-              () => notify("error", "Copie impossible : sélectionnez le texte."),
-            )
-          }
-        >
+        <Button variant="secondary" icon="copy" onClick={() => copy(value, notify)}>
           Copier
         </Button>
       </div>
@@ -45,33 +48,265 @@ function CopyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-/**
- * Réglages > Assistant IA: connects an AI assistant (Claude, ChatGPT…) to the site through the
- * MCP server, with keys the owner creates and revokes; and shows WebMCP for browser assistants.
- */
-export function AssistantSettings() {
-  const { services, config, settings, notify } = useAdmin();
-  const webMcp = useWebMcpState();
-  const [keys, setKeys] = useState<KeyEntry[]>([]);
-  const [label, setLabel] = useState("Claude");
+/** A link styled as a button (settings pages of the assistants, install links of the editors). */
+function LinkButton({
+  href,
+  icon,
+  variant = "secondary",
+  children,
+}: {
+  href: string;
+  icon: IconName;
+  variant?: "primary" | "secondary";
+  children: ReactNode;
+}) {
+  const external = href.startsWith("http");
+  return (
+    <a
+      className={`of-btn of-btn--${variant}`}
+      href={href}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+    >
+      <Icon name={icon} />
+      {children}
+    </a>
+  );
+}
+
+type ClientId = "claude" | "chatgpt" | "claude-code" | "cursor" | "vscode" | "other";
+
+const CLIENTS: Array<{ id: ClientId; label: string }> = [
+  { id: "claude", label: "Claude" },
+  { id: "chatgpt", label: "ChatGPT" },
+  { id: "claude-code", label: "Claude Code" },
+  { id: "cursor", label: "Cursor" },
+  { id: "vscode", label: "VS Code" },
+  { id: "other", label: "Autre" },
+];
+
+const CLIENT_KEY = "openflow:ai-client";
+
+function storedClient(): ClientId {
+  try {
+    const value = window.localStorage.getItem(CLIENT_KEY);
+    return CLIENTS.some((c) => c.id === value) ? (value as ClientId) : "claude";
+  } catch {
+    return "claude";
+  }
+}
+
+const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+
+/** Steps to connect one assistant, with a direct action when the assistant offers one. */
+function ClientGuide({
+  client,
+  endpoint,
+  name,
+}: {
+  client: ClientId;
+  endpoint: string;
+  name: string;
+}) {
+  const authorize = (
+    <li>
+      Cette admin s'ouvre : vérifiez le nom de l'assistant, puis cliquez sur{" "}
+      <strong>Autoriser</strong>.
+    </li>
+  );
+  switch (client) {
+    case "claude":
+      return (
+        <>
+          <ol className="of-steps">
+            <li>
+              Dans Claude (claude.ai ou l'application) :{" "}
+              <strong>Paramètres &gt; Connecteurs</strong>, puis{" "}
+              <strong>Ajouter un connecteur personnalisé</strong>.
+            </li>
+            <li>
+              Nommez-le « {name} », collez l'adresse ci-dessus, puis cliquez sur{" "}
+              <strong>Se connecter</strong>.
+            </li>
+            {authorize}
+            <li>
+              Dans une discussion, activez le connecteur (bouton des outils) et demandez ce que vous
+              voulez changer.
+            </li>
+          </ol>
+          <div className="of-row">
+            <LinkButton href="https://claude.ai/settings/connectors" icon="externalLink">
+              Ouvrir les connecteurs de Claude
+            </LinkButton>
+          </div>
+        </>
+      );
+    case "chatgpt":
+      return (
+        <>
+          <ol className="of-steps">
+            <li>
+              Dans ChatGPT :{" "}
+              <strong>Paramètres &gt; Applications et connecteurs &gt; Paramètres avancés</strong>,
+              activez le <strong>mode développeur</strong>.
+            </li>
+            <li>
+              Cliquez sur <strong>Créer</strong>, nommez le connecteur « {name} », collez l'adresse
+              ci-dessus et choisissez l'authentification <strong>OAuth</strong>.
+            </li>
+            {authorize}
+            <li>
+              Dans une discussion, choisissez le connecteur et demandez ce que vous voulez changer.
+            </li>
+          </ol>
+          <p className="of-field__hint">
+            Le mode développeur est réservé aux offres payantes de ChatGPT.
+          </p>
+          <div className="of-row">
+            <LinkButton href="https://chatgpt.com/#settings/Connectors" icon="externalLink">
+              Ouvrir les connecteurs de ChatGPT
+            </LinkButton>
+          </div>
+        </>
+      );
+    case "claude-code":
+      return (
+        <ol className="of-steps">
+          <li>
+            <div className="of-steps__body">
+              Dans un terminal, lancez :
+              <CopyField
+                label="Commande"
+                value={`claude mcp add --transport http ${name} ${endpoint}`}
+              />
+            </div>
+          </li>
+          <li>
+            Dans Claude Code, tapez <code>/mcp</code>, choisissez « {name} » puis{" "}
+            <strong>Authenticate</strong>.
+          </li>
+          {authorize}
+        </ol>
+      );
+    case "cursor":
+      return (
+        <>
+          <ol className="of-steps">
+            <li>Cliquez sur « Ajouter à Cursor » et confirmez l'installation dans Cursor.</li>
+            <li>
+              Dans <strong>Cursor Settings &gt; MCP</strong>, cliquez sur <strong>Connect</strong> à
+              côté de « {name} ».
+            </li>
+            {authorize}
+          </ol>
+          <div className="of-row">
+            <LinkButton
+              variant="primary"
+              icon="plug"
+              href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(base64(JSON.stringify({ url: endpoint })))}`}
+            >
+              Ajouter à Cursor
+            </LinkButton>
+          </div>
+        </>
+      );
+    case "vscode":
+      return (
+        <>
+          <ol className="of-steps">
+            <li>Cliquez sur « Ajouter à VS Code » et confirmez l'installation dans VS Code.</li>
+            <li>
+              Démarrez le serveur « {name} » (liste des serveurs MCP), puis acceptez la connexion.
+            </li>
+            {authorize}
+          </ol>
+          <div className="of-row">
+            <LinkButton
+              variant="primary"
+              icon="plug"
+              href={`vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name, type: "http", url: endpoint }))}`}
+            >
+              Ajouter à VS Code
+            </LinkButton>
+          </div>
+        </>
+      );
+    default:
+      return (
+        <>
+          <p className="of-muted">
+            Tout assistant compatible MCP (transport HTTP) et connexion OAuth se branche avec
+            l'adresse ci-dessus. Configuration type :
+          </p>
+          <CopyField
+            label="Configuration"
+            value={JSON.stringify({ mcpServers: { [name]: { url: endpoint } } })}
+          />
+          <p className="of-field__hint">
+            Votre outil ne sait pas se connecter ? Créez une clé d'accès, plus bas.
+          </p>
+        </>
+      );
+  }
+}
+
+const IDEAS = [
+  "Change le titre de la page d'accueil pour « … ».",
+  "Ajoute une question à la FAQ sur les délais de livraison.",
+  "Réécris le texte de présentation, plus court et plus chaleureux.",
+  "Mets les titres en bleu sur mobile.",
+  "Crée une page Tarifs avec trois formules.",
+  "Dis-moi ce qui a changé depuis la dernière publication, puis publie.",
+];
+
+function AgentRow({ agent }: { agent: AgentEntry }) {
+  const { services, notify } = useAdmin();
+  const oauth = agent.kind === "oauth";
+  const disconnect = async () => {
+    const question = oauth
+      ? `Déconnecter « ${agent.label} » ? Il devra se reconnecter pour modifier le site.`
+      : `Révoquer la clé « ${agent.label} » ? L'assistant qui l'utilise perdra l'accès.`;
+    if (!window.confirm(question)) return;
+    try {
+      await deleteDoc(doc(services.db, COLLECTIONS.agentTokens, agent.id));
+      notify("success", oauth ? "Assistant déconnecté." : "Clé révoquée.");
+    } catch (error) {
+      notify("error", errorMessage(error));
+    }
+  };
+  return (
+    <li className="of-list__item">
+      <span className="of-list__icon" aria-hidden>
+        <Icon name={oauth ? "sparkles" : "key"} />
+      </span>
+      <div className="of-list__main">
+        <span className="of-list__title">{agent.label}</span>
+        <span className="of-list__meta">
+          {oauth ? (
+            <span>connecté le {formatDate(agent.createdAt)}</span>
+          ) : (
+            <>
+              <span className="of-mono">{agent.prefix}…</span>
+              <span>clé créée le {formatDate(agent.createdAt)}</span>
+            </>
+          )}
+          <span>
+            {agent.lastUsedAt ? `utilisé ${timeAgo(agent.lastUsedAt)}` : "jamais utilisé"}
+          </span>
+        </span>
+      </div>
+      <Button variant="danger-ghost" size="sm" onClick={() => void disconnect()}>
+        {oauth ? "Déconnecter" : "Révoquer"}
+      </Button>
+    </li>
+  );
+}
+
+/** Keys, for tools that cannot sign in (scripts, older clients): shown once, revocable. */
+function AccessKeys({ endpoint, name }: { endpoint: string; name: string }) {
+  const { services, notify } = useAdmin();
+  const [label, setLabel] = useState("Mon outil");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<{ token: string; label: string }>();
-
-  useEffect(
-    () =>
-      onSnapshot(
-        query(collection(services.db, COLLECTIONS.agentTokens), orderBy("createdAt", "desc")),
-        (snap) => setKeys(snap.docs.map((d) => ({ id: d.id, ...(d.data() as AgentTokenDoc) }))),
-        (error) => notify("error", errorMessage(error)),
-      ),
-    [services.db, notify],
-  );
-
-  const endpoint = services.emulators
-    ? `http://${services.emulatorHost ?? "127.0.0.1"}:5001/${services.projectId}/${services.region}/${FUNCTION_NAMES.mcp}`
-    : `https://${services.region}-${services.projectId}.cloudfunctions.net/${FUNCTION_NAMES.mcp}`;
-  const siteName = settings?.site?.name ?? config.site.name;
-  const serverName = slugify(siteName) || "mon-site";
 
   const create = async () => {
     setBusy(true);
@@ -89,56 +324,17 @@ export function AssistantSettings() {
     }
   };
 
-  const revoke = async (key: KeyEntry) => {
-    if (
-      !window.confirm(
-        `Révoquer la clé « ${key.label} » ? L'assistant qui l'utilise perdra l'accès.`,
-      )
-    ) {
-      return;
-    }
-    try {
-      await deleteDoc(doc(services.db, COLLECTIONS.agentTokens, key.id));
-      notify("success", "Clé révoquée.");
-    } catch (error) {
-      notify("error", errorMessage(error));
-    }
-  };
-
   return (
-    <div className="of-assistant">
-      <section className="of-card of-form">
-        <div>
-          <h2>Modifier le site en discutant avec une IA</h2>
-          <p className="of-card__lead">
-            Connectez Claude, ChatGPT ou tout assistant compatible MCP, puis demandez-lui « change
-            le titre de l'accueil », « ajoute une question à la FAQ » ou « mets les titres en bleu
-            sur mobile ».
-          </p>
-        </div>
-        <ol className="of-steps">
-          <li>Créez une clé d'accès ci-dessous et donnez-lui un nom.</li>
-          <li>Copiez les réglages proposés dans votre assistant.</li>
-          <li>
-            Discutez : ses modifications sont des brouillons, visibles en direct dans l'éditeur.
-            Rien n'est en ligne avant la publication.
-          </li>
-        </ol>
-        <p className="of-callout">
-          <Icon name="info" className="of-icon--first-line" />
-          <span>
-            L'assistant n'a accès qu'à ce site (pages, sections, réglages), jamais au code ni aux
-            autres données du projet. Une clé se révoque d'un clic.
-          </span>
-        </p>
-        <CopyField label="Adresse du serveur MCP" value={endpoint} />
-      </section>
-
-      <section className="of-card of-form">
-        <div>
-          <h2>Clés d'accès</h2>
-          <p className="of-card__lead">Une clé par assistant ou par appareil.</p>
-        </div>
+    <details className="of-card of-disclosure">
+      <summary>
+        <Icon name="key" />
+        <span className="of-disclosure__title">
+          <strong>Clé d'accès</strong>
+          <span className="of-muted"> pour les outils qui ne savent pas se connecter</span>
+        </span>
+        <Icon name="chevronDown" className="of-disclosure__chevron" />
+      </summary>
+      <div className="of-form">
         {created ? (
           <div className="of-key-created" role="status">
             <p className="of-row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
@@ -149,28 +345,18 @@ export function AssistantSettings() {
               </span>
             </p>
             <CopyField label="Clé" value={created.token} />
-            <h3>Claude (application ou claude.ai)</h3>
-            <p className="of-muted">
-              Paramètres &gt; Connecteurs &gt; Ajouter un connecteur personnalisé, puis collez cette
-              adresse (elle contient la clé : gardez-la pour vous) :
-            </p>
-            <CopyField label="Adresse avec la clé" value={`${endpoint}?key=${created.token}`} />
-            <h3>Claude Code</h3>
+            <CopyField label="En-tête à envoyer" value={`Authorization: Bearer ${created.token}`} />
             <CopyField
-              label="Commande"
-              value={`claude mcp add --transport http ${serverName} ${endpoint} --header "Authorization: Bearer ${created.token}"`}
-            />
-            <h3>Autres assistants (configuration JSON)</h3>
-            <CopyField
-              label="Configuration"
+              label="Configuration JSON"
               value={JSON.stringify({
                 mcpServers: {
-                  [serverName]: {
-                    url: endpoint,
-                    headers: { Authorization: `Bearer ${created.token}` },
-                  },
+                  [name]: { url: endpoint, headers: { Authorization: `Bearer ${created.token}` } },
                 },
               })}
+            />
+            <CopyField
+              label="Adresse avec la clé (outils sans en-têtes : gardez-la pour vous)"
+              value={`${endpoint}?key=${created.token}`}
             />
             <div className="of-row">
               <Button variant="primary" icon="check" onClick={() => setCreated(undefined)}>
@@ -179,58 +365,148 @@ export function AssistantSettings() {
             </div>
           </div>
         ) : (
-          <form
-            className="of-row of-row--end"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void create();
-            }}
-          >
-            <FormField label="Nom de la clé">
-              <input
-                className="of-input"
-                value={label}
-                maxLength={80}
-                required
-                autoComplete="off"
-                onChange={(e) => setLabel(e.target.value)}
-              />
-            </FormField>
-            <Button type="submit" variant="primary" icon="key" busy={busy}>
-              Créer une clé
-            </Button>
-          </form>
+          <>
+            <form
+              className="of-row of-row--end"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void create();
+              }}
+            >
+              <FormField label="Nom de la clé">
+                <input
+                  className="of-input"
+                  value={label}
+                  maxLength={80}
+                  required
+                  autoComplete="off"
+                  onChange={(e) => setLabel(e.target.value)}
+                />
+              </FormField>
+              <Button type="submit" variant="primary" icon="key" busy={busy}>
+                Créer une clé
+              </Button>
+            </form>
+            <p className="of-field__hint">
+              Préférez la connexion ci-dessus quand elle est possible : rien à copier ni à garder
+              secret. Une clé se révoque d'un clic dans la liste des IA connectées.
+            </p>
+          </>
         )}
-        {!created && (
-          <p className="of-field__hint" style={{ marginTop: -10 }}>
-            Pour la reconnaître : « Claude sur mon ordinateur », « ChatGPT »…
+      </div>
+    </details>
+  );
+}
+
+/**
+ * « Assistant IA »: connects Claude, ChatGPT, Claude Code, Cursor, VS Code… to the site through its
+ * MCP server (`https://<site>/mcp`, OAuth sign-in or key), lists the connected assistants, and
+ * shows WebMCP for browser assistants.
+ */
+export function AssistantSettings() {
+  const { services, config, settings, agents, notify } = useAdmin();
+  const webMcp = useWebMcpState();
+  const [client, setClient] = useState<ClientId>(storedClient);
+  const endpoint = mcpEndpoint(services);
+  const siteName = settings?.site?.name ?? config.site.name;
+  const name = slugify(siteName) || "mon-site";
+  const pick = (id: ClientId) => {
+    setClient(id);
+    try {
+      window.localStorage.setItem(CLIENT_KEY, id);
+    } catch {
+      // Private mode: the choice lasts for this visit.
+    }
+  };
+
+  return (
+    <div className="of-assistant">
+      <section className="of-card of-form of-assistant__hero">
+        <div className="of-row of-row--spread">
+          <h2>Modifiez votre site en discutant avec votre IA</h2>
+          <StatusChip tone={agents.length > 0 ? "green" : "grey"}>
+            {agents.length === 0
+              ? "Aucune IA connectée"
+              : `${agents.length} IA connectée${agents.length > 1 ? "s" : ""}`}
+          </StatusChip>
+        </div>
+        <p className="of-card__lead">
+          Collez cette adresse dans votre assistant : il vous demandera de vous connecter et
+          d'autoriser l'accès. Rien d'autre à copier.
+        </p>
+        <CopyField label="Adresse de votre site pour l'IA (serveur MCP)" value={endpoint} />
+        <p className="of-callout">
+          <Icon name="shieldCheck" className="of-icon--first-line" />
+          <span>
+            L'assistant n'a accès qu'au contenu de ce site : pages, sections, style, réglages et
+            médias. Ses modifications sont des brouillons, visibles en direct dans l'éditeur ; rien
+            n'est en ligne avant la publication.
+          </span>
+        </p>
+      </section>
+
+      <section className="of-card of-form">
+        <h2>Connecter votre assistant</h2>
+        <fieldset className="of-segmented of-assistant__clients">
+          <legend className="of-sr-only">Assistant</legend>
+          {CLIENTS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={client === c.id}
+              className={client === c.id ? "is-active" : ""}
+              onClick={() => pick(c.id)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </fieldset>
+        <ClientGuide client={client} endpoint={endpoint} name={name} />
+      </section>
+
+      <section className="of-card of-form">
+        <div>
+          <h2>IA connectées</h2>
+          <p className="of-card__lead">
+            Chaque assistant autorisé, et chaque clé. Déconnectez celles que vous n'utilisez plus.
           </p>
-        )}
-        {keys.length > 0 ? (
+        </div>
+        {agents.length > 0 ? (
           <ul className="of-list">
-            {keys.map((key) => (
-              <li key={key.id} className="of-list__item">
-                <span className="of-list__icon" aria-hidden>
-                  <Icon name="key" />
-                </span>
-                <div className="of-list__main">
-                  <span className="of-list__title">{key.label}</span>
-                  <span className="of-list__meta">
-                    <span className="of-mono">{key.prefix}…</span>
-                    <span>créée le {formatDate(key.createdAt)}</span>
-                    <span>utilisée : {formatDate(key.lastUsedAt)}</span>
-                  </span>
-                </div>
-                <Button variant="danger-ghost" size="sm" onClick={() => void revoke(key)}>
-                  Révoquer
-                </Button>
-              </li>
+            {agents.map((agent) => (
+              <AgentRow key={agent.id} agent={agent} />
             ))}
           </ul>
         ) : (
-          <p className="of-subtle">Aucune clé pour l'instant.</p>
+          <p className="of-subtle">Aucune IA connectée pour l'instant.</p>
         )}
       </section>
+
+      <section className="of-card of-form">
+        <div>
+          <h2>Idées de demandes</h2>
+          <p className="of-card__lead">
+            Parlez-lui comme à un collaborateur. Il vous montre ce qu'il va faire et publie
+            seulement si vous le lui demandez.
+          </p>
+        </div>
+        <ul className="of-ideas">
+          {IDEAS.map((idea) => (
+            <li key={idea}>
+              <Icon name="messageSquare" className="of-icon--first-line" />
+              <span className="of-ideas__text">{idea}</span>
+              <IconButton
+                icon="copy"
+                size="sm"
+                label={`Copier « ${idea} »`}
+                onClick={() => copy(idea, notify)}
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <AccessKeys endpoint={endpoint} name={name} />
 
       <section className="of-card of-form">
         <div className="of-row of-row--spread">
@@ -254,5 +530,61 @@ export function AssistantSettings() {
         )}
       </section>
     </div>
+  );
+}
+
+const PROMO_KEY = "openflow:ai-card-hidden";
+
+/** Card of the Pages view until an assistant is connected (or the owner hides it). */
+export function AiPromo() {
+  const { agents, navigate } = useAdmin();
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return window.localStorage.getItem(PROMO_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  if (hidden || agents.length > 0) return null;
+  const hide = () => {
+    setHidden(true);
+    try {
+      window.localStorage.setItem(PROMO_KEY, "1");
+    } catch {
+      // Private mode: hidden for this visit.
+    }
+  };
+  return (
+    <section className="of-promo" aria-label="Connecter une IA">
+      <span className="of-promo__icon" aria-hidden>
+        <Icon name="sparkles" size={18} />
+      </span>
+      <div className="of-promo__text">
+        <strong>Modifiez votre site en discutant avec votre IA</strong>
+        <span>
+          Branchez Claude, ChatGPT ou votre éditeur de code en une minute, puis demandez-lui «
+          ajoute une question à la FAQ ».
+        </span>
+      </div>
+      <Button variant="primary" icon="plug" onClick={() => navigate({ view: "assistant" })}>
+        Connecter Claude ou ChatGPT
+      </Button>
+      <IconButton icon="x" size="sm" label="Masquer cette suggestion" onClick={hide} />
+    </section>
+  );
+}
+
+/** The « Assistant IA » view of the dashboard. */
+export function AssistantView() {
+  return (
+    <>
+      <PageHead
+        title="Assistant IA"
+        description="Claude, ChatGPT ou votre éditeur de code modifient le site à votre demande."
+      />
+      <div className="of-view of-view--narrow">
+        <AssistantSettings />
+      </div>
+    </>
   );
 }

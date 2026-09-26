@@ -156,10 +156,10 @@ export function CommandPalette() {
       {
         id: "go:assistant",
         group: "Aller à",
-        label: "Réglages : assistant IA",
+        label: "Connecter une IA (Claude, ChatGPT…)",
         icon: "sparkles",
-        keywords: "mcp claude chatgpt clé",
-        run: go(() => navigate({ view: "settings", tab: "assistant" })),
+        keywords: "assistant ia mcp claude chatgpt cursor clé connecteur",
+        run: go(() => navigate({ view: "assistant" })),
       },
       {
         id: "go:history",

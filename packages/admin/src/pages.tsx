@@ -7,6 +7,7 @@ import {
   slugToPath,
 } from "@openflow/core";
 import { useEffect, useState } from "react";
+import { AiPromo } from "./assistant.js";
 import { useAdmin } from "./context.js";
 import {
   createPage,
@@ -356,6 +357,7 @@ export function PagesView() {
       />
       <section className="of-view">
         <SiteStatus />
+        <AiPromo />
         {pages.length === 0 ? (
           <EmptyState icon="fileText" title="Aucune page pour l'instant">
             <p>Créez la première page de votre site.</p>

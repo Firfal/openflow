@@ -3,9 +3,11 @@ import {
   AGENT_AUTHOR,
   AgentError,
   COLLECTIONS,
+  FUNCTION_NAMES,
   handleMcpMessage,
   OWNER_CLAIM,
   type ReleaseDoc,
+  type SiteSchema,
   SnapshotError,
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -42,6 +44,22 @@ import {
   startLocalBuild,
   type TokenInfo,
 } from "./core.js";
+import {
+  decideRequest,
+  describeRequest,
+  errorPage,
+  exchangeToken,
+  OAUTH_SCOPE,
+  OAuthError,
+  registerClient,
+  resourceMetadata,
+  revokeToken,
+  routeOf,
+  serverMetadata,
+  splitFunctionPath,
+  startAuthorization,
+  tokenRequestParams,
+} from "./oauth.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -232,21 +250,132 @@ export const openflowCreateAgentToken = onCall({ region, enforceAppCheck }, asyn
   return created;
 });
 
+/**
+ * The owner's answer on the consent screen of the admin (`/admin/?view=connect&request=…`), when an
+ * AI assistant asks to connect with OAuth: `{ requestId }` describes the request,
+ * `{ requestId, decision: "approve" | "deny" }` answers it and returns where to send the browser.
+ */
+export const openflowAgentConsent = onCall({ region, enforceAppCheck }, async (request) => {
+  const token = assertOwner(request);
+  const data = (request.data ?? {}) as { requestId?: unknown; decision?: unknown };
+  const db = getFirestore();
+  try {
+    if (data.decision === undefined) return await describeRequest(db, data.requestId);
+    if (data.decision !== "approve" && data.decision !== "deny") {
+      throw new HttpsError("invalid-argument", "decision : approve ou deny.");
+    }
+    const by = String(token.email ?? request.auth?.uid ?? "inconnu");
+    const result = await decideRequest(db, {
+      requestId: data.requestId,
+      approve: data.decision === "approve",
+      by,
+    });
+    logger.info("OpenFlow assistant consent", { decision: data.decision, by });
+    return result;
+  } catch (error) {
+    if (error instanceof OAuthError) throw new HttpsError("failed-precondition", error.message);
+    throw error;
+  }
+});
+
 function storageBaseUrl(): string {
   const emulated = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
   if (emulated) return emulated.startsWith("http") ? emulated : `http://${emulated}`;
   return "https://firebasestorage.googleapis.com";
 }
 
+/** Public origin of the site: `site.url` of the config, or the Hosting default domain. */
+function siteOrigin(schema: SiteSchema | undefined): string {
+  try {
+    if (schema?.site.url) return new URL(schema.site.url).origin;
+  } catch {
+    // Invalid URL in the config: fall back to the Hosting domain.
+  }
+  return `https://${hostingSite()}.web.app`;
+}
+
+/** Hosts the MCP server answers for, besides the site's and Firebase's (custom domains). */
+const extraHosts = (process.env.OPENFLOW_MCP_HOSTS ?? "")
+  .split(",")
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+
+/**
+ * Addresses as seen by the client. `base` is where this function's routes are (the site's origin
+ * behind Hosting, the Cloud Run origin, or the function path of `cloudfunctions.net` and of the
+ * emulator); `issuer` is the authorization server announced to clients (the site's origin for the
+ * legacy `cloudfunctions.net` address, whose root is not ours). Hosts come from a fixed list, never
+ * blindly from the request.
+ */
+function requestUrls(
+  req: { headers: Record<string, unknown>; originalUrl?: string; url?: string },
+  schema: SiteSchema | undefined,
+): { base: string; issuer: string; path: string } {
+  const site = hostingSite();
+  let siteHost = "";
+  try {
+    siteHost = schema?.site.url ? new URL(schema.site.url).host.toLowerCase() : "";
+  } catch {
+    siteHost = "";
+  }
+  const allowed = (host: string) =>
+    Boolean(host) &&
+    (emulator ||
+      host === `${site}.web.app` ||
+      host === `${site}.firebaseapp.com` ||
+      host === siteHost ||
+      extraHosts.includes(host) ||
+      host.endsWith(".run.app") ||
+      host.endsWith(".cloudfunctions.net"));
+  const first = (name: string) =>
+    String(req.headers[name] ?? "")
+      .split(",")[0]!
+      .trim()
+      .toLowerCase();
+  const host = [first("x-fh-requested-host"), first("x-forwarded-host"), first("host")].find(
+    allowed,
+  );
+  const pathname = new URL(req.originalUrl || req.url || "/", "http://localhost").pathname;
+  let { prefix, path } = splitFunctionPath(pathname, FUNCTION_NAMES.mcp);
+  // The emulator may pass the path without its `/<project>/<region>/<function>` prefix.
+  if (emulator && !prefix) prefix = `/${projectId()}/${region}/${FUNCTION_NAMES.mcp}`;
+  if (!host) {
+    const origin = siteOrigin(schema);
+    return { base: origin, issuer: origin, path };
+  }
+  const proto = emulator ? first("x-forwarded-proto") || "http" : "https";
+  const base = `${proto}://${host}${prefix}`;
+  return { base, issuer: prefix && !emulator ? siteOrigin(schema) : base, path };
+}
+
+function adminUrl(schema: SiteSchema | undefined): string {
+  return process.env.OPENFLOW_ADMIN_URL || new URL("/admin/", siteOrigin(schema)).toString();
+}
+
+const jsonRpcError = (code: number, message: string) => ({
+  jsonrpc: "2.0",
+  id: null,
+  error: { code, message },
+});
+
 /**
  * MCP server of the site (Model Context Protocol, Streamable HTTP, stateless): an AI assistant
  * (Claude, ChatGPT…) edits the site by chat with the tools of `@openflow/core` (`AGENT_TOOLS`).
- * Public HTTPS endpoint (`https://<region>-<project>.cloudfunctions.net/openflowMcp`), authenticated
- * with an owner-created key
- * (`Authorization: Bearer ofk_…`, or `?key=ofk_…` for clients without custom headers).
+ *
+ * Address: `https://<site>/mcp` (Hosting rewrite, see `firebase.json`), also reachable at the
+ * function's own addresses. Assistants connect with OAuth (`oauth.ts`: metadata, registration,
+ * consent in the admin, tokens), or with an owner-created key (`Authorization: Bearer ofk_…`, or
+ * `?key=ofk_…` for clients without custom headers).
  */
 export const openflowMcp = onRequest(
-  { region, timeoutSeconds: 120, memory: "512MiB", cors: false, invoker: "public" },
+  {
+    region,
+    timeoutSeconds: 120,
+    memory: "512MiB",
+    cors: false,
+    invoker: "public",
+    maxInstances: 10,
+  },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");
     res.set(
@@ -254,24 +383,98 @@ export const openflowMcp = onRequest(
       "Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version",
     );
     res.set("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS");
+    res.set("Access-Control-Expose-Headers", "WWW-Authenticate");
     res.set("Cache-Control", "no-store");
     if (req.method === "OPTIONS") {
       res.status(204).end();
       return;
     }
+    const db = getFirestore();
+    const schema = await loadSiteSchema(db);
+    const urls = requestUrls(req as never, schema);
+    const { route, suffix } = routeOf(urls.path);
+    const only = (method: string) => {
+      if (req.method === method) return true;
+      res
+        .set("Allow", `${method}, OPTIONS`)
+        .status(405)
+        .json({
+          error: "invalid_request",
+          error_description: `Méthode non prise en charge : utilisez ${method}.`,
+        });
+      return false;
+    };
+    try {
+      switch (route) {
+        case "resource-metadata":
+          if (!only("GET")) return;
+          res
+            .set("Cache-Control", "public, max-age=300")
+            .json(
+              resourceMetadata(urls.base + suffix, urls.issuer, schema?.site.name ?? hostingSite()),
+            );
+          return;
+        case "server-metadata":
+          if (!only("GET")) return;
+          res.set("Cache-Control", "public, max-age=300").json(serverMetadata(urls.base));
+          return;
+        case "register":
+          if (!only("POST")) return;
+          res.status(201).json(await registerClient(db, req.body));
+          return;
+        case "authorize": {
+          if (!only("GET")) return;
+          const result = await startAuthorization(db, req.query as Record<string, unknown>, {
+            adminUrl: adminUrl(schema),
+            issuer: urls.base,
+          });
+          if ("redirect" in result) {
+            res.redirect(302, result.redirect);
+          } else {
+            res
+              .status(400)
+              .set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'")
+              .type("html")
+              .send(errorPage(result.page));
+          }
+          return;
+        }
+        case "token":
+          if (!only("POST")) return;
+          res
+            .set("Pragma", "no-cache")
+            .json(await exchangeToken(db, tokenRequestParams(req.body, req.headers.authorization)));
+          return;
+        case "revoke":
+          if (!only("POST")) return;
+          await revokeToken(db, tokenRequestParams(req.body, req.headers.authorization));
+          res.status(200).json({});
+          return;
+        case "unknown":
+          res.status(404).json(jsonRpcError(-32000, "Adresse inconnue : utilisez /mcp."));
+          return;
+        default:
+          break;
+      }
+    } catch (error) {
+      if (error instanceof OAuthError) {
+        res.status(error.status).json({ error: error.code, error_description: error.message });
+      } else {
+        logger.error("OpenFlow OAuth", error);
+        res.status(500).json({ error: "server_error", error_description: "Erreur interne." });
+      }
+      return;
+    }
+
+    // MCP itself.
     if (req.method !== "POST") {
       // Stateless server: no event stream to open, no session to delete.
       res
         .set("Allow", "POST, OPTIONS")
         .status(405)
-        .json({
-          jsonrpc: "2.0",
-          id: null,
-          error: { code: -32000, message: "Method not allowed: use POST." },
-        });
+        .json(jsonRpcError(-32000, "Method not allowed: use POST."));
       return;
     }
-    const db = getFirestore();
     const key = await verifyAgentToken(
       db,
       tokenFromRequest(
@@ -281,26 +484,23 @@ export const openflowMcp = onRequest(
     );
     if (!key) {
       res
-        .set("WWW-Authenticate", 'Bearer realm="OpenFlow"')
+        .set(
+          "WWW-Authenticate",
+          `Bearer resource_metadata="${urls.base}/.well-known/oauth-protected-resource${suffix}", scope="${OAUTH_SCOPE}"`,
+        )
         .status(401)
-        .json({
-          jsonrpc: "2.0",
-          id: null,
-          error: {
-            code: -32001,
-            message:
-              "Clé d'accès absente ou révoquée : créez-en une dans l'admin (Réglages > Assistant IA).",
-          },
-        });
+        .json(
+          jsonRpcError(
+            -32001,
+            "Connexion requise : ajoutez ce serveur dans votre assistant IA et connectez-vous, ou utilisez une clé créée dans l'admin (Assistant IA).",
+          ),
+        );
       return;
     }
-    const schema = await loadSiteSchema(db);
     if (!schema) {
-      res.status(503).json({
-        jsonrpc: "2.0",
-        id: null,
-        error: { code: -32002, message: "Schéma du site absent : lancez `openflow deploy`." },
-      });
+      res
+        .status(503)
+        .json(jsonRpcError(-32002, "Schéma du site absent : lancez `openflow deploy`."));
       return;
     }
     const bucket = getStorage().bucket();

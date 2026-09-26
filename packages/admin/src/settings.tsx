@@ -8,7 +8,6 @@ import {
 } from "@openflow/core";
 import { type Config, type CustomField, type Data, type Fields, Puck } from "@puckeditor/core";
 import { createElement, useCallback, useId, useMemo, useState } from "react";
-import { AssistantSettings } from "./assistant.js";
 import { useAutosave } from "./autosave.js";
 import { ThemeStyles } from "./canvas.js";
 import { type SettingsTab, useAdmin } from "./context.js";
@@ -413,19 +412,18 @@ const TAB_TITLES: Record<SettingsTab, string> = {
   global: "Contenu commun",
   theme: "Thème",
   site: "Site et référencement",
-  assistant: "Assistant IA",
 };
 
 /** Réglages: one view per tab of the sidebar (the tab lives in the address). */
 export function SettingsView({ tab }: { tab: SettingsTab }) {
   const { config } = useAdmin();
   if (tab === "theme" && config.theme) return <ThemeEditor theme={config.theme} />;
-  if (tab === "site" || tab === "assistant") {
+  if (tab === "site") {
     return (
       <>
         <PageHead title={TAB_TITLES[tab]} />
         <div className="of-view of-view--narrow">
-          {tab === "site" ? <SiteForm /> : <AssistantSettings />}
+          <SiteForm />
         </div>
       </>
     );

@@ -24,6 +24,8 @@ import type { Firestore } from "firebase-admin/firestore";
 
 /** Prefix of OpenFlow assistant keys (recognisable in logs and secret scanners). */
 export const AGENT_TOKEN_PREFIX = "ofk_";
+/** Prefix of the OAuth access tokens given to connected assistants (see `oauth.ts`). */
+export const OAUTH_ACCESS_TOKEN_PREFIX = "ofa_";
 
 export function hashAgentToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -47,12 +49,17 @@ export async function createAgentToken(
   return { id: ref.id, token };
 }
 
-/** Finds the key presented by a client (`Authorization: Bearer …` or `?key=…`). */
+/**
+ * Finds the assistant presenting `token`: an owner-created key (`ofk_…`, `Authorization: Bearer`
+ * or `?key=`) or an OAuth access token (`ofa_…`, valid one hour).
+ */
 export async function verifyAgentToken(
   db: Firestore,
   token: string | undefined,
 ): Promise<{ id: string; doc: AgentTokenDoc } | undefined> {
-  if (!token?.startsWith(AGENT_TOKEN_PREFIX) || token.length > 200) return undefined;
+  if (!token || token.length > 200) return undefined;
+  const oauth = token.startsWith(OAUTH_ACCESS_TOKEN_PREFIX);
+  if (!oauth && !token.startsWith(AGENT_TOKEN_PREFIX)) return undefined;
   const snap = await db
     .collection(COLLECTIONS.agentTokens)
     .where("hash", "==", hashAgentToken(token))
@@ -61,6 +68,8 @@ export async function verifyAgentToken(
   const found = snap.docs[0];
   if (!found) return undefined;
   const doc = found.data() as AgentTokenDoc;
+  if (oauth !== (doc.kind === "oauth")) return undefined;
+  if (oauth && (!doc.expiresAt || Date.parse(doc.expiresAt) < Date.now())) return undefined;
   // Last use, at most once per hour (shown in the admin).
   const last = doc.lastUsedAt ? Date.parse(doc.lastUsedAt) : 0;
   if (Date.now() - last > 3_600_000) {

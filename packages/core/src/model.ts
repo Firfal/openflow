@@ -7,8 +7,17 @@ export const COLLECTIONS = {
   releases: "of_releases",
   media: "of_media",
   system: "of_system",
-  /** Access keys of AI assistants (MCP), hashed. Created by `openflowCreateAgentToken`. */
+  /**
+   * AI assistants allowed on the site (MCP): owner-created keys and OAuth connections, hashed.
+   * The owner lists and revokes them; only the functions write them.
+   */
   agentTokens: "of_agent_tokens",
+  /** OAuth clients registered by AI assistants (dynamic client registration). Server only. */
+  agentClients: "of_agent_clients",
+  /** Pending OAuth authorization requests, waiting for the owner's consent (10 min). Server only. */
+  agentRequests: "of_agent_requests",
+  /** OAuth authorization codes, hashed, single use (5 min). Server only. */
+  agentCodes: "of_agent_codes",
 } as const;
 
 /** Well-known document ids. */
@@ -35,21 +44,37 @@ export const FUNCTION_NAMES = {
   publish: "openflowPublish",
   restoreRelease: "openflowRestoreRelease",
   createAgentToken: "openflowCreateAgentToken",
+  /** The owner's answer on the consent screen of an AI assistant (OAuth). */
+  agentConsent: "openflowAgentConsent",
   mcp: "openflowMcp",
 } as const;
 
 /** `updatedBy` of the changes made by an AI assistant (the editor reloads them live). */
 export const AGENT_AUTHOR = "Assistant IA";
 
-/** `of_agent_tokens/{id}`: an access key of an AI assistant (only its SHA-256 is stored). */
+/**
+ * `of_agent_tokens/{id}`: an AI assistant allowed on the site, either an access key created by the
+ * owner (`kind` absent or `key`) or an OAuth connection (`oauth`: Claude, ChatGPT… signed in with
+ * « Se connecter »). Only SHA-256 hashes of the secrets are stored.
+ */
 export interface AgentTokenDoc {
+  kind?: "key" | "oauth";
+  /** Name shown to the owner: the key's name, or the assistant's (« Claude »). */
   label: string;
+  /** Hash of the key, or of the current OAuth access token. */
   hash: string;
   /** First characters of the key, to recognise it in the list. */
   prefix: string;
   createdAt: string;
   createdBy: string;
   lastUsedAt?: string;
+  /** OAuth: registered client, expiry of the access token, current refresh token. */
+  clientId?: string;
+  expiresAt?: string;
+  refreshHash?: string;
+  refreshExpiresAt?: string;
+  /** OAuth: where the assistant is sent back after consent (host or app), shown to the owner. */
+  redirect?: string;
 }
 
 /** Default Firebase project id used with the local emulators. */

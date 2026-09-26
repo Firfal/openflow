@@ -15,7 +15,8 @@ const site = path.resolve(
 
 writeFileSync(
   path.join(site, "functions", ".env.local"),
-  `OPENFLOW_OWNER_EMAIL=proprietaire@exemple.fr\nOPENFLOW_LOCAL_SITE_DIR=${site}\n`,
+  // The OAuth consent screen of the assistant test (assistant.test.ts serves the site on 3102).
+  `OPENFLOW_OWNER_EMAIL=proprietaire@exemple.fr\nOPENFLOW_LOCAL_SITE_DIR=${site}\nOPENFLOW_ADMIN_URL=http://localhost:3102/admin/\n`,
 );
 const build = spawnSync("npm", ["--prefix", "functions", "run", "build"], {
   cwd: site,
