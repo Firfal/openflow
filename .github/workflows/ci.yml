@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -52,8 +53,8 @@ jobs:
       - run: pnpm --filter @openflow/e2e exec playwright install --with-deps chromium
       - name: Security rules + admin scenario on the Firebase emulators
         run: pnpm --filter @openflow/e2e test
-      - name: Editor ergonomics on the landing (drag and drop, collapsed content, site frame)
-        run: pnpm --filter @openflow/e2e test editor.test.ts
+      - name: Landing (editor ergonomics, AI assistant and OAuth, security rules)
+        run: pnpm --filter @openflow/e2e test editor assistant rules
         env:
           OPENFLOW_E2E_SITE: ${{ github.workspace }}/sites/landing
       - uses: actions/upload-artifact@v4
