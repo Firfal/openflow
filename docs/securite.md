@@ -29,6 +29,8 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
   validées (champs obligatoires, statut).
 - `of_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
 - `of_system` : aucun accès client.
+- `of_agent_tokens` (clés des assistants IA) : lecture et suppression (révocation) par le propriétaire,
+  création uniquement par la fonction `openflowCreateAgentToken` ; seule l'empreinte SHA-256 est stockée.
 - Storage `openflow/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
   en type et en taille ; les SVG sont refusés pour éviter l'injection de scripts.
 - Storage `openflow/source` et `openflow/snapshots` : aucun accès client.
@@ -51,6 +53,13 @@ utilisateur connecté non propriétaire sont refusés partout ; le propriétaire
 - Le build ne lit pas Firestore : il reçoit un snapshot figé.
 - La règle OF-304 détecte les secrets dans le code (clés privées, jetons Anthropic, GitHub, AWS, Stripe,
   Slack). Les secrets serveur passent par `defineSecret` (Secret Manager).
+
+## Assistant IA (MCP et WebMCP)
+
+Le serveur MCP (fonction HTTPS `openflowMcp`) n'accepte que les clés créées par le propriétaire, révocables à
+tout moment. Les outils n'écrivent que des brouillons et assainissent ce qu'ils écrivent (texte riche, liens,
+images, style) contre l'injection. L'import de médias refuse les adresses privées. Détails :
+[assistant-ia.md](assistant-ia.md#sécurité).
 
 ## Recommandations au propriétaire
 

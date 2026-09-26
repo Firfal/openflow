@@ -55,8 +55,12 @@ Cette commande :
 - associe une application Web Firebase au site Hosting (elle la crée au besoin) : l'admin lit sa
   configuration dans `/__/firebase/init.json` ;
 - envoie le code source dans Storage ;
-- importe le contenu de départ sans jamais écraser un contenu existant ;
+- importe le contenu de départ sans jamais écraser un contenu existant, et met à jour le schéma des
+  sections (`of_system/schema`) lu par le serveur MCP ;
 - lance la première publication.
+
+Le propriétaire peut ensuite brancher son IA (Claude, ChatGPT…) : Réglages > Assistant IA crée une clé et
+donne l'adresse du serveur MCP (`openflowMcp`). Voir `docs/assistant-ia.md` du dépôt OpenFlow.
 
 Si les paquets `@openflow/*` ne viennent pas de npm (site placé dans le dépôt OpenFlow ou dans un fork,
 dépendances `workspace:`), la commande prépare une copie autonome du site : elle empaquette ces paquets

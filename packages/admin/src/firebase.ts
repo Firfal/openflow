@@ -29,6 +29,10 @@ export interface Services {
   functions: Functions;
   emulators: boolean;
   projectId: string;
+  /** Region of the OpenFlow Cloud Functions. */
+  region: string;
+  /** Host of the emulators, when used. */
+  emulatorHost?: string;
 }
 
 const APP_NAME = "openflow-admin";
@@ -62,8 +66,10 @@ export function initServices(setup: FirebaseSetup = {}): Promise<Services> {
     const auth = getAuth(app);
     const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
     const storage = getStorage(app);
-    const functions = getFunctions(app, setup.region ?? "europe-west1");
+    const region = setup.region ?? "europe-west1";
+    const functions = getFunctions(app, region);
     const emulators = Boolean(setup.emulators);
+    let emulatorHost: string | undefined;
     if (emulators) {
       const host =
         setup.emulatorHost ??
@@ -72,8 +78,19 @@ export function initServices(setup: FirebaseSetup = {}): Promise<Services> {
       connectFirestoreEmulator(db, host, 8080);
       connectStorageEmulator(storage, host, 9199);
       connectFunctionsEmulator(functions, host, 5001);
+      emulatorHost = host;
     }
-    return { app, auth, db, storage, functions, emulators, projectId: options.projectId ?? "" };
+    return {
+      app,
+      auth,
+      db,
+      storage,
+      functions,
+      emulators,
+      projectId: options.projectId ?? "",
+      region,
+      emulatorHost,
+    };
   })();
   return pending;
 }

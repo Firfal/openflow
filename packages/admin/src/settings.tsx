@@ -8,6 +8,7 @@ import {
 } from "@openflow/core";
 import { type Config, type CustomField, type Data, type Fields, Puck } from "@puckeditor/core";
 import { createElement, useCallback, useId, useMemo, useState } from "react";
+import { AssistantSettings } from "./assistant.js";
 import { useAutosave } from "./autosave.js";
 import { ThemeStyles } from "./canvas.js";
 import { useAdmin } from "./context.js";
@@ -380,7 +381,7 @@ function ThemeEditor({ theme }: { theme: ThemeConfig }) {
 
 export function SettingsView() {
   const { config } = useAdmin();
-  const [tab, setTab] = useState<"global" | "theme" | "site">("global");
+  const [tab, setTab] = useState<"global" | "theme" | "site" | "assistant">("global");
   return (
     <section className="of-view of-view--flush">
       <nav className="of-tabs" aria-label="Réglages">
@@ -407,11 +408,22 @@ export function SettingsView() {
         >
           Site et référencement
         </button>
+        <button
+          type="button"
+          className={tab === "assistant" ? "is-active" : ""}
+          onClick={() => setTab("assistant")}
+        >
+          Assistant IA
+        </button>
       </nav>
       {tab === "global" ? (
         <GlobalContent />
       ) : tab === "theme" && config.theme ? (
         <ThemeEditor theme={config.theme} />
+      ) : tab === "assistant" ? (
+        <div className="of-view">
+          <AssistantSettings />
+        </div>
       ) : (
         <div className="of-view">
           <SiteForm />

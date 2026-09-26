@@ -1,6 +1,7 @@
 import { FUNCTION_NAMES, type OpenFlowConfig, OWNER_CLAIM, type SettingsDoc } from "@openflow/core";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { browserAgentContext, useWebMcp } from "./agent.js";
 import {
   type AdminContextValue,
   AdminProvider,
@@ -168,6 +169,11 @@ function OwnerApp({
       for (const unsubscribe of unsubscribers) unsubscribe();
     };
   }, [services.db, notify]);
+
+  // WebMCP: the assistant of the browser edits the site with the owner's session.
+  const agentContext = useMemo(() => browserAgentContext(services, config), [services, config]);
+  const getAgentContext = useCallback(() => agentContext, [agentContext]);
+  useWebMcp(getAgentContext);
 
   const value = useMemo<AdminContextValue | null>(
     () =>

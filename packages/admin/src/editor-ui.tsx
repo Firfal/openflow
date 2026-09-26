@@ -1,5 +1,12 @@
-import { ActionBar, createUsePuck, type Overrides, type Viewports } from "@puckeditor/core";
-import { createContext, type ReactNode, useContext } from "react";
+import {
+  ActionBar,
+  createUsePuck,
+  type Overrides,
+  useGetPuck,
+  type Viewports,
+} from "@puckeditor/core";
+import { createContext, type ReactNode, useContext, useEffect } from "react";
+import { type EditorBridge, getEditorBridge, setEditorBridge } from "./agent.js";
 import type { SaveState } from "./autosave.js";
 import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
 import { FieldsPanel } from "./panel.js";
@@ -16,6 +23,8 @@ export interface EditorChrome {
   retry: () => void;
   /** "Terminer" button (page editor only). */
   finish?: () => void;
+  /** Page being edited (page editor only): AI assistants edit it through Puck. */
+  pageId?: string;
 }
 
 export const EditorChromeContext = createContext<EditorChrome | null>(null);
@@ -49,10 +58,31 @@ export function SaveIndicator({
   );
 }
 
+/**
+ * Lets an AI assistant (WebMCP, or the MCP server through live sync) edit the open page through
+ * Puck: the owner sees each change, can undo it, and autosave stays the only writer.
+ */
+function AgentBridge({ pageId }: { pageId: string }) {
+  const getPuck = useGetPuck();
+  useEffect(() => {
+    const bridge: EditorBridge = {
+      pageId,
+      getData: () => getPuck().appState.data,
+      setData: (data) => getPuck().dispatch({ type: "setData", data }),
+    };
+    setEditorBridge(bridge);
+    return () => {
+      if (getEditorBridge() === bridge) setEditorBridge(null);
+    };
+  }, [pageId, getPuck]);
+  return null;
+}
+
 function HeaderActions(_props: { children: ReactNode }) {
   const chrome = useContext(EditorChromeContext);
   return (
     <>
+      {chrome?.pageId && <AgentBridge pageId={chrome.pageId} />}
       {chrome && (
         <SaveIndicator state={chrome.saveState} error={chrome.saveError} onRetry={chrome.retry} />
       )}

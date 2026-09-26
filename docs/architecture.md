@@ -55,6 +55,8 @@ Projet Firebase du client (plan Blaze)
   en tête du panneau de droite (une image ou une vidéo ouvre directement la médiathèque). L'onglet « Style »
   modifie le style de la section ou de l'élément pour l'écran affiché (Ordinateur, Tablette, Mobile).
   La feuille de style est recalculée à chaque modification et injectée dans l'iframe de l'éditeur.
+- Un **assistant IA** peut modifier le site par la discussion : serveur MCP (fonction HTTPS `openflowMcp`) et WebMCP
+  dans l'admin, avec les mêmes outils (`packages/core/src/agent/`). Voir [assistant-ia.md](assistant-ia.md).
 - Chaque modification est sauvegardée automatiquement dans `of_pages/{id}.data` (debounce de 800 ms). Toutes les
   sauvegardes en attente sont forcées avant une publication.
 

@@ -28,6 +28,10 @@ match /of_releases/{releaseId} {
 }
 match /of_system/{docId} {
   allow read, write: if false;
+}
+match /of_agent_tokens/{tokenId} {
+  allow read, delete: if ofIsOwner();
+  allow create, update: if false;
 }`;
 
 export const STORAGE_RULES_BLOCK = `function ofIsOwner() {

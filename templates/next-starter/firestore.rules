@@ -26,6 +26,10 @@ service cloud.firestore {
     match /of_system/{docId} {
       allow read, write: if false;
     }
+    match /of_agent_tokens/{tokenId} {
+      allow read, delete: if ofIsOwner();
+      allow create, update: if false;
+    }
     // END openflow
 
     // Ajoutez ici les règles propres à votre site.

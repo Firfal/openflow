@@ -12,6 +12,8 @@ propres au site. Les types TypeScript se trouvent dans `packages/core/src/model.
 | `of_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
 | `of_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` | Admin, `openflow seed` | Admin (médiathèque) |
 | `of_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `openflowPublish` |
+| `of_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème (`buildSiteSchema`) | `openflow seed` / `deploy` | `openflowMcp` |
+| `of_agent_tokens/{id}` | Clés des assistants IA : `label`, `hash` (SHA-256), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` | `openflowCreateAgentToken`, `openflowMcp` | Admin (liste, révocation) |
 
 Taille : une page Puck pèse généralement quelques dizaines de Ko. L'admin avertit au-delà de 800 Ko et
 refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).

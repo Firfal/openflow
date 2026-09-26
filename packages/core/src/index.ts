@@ -1,3 +1,34 @@
+export { sanitizeRichText } from "./agent/html.js";
+export {
+  handleMcpMessage,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  MCP_PROTOCOL_VERSIONS,
+  type McpServerOptions,
+  toolResult,
+} from "./agent/mcp.js";
+export {
+  buildSiteSchema,
+  configFromSchema,
+  type FieldSchema,
+  type SectionSchema,
+  SITE_SCHEMA_VERSION,
+  type SiteSchema,
+} from "./agent/schema.js";
+export {
+  AGENT_TOOLS,
+  type AgentBackend,
+  type AgentContext,
+  AgentError,
+  type AgentMedia,
+  type AgentPage,
+  type AgentRelease,
+  type AgentSettings,
+  type AgentToolInfo,
+  agentInstructions,
+  runAgentTool,
+  type ToolAnnotations,
+} from "./agent/tools.js";
 export type {
   EditorOptions,
   LayoutProps,
@@ -41,6 +72,7 @@ export {
   VIDEO_PLACEHOLDER,
 } from "./marks.js";
 export type {
+  AgentTokenDoc,
   MediaDoc,
   PageDoc,
   PageSeo,
@@ -52,6 +84,7 @@ export type {
   SourceDoc,
 } from "./model.js";
 export {
+  AGENT_AUTHOR,
   COLLECTIONS,
   DEMO_PROJECT_ID,
   DOCS,

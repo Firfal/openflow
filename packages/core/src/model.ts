@@ -7,12 +7,16 @@ export const COLLECTIONS = {
   releases: "of_releases",
   media: "of_media",
   system: "of_system",
+  /** Access keys of AI assistants (MCP), hashed. Created by `openflowCreateAgentToken`. */
+  agentTokens: "of_agent_tokens",
 } as const;
 
 /** Well-known document ids. */
 export const DOCS = {
   settings: "settings",
   source: "source",
+  /** `of_system/schema`: serializable site schema (sections, fields, theme) for the MCP server. */
+  schema: "schema",
 } as const;
 
 /** Cloud Storage prefixes used by OpenFlow. */
@@ -30,7 +34,68 @@ export const FUNCTION_NAMES = {
   claimOwner: "openflowClaimOwner",
   publish: "openflowPublish",
   restoreRelease: "openflowRestoreRelease",
+  createAgentToken: "openflowCreateAgentToken",
+  mcp: "openflowMcp",
 } as const;
+
+/** `updatedBy` of the changes made by an AI assistant (the editor reloads them live). */
+export const AGENT_AUTHOR = "Assistant IA";
+
+/** `of_agent_tokens/{id}`: an access key of an AI assistant (only its SHA-256 is stored). */
+export interface AgentTokenDoc {
+  label: string;
+  hash: string;
+  /** First characters of the key, to recognise it in the list. */
+  prefix: string;
+  createdAt: string;
+  createdBy: string;
+  lastUsedAt?: string;
+}
+
+/** Default Firebase project id used with the local emulators. */
+export const DEMO_PROJECT_ID = "demo-openflow";
+
+/** Maximum Firestore document size is 1 MiB; warn well before it. */
+export const PAGE_SIZE_WARNING_BYTES = 800 * 1024;
+
+export type PageStatus = "draft" | "published";
+
+export interface PageSeo {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+/** `of_pages/{pageId}` — the working copy (draft) of a page. */
+export interface PageDoc {
+  slug: string;
+  title: string;
+  status: PageStatus;
+  seo: PageSeo;
+  data: Data;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+/** Site-level settings edited in "Site et SEO". */
+export interface SiteSettings {
+  name: string;
+  lang: string;
+  url?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+/** `of_site/settings`. */
+export interface SettingsDoc {
+  site: SiteSettings;
+  values: Record<string, unknown>;
+  /** Theme tokens chosen by the owner, e.g. `{ "color-ink": "#101820" }` (see `config.theme`). */
+  theme?: Record<string, string>;
+  updatedAt: string;
+  updatedBy?: string;
+}
 
 export type ReleaseStatus = "queued" | "building" | "live" | "failed" | "superseded";
 

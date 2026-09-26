@@ -1,6 +1,13 @@
 import path from "node:path";
 import { loadSite } from "@openflow/check";
-import { COLLECTIONS, DOCS, ensureIds, type PageDoc, type SettingsDoc } from "@openflow/core";
+import {
+  buildSiteSchema,
+  COLLECTIONS,
+  DOCS,
+  ensureIds,
+  type PageDoc,
+  type SettingsDoc,
+} from "@openflow/core";
 import { listStaticMedia, loadSeed, writeSnapshotFile } from "@openflow/core/node";
 import { snapshotFromFirestore } from "@openflow/functions/core";
 import { adminApp, defaultProject, firestore } from "../firebase.js";
@@ -68,6 +75,11 @@ export async function seed(
       await ref.set(JSON.parse(JSON.stringify(doc)));
       created++;
     }
+    // Schema of the sections (code, not content: always replaced), read by the MCP server.
+    await db
+      .collection(COLLECTIONS.system)
+      .doc(DOCS.schema)
+      .set(JSON.parse(JSON.stringify(buildSiteSchema(config))));
     // Images and videos of public/ go into the media library (the owner can reuse them).
     for (const { id, doc } of await listStaticMedia(site)) {
       const ref = db.collection(COLLECTIONS.media).doc(id);

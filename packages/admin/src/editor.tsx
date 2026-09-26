@@ -1,6 +1,15 @@
-import { applyDefaults, PAGE_SIZE_WARNING_BYTES, slugToPath } from "@openflow/core";
+import {
+  AGENT_AUTHOR,
+  applyDefaults,
+  COLLECTIONS,
+  PAGE_SIZE_WARNING_BYTES,
+  type PageDoc,
+  slugToPath,
+} from "@openflow/core";
 import { type Data, Puck } from "@puckeditor/core";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getEditorBridge } from "./agent.js";
 import { useAutosave } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { getPage, type PageEntry, savePageData } from "./data.js";
@@ -77,9 +86,26 @@ export function EditorView({ pageId }: { pageId: string }) {
         await flush();
         navigate({ view: "pages" });
       },
+      pageId,
     }),
-    [autosave.state, autosave.error, flush, navigate],
+    [autosave.state, autosave.error, flush, navigate, pageId],
   );
+
+  // Changes made by an AI assistant through the MCP server appear live in the editor.
+  useEffect(() => {
+    if (!page) return;
+    return onSnapshot(doc(services.db, COLLECTIONS.pages, pageId), (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      const remote = snap.data() as PageDoc | undefined;
+      if (!remote || remote.updatedBy !== AGENT_AUTHOR) return;
+      const data = applyDefaults(remote.data, config);
+      const json = JSON.stringify(data);
+      if (json === lastSaved.current) return;
+      lastSaved.current = json;
+      getEditorBridge()?.setData(data);
+      notify("info", "L'assistant IA a modifié cette page.");
+    });
+  }, [page, pageId, services.db, config, notify]);
 
   if (page === undefined) return <Spinner label="Ouverture de la page…" />;
   if (page === null) {

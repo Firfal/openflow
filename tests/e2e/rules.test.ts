@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { getBytes, ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -54,6 +54,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "of_pages/accueil"), page);
     await setDoc(doc(db, "of_releases/r1"), { status: "live" });
     await setDoc(doc(db, "of_system/source"), { path: "openflow/source/x.tgz" });
+    await setDoc(doc(db, "of_agent_tokens/k1"), { label: "Claude", hash: "abc", prefix: "ofk_ab" });
     await uploadBytes(
       ref(context.storage(), "openflow/media/photo.png"),
       new Uint8Array([1, 2, 3]),
@@ -102,6 +103,14 @@ describe("Firestore rules", () => {
     await assertFails(setDoc(doc(db, "of_system/source"), { path: "evil" }));
   });
 
+  it("lets the owner list and revoke assistant keys, never create them", async () => {
+    const db = owner().firestore();
+    await assertSucceeds(getDoc(doc(db, "of_agent_tokens/k1")));
+    await assertFails(setDoc(doc(db, "of_agent_tokens/k2"), { hash: "mine" }));
+    await assertFails(updateDoc(doc(db, "of_agent_tokens/k1"), { hash: "mine" }));
+    await assertSucceeds(deleteDoc(doc(db, "of_agent_tokens/k1")));
+  });
+
   for (const [who, context] of [
     ["an authenticated non-owner", intruder],
     ["an anonymous visitor", anonymous],
@@ -113,6 +122,8 @@ describe("Firestore rules", () => {
       await assertFails(getDoc(doc(db, "of_site/settings")));
       await assertFails(setDoc(doc(db, "of_site/settings"), { values: {} }));
       await assertFails(getDoc(doc(db, "of_releases/r1")));
+      await assertFails(getDoc(doc(db, "of_agent_tokens/k1")));
+      await assertFails(deleteDoc(doc(db, "of_agent_tokens/k1")));
     });
   }
 });

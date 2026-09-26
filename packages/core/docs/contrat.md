@@ -146,6 +146,9 @@ n'as rien à coder, mais la section doit s'y prêter.
 - **Aucun champ dont le nom commence par `_`** (OF-203) : ces noms sont réservés à OpenFlow.
 - Pour un site où seul le contenu doit changer : `editor: { styles: "off" }` dans `defineConfig`.
 
+Le propriétaire peut aussi confier ces modifications à une IA (serveur MCP et WebMCP) : écris des libellés de
+champs clairs, car l'IA s'en sert pour comprendre les sections.
+
 Le **thème** expose au propriétaire les variables de `app/globals.css` (Réglages > Thème) :
 
 ```tsx
