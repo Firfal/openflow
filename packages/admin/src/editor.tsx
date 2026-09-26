@@ -1,42 +1,19 @@
 import { applyDefaults, PAGE_SIZE_WARNING_BYTES, slugToPath } from "@openflow/core";
 import { type Data, Puck } from "@puckeditor/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type SaveState, useAutosave } from "./autosave.js";
+import { useAutosave } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { getPage, type PageEntry, savePageData } from "./data.js";
+import {
+  EDITOR_IFRAME,
+  type EditorChrome,
+  EditorChromeContext,
+  PAGE_EDITOR_OVERRIDES,
+} from "./editor-ui.js";
 import { prepareEditorConfig } from "./fields.js";
 import { errorMessage } from "./firebase.js";
 import { FR_DICTIONARY } from "./i18n.js";
 import { Button, Spinner } from "./ui.js";
-
-const SAVE_LABELS: Record<SaveState, string> = {
-  saved: "Enregistré",
-  pending: "Modifications en cours…",
-  saving: "Enregistrement…",
-  error: "Échec de l'enregistrement",
-};
-
-export function SaveIndicator({
-  state,
-  error,
-  onRetry,
-}: {
-  state: SaveState;
-  error?: string;
-  onRetry: () => void;
-}) {
-  return (
-    <span className={`of-save of-save--${state}`} role="status" title={error}>
-      {state === "saving" && <span className="of-spinner of-spinner--small" aria-hidden />}
-      {SAVE_LABELS[state]}
-      {state === "error" && (
-        <Button variant="ghost" onClick={onRetry}>
-          Réessayer
-        </Button>
-      )}
-    </span>
-  );
-}
 
 export function EditorView({ pageId }: { pageId: string }) {
   const { config, services, user, notify, navigate } = useAdmin();
@@ -82,6 +59,23 @@ export function EditorView({ pageId }: { pageId: string }) {
     () => (page ? applyDefaults(page.data, config) : undefined),
     [page, config],
   );
+  const metadata = useMemo(
+    () => (page ? { page: { id: page.id, slug: page.slug, title: page.title } } : {}),
+    [page],
+  );
+  const { flush } = autosave;
+  const chrome = useMemo<EditorChrome>(
+    () => ({
+      saveState: autosave.state,
+      saveError: autosave.error,
+      retry: () => void flush(),
+      finish: async () => {
+        await flush();
+        navigate({ view: "pages" });
+      },
+    }),
+    [autosave.state, autosave.error, flush, navigate],
+  );
 
   if (page === undefined) return <Spinner label="Ouverture de la page…" />;
   if (page === null) {
@@ -93,39 +87,24 @@ export function EditorView({ pageId }: { pageId: string }) {
     );
   }
 
+  // Every prop given to <Puck> keeps its identity across renders: a new `overrides`, `iframe` or
+  // `metadata` object makes Puck rebuild its store and remount the canvas (e.g. mid-drag).
   return (
-    <div className="of-editor">
-      <Puck
-        config={editorConfig}
-        data={initialData!}
-        onChange={autosave.schedule}
-        dictionary={FR_DICTIONARY}
-        headerTitle={page.title}
-        headerPath={slugToPath(page.slug)}
-        height="calc(100dvh - var(--of-topbar-height))"
-        iframe={{ enabled: true, waitForStyles: true }}
-        metadata={{ page: { id: page.id, slug: page.slug, title: page.title } }}
-        overrides={{
-          headerActions: () => (
-            <>
-              <SaveIndicator
-                state={autosave.state}
-                error={autosave.error}
-                onRetry={() => void autosave.flush()}
-              />
-              <Button
-                variant="ghost"
-                onClick={async () => {
-                  await autosave.flush();
-                  navigate({ view: "pages" });
-                }}
-              >
-                Terminer
-              </Button>
-            </>
-          ),
-        }}
-      />
-    </div>
+    <EditorChromeContext.Provider value={chrome}>
+      <div className="of-editor">
+        <Puck
+          config={editorConfig}
+          data={initialData!}
+          onChange={autosave.schedule}
+          dictionary={FR_DICTIONARY}
+          headerTitle={page.title}
+          headerPath={slugToPath(page.slug)}
+          height="calc(100dvh - var(--of-topbar-height))"
+          iframe={EDITOR_IFRAME}
+          metadata={metadata}
+          overrides={PAGE_EDITOR_OVERRIDES}
+        />
+      </div>
+    </EditorChromeContext.Provider>
   );
 }

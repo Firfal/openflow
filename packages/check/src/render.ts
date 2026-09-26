@@ -268,6 +268,75 @@ function collect(html: string): Occurrences {
   return result;
 }
 
+/** Classes the site's own CSS uses to hide elements (e.g. `.demo-before { opacity: 0 }`). */
+async function hidingClasses(siteDir: string): Promise<Set<string>> {
+  const classes = new Set<string>();
+  const files = (await listCssFiles(path.join(siteDir, "app"))).concat(
+    await listCssFiles(path.join(siteDir, "styles")),
+  );
+  for (const file of files) {
+    const css = (await readFile(file, "utf8")).replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const match of css.matchAll(/([^{}@;]+)\{([^{}]*)\}/g)) {
+      const selector = (match[1] ?? "").trim();
+      const body = match[2] ?? "";
+      if (!/^\.[\w-]+$/.test(selector)) continue;
+      if (/(opacity\s*:\s*0\s*(;|$))|(display\s*:\s*none)|(visibility\s*:\s*hidden)/m.test(body)) {
+        classes.add(selector.slice(1));
+      }
+    }
+  }
+  return classes;
+}
+
+async function listCssFiles(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await listCssFiles(full)));
+    else if (entry.name.endsWith(".css")) out.push(full);
+  }
+  return out;
+}
+
+/** Tailwind classes that re-show a `hidden` element at a width the editor previews (≤ 1280 px). */
+const RESHOWN =
+  /^(sm|md|lg|xl):(block|flex|grid|inline|inline-block|inline-flex|table|contents|flow-root)$/;
+const ALWAYS_HIDDEN = new Set(["invisible", "opacity-0", "sr-only"]);
+
+function isHiddenElement(element: Element, siteClasses: Set<string>): boolean {
+  const attrs = new Map(element.attrs.map((attr) => [attr.name, attr.value]));
+  if (attrs.has("hidden")) return true;
+  const style = attrs.get("style") ?? "";
+  if (/display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(\s*;|$)/.test(style)) return true;
+  const classes = (attrs.get("class") ?? "").split(/\s+/).filter(Boolean);
+  if (classes.some((name) => ALWAYS_HIDDEN.has(name) || siteClasses.has(name))) return true;
+  return classes.includes("hidden") && !classes.some((name) => RESHOWN.test(name));
+}
+
+/** Sentinel tokens of an editor-mode render, split by visibility. */
+function collectVisibility(
+  html: string,
+  siteClasses: Set<string>,
+): { visible: Set<string>; hidden: Set<string> } {
+  const result = { visible: new Set<string>(), hidden: new Set<string>() };
+  const fragment = parse(`<!doctype html><html><body>${html}</body></html>`);
+  const visit = (node: ChildNode | DefaultTreeAdapterMap["document"], hidden: boolean) => {
+    if (node.nodeName === "#text") {
+      const value = (node as DefaultTreeAdapterMap["textNode"]).value;
+      for (const token of value.match(TOKEN) ?? [])
+        (hidden ? result.hidden : result.visible).add(token);
+    }
+    if ("childNodes" in node) {
+      const hides =
+        hidden || ("attrs" in node && isHiddenElement(node as unknown as Element, siteClasses));
+      for (const child of node.childNodes as ChildNode[]) visit(child, hides);
+    }
+  };
+  visit(fragment, false);
+  return result;
+}
+
 export interface SectionReport {
   name: string;
   fields: number;
@@ -377,6 +446,18 @@ export async function checkRender(
 
   if (options.sections === false) return { issues, sections };
 
+  // What the owner sees in the editor: the section rendered with `puck.isEditing`.
+  const siteClasses = await hidingClasses(siteDir);
+  const renderEditing = (name: string, props: Record<string, unknown>) =>
+    site.renderToStaticMarkup(
+      site.createElement(config.components[name]?.render, {
+        ...props,
+        id: `${name}-check`,
+        editMode: true,
+        puck: { isEditing: true, metadata: {}, dragRef: null, renderDropZone: () => null },
+      }),
+    );
+
   for (const [name, component] of Object.entries(config.components)) {
     const where = await locate(
       siteDir,
@@ -454,6 +535,27 @@ export async function checkRender(
           ),
         );
       }
+    }
+    try {
+      const seen = collectVisibility(renderEditing(name, props), siteClasses);
+      for (const [token, info] of sentinels.byToken) {
+        if (!info.contentEditable || seen.visible.has(token) || !seen.hidden.has(token)) continue;
+        issues.push(
+          makeIssue(
+            "OF-109",
+            `Section « ${name} » : le champ « ${info.path} » n'est affiché que dans un élément caché : il est impossible de le cliquer dans l'éditeur.`,
+            where,
+          ),
+        );
+      }
+    } catch (error) {
+      issues.push(
+        makeIssue(
+          "OF-107",
+          `Section « ${name} » : le rendu échoue dans l'éditeur (puck.isEditing) : ${(error as Error).message}`,
+          where,
+        ),
+      );
     }
     for (const text of new Set(found.leftoverText)) {
       const exact = await locate(siteDir, new RegExp(escapeRegExp(text.slice(0, 40))));

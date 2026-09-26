@@ -198,6 +198,41 @@ export default defineConfig({ site: { name: "X" }, components: { Promo } });`,
     expect(hardCoded?.line).toBe(2);
   }, 30_000);
 
+  it("flags editable fields only shown in hidden elements (OF-109)", async () => {
+    const section = `export const Status = {
+  fields: {
+    saved: { type: "text", contentEditable: true },
+    pending: { type: "text", contentEditable: true },
+    tab: { type: "text", contentEditable: true },
+    answer: { type: "text", contentEditable: true },
+  },
+  defaultProps: { saved: "Enregistré", pending: "En cours", tab: "Pages", answer: "Oui" },
+  render: ({ saved, pending, tab, answer, puck }) => (
+    <section>
+      <span className="fade-out">{saved}</span>
+      <span className="opacity-0">{pending}</span>
+      {puck?.isEditing && <span>{pending}</span>}
+      <span className="hidden md:inline">{tab}</span>
+      <details><summary>Q</summary><p>{answer}</p></details>
+    </section>
+  ),
+};
+`;
+    const dir = await makeSite("render-hidden", {
+      "openflow/components/Status.tsx": section,
+      "app/globals.css": ".fade-out { opacity: 0; transition: opacity 1s; }\n",
+      "openflow.config.tsx": `import { defineConfig } from "@openflow/core";
+import { Status } from "./openflow/components/Status";
+export default defineConfig({ site: { name: "X" }, components: { Status } });`,
+    });
+    const result = await runCheck({ siteDir: dir, level: "render" });
+    const hidden = result.issues.filter((issue) => issue.rule === "OF-109");
+    // `saved` is hidden by the site's own CSS class; `pending` has an editor-only copy; `tab` is
+    // re-shown from md; `answer` sits in a <details>, which the editor opens.
+    expect(hidden.map((issue) => issue.message.match(/« (\w+) »/g)?.[1])).toEqual(["« saved »"]);
+    expect(hidden[0]?.severity).toBe("warning");
+  }, 30_000);
+
   it("reports a config that cannot be loaded", async () => {
     const dir = await makeSite("render-broken", {
       "openflow.config.tsx": `import "./does-not-exist";\nexport default {};`,

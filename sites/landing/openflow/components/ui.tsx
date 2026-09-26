@@ -37,6 +37,7 @@ export function Section({
   return (
     <section
       id={anchor || undefined}
+      data-surface={SURFACES[surface] ? surface : "calque"}
       className={`${SURFACES[surface] ?? SURFACES.calque} px-5 py-24 sm:px-8 sm:py-32 ${className}`}
     >
       <div className="mx-auto max-w-7xl">{children}</div>
@@ -48,22 +49,16 @@ export function Section({
 export function Heading({
   title,
   intro,
-  surface = "calque",
 }: {
   title: ReactNode;
   intro?: ReactNode;
+  /** Kept for compatibility: colours now follow the section's `data-surface`. */
   surface?: Surface;
 }) {
   return (
     <div className="max-w-3xl">
       <h2 className="text-4xl font-bold leading-[1.05] sm:text-5xl">{title}</h2>
-      {intro && (
-        <p
-          className={`mt-5 max-w-2xl text-lg leading-8 ${surface === "encre" ? "text-white/70" : "text-graphite"}`}
-        >
-          {intro}
-        </p>
-      )}
+      {intro && <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{intro}</p>}
     </div>
   );
 }

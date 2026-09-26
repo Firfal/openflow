@@ -13,6 +13,7 @@ import {
   type Fields,
 } from "@puckeditor/core";
 import { useEffect, useId, useRef, useState } from "react";
+import { EditorFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
 import { ACCEPTED_MEDIA, listMedia, type MediaEntry, uploadMedia } from "./data.js";
 import { errorMessage } from "./firebase.js";
@@ -299,7 +300,10 @@ export function mapFields(fields: Fields | undefined): Fields {
   ) as Fields;
 }
 
-/** Puck config used by the editor: same components, OpenFlow fields wired to Firebase. */
+/**
+ * Puck config used by the editor: same components, OpenFlow fields wired to Firebase, and the
+ * site layout (header, footer, theme) around the page when the config declares one.
+ */
 export function prepareEditorConfig(config: OpenFlowConfig): Config {
   const components = Object.fromEntries(
     Object.entries(config.components).map(([name, component]) => [
@@ -307,11 +311,16 @@ export function prepareEditorConfig(config: OpenFlowConfig): Config {
       { ...component, fields: mapFields(component.fields) },
     ]),
   );
-  return {
-    categories: config.categories,
-    components,
-    root: config.root
-      ? { ...config.root, fields: config.root.fields ? mapFields(config.root.fields) : undefined }
-      : undefined,
-  } as Config;
+  const userRoot = config.root;
+  const root =
+    userRoot || config.layout
+      ? {
+          ...userRoot,
+          fields: userRoot?.fields ? mapFields(userRoot.fields) : undefined,
+          render: (props: any) => (
+            <EditorFrame>{userRoot?.render ? userRoot.render(props) : props.children}</EditorFrame>
+          ),
+        }
+      : undefined;
+  return { categories: config.categories, components, root } as Config;
 }

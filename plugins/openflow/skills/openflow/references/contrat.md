@@ -19,9 +19,10 @@ frontière entre les deux est constituée des **champs** déclarés par chaque s
 
 | Fichier | Rôle | Qui le modifie |
 |---|---|---|
-| `openflow.config.tsx` | `defineConfig({ site, components, categories, settings })` | Agent |
+| `openflow.config.tsx` | `defineConfig({ site, components, categories, settings, layout })` | Agent |
 | `openflow/components/*.tsx` | Sections (`ComponentConfig` Puck) | Agent |
-| `openflow/layout/*` | En-tête et pied de page, champs des réglages (`settings`) | Agent |
+| `openflow/layout/*` | `SiteLayout` (en-tête, pied de page, thème) et champs des réglages (`settings`) | Agent |
+| `app/(site)/layout.tsx` | `createOpenFlowLayout(config)` : rend `layout` autour des pages | Ne pas modifier |
 | `openflow/seed/settings.json` | Réglages de départ (`site` et `values`) | Agent, avant livraison |
 | `openflow/seed/pages/<id>.json` | Pages de départ | Agent, avant livraison |
 | `app/(site)/[[...slug]]/page.tsx` | Rendu des pages à partir du snapshot | Ne pas modifier |
@@ -95,6 +96,8 @@ Puis, dans `openflow.config.tsx` : `components: { …, Offre }` et `categories.c
 - **OF-106** : les textes affichés comme contenu sont `contentEditable` (le propriétaire clique dessus pour les modifier).
 - **OF-107** : le rendu résiste aux champs vides, aux textes très longs et aux images ou listes absentes.
 - **OF-108** : un champ `contentEditable` n'apparaît jamais dans un attribut ni dans une chaîne.
+- **OF-109** : un champ éditable reste visible dans l'éditeur (`puck?.isEditing`), même s'il n'apparaît sur le
+  site que dans un état caché (animation, `opacity-0`, très grand écran).
 - **OF-201** : le contenu de départ respecte les champs déclarés.
 - **OF-202** : on ne renomme ni ne supprime un champ ou une section déjà livrés.
 - **OF-203** : la config est valide (sections en PascalCase, `site.name`).
@@ -113,7 +116,14 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
 - **Texte enrichi.** La valeur d'un champ `richtext` est déjà rendue par Puck : affiche `{body}` dans un `div`.
 - **Composants client.** Les composants interactifs (`useState`, carrousel…) vont dans un fichier `"use client"`.
   Rien ne doit accéder au navigateur pendant le rendu initial.
-- **Réglages globaux.** Ils se lisent côté serveur avec `getSettings(config)` de `@openflow/next`, par exemple dans `app/(site)/layout.tsx`.
+- **En-tête, pied de page, thème : `layout`.** Déclare `layout: SiteLayout` dans `defineConfig`. `SiteLayout` reçoit
+  `{ settings, site, children, editing }` et entoure les sections. Le site publié l'utilise via
+  `createOpenFlowLayout(config)`, et l'admin l'affiche autour de la page éditée : le propriétaire voit sa page
+  dans son vrai cadre, avec la couleur du thème. Pas de `useState` ni d'accès au navigateur dans `SiteLayout`.
+- **Réglages globaux.** Ils arrivent dans `SiteLayout` par la prop `settings`. Ailleurs côté serveur :
+  `getSettings(config)` de `@openflow/next`.
+- **États cachés.** Un texte visible seulement pendant une animation, au survol ou sur très grand écran doit aussi
+  s'afficher quand `puck?.isEditing` est vrai (OF-109). Les `<details>` sont ouverts automatiquement dans l'éditeur.
 - **Images du contenu de départ.** Elles peuvent pointer vers `public/` (`"/images/x.jpg"`). Le propriétaire les remplacera.
 
 ## Contenu de départ (seed)

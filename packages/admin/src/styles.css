@@ -679,3 +679,50 @@
     flex-direction: column;
   }
 }
+
+/* Section library ("Ajouter" tab): a palette, not the page's sections. */
+.of-drawer__hint {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--of-radius);
+  background: #eef2ff;
+  color: #33406b;
+  font: 13px / 1.45 var(--of-font);
+}
+
+.of-drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.of-drawer-item > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.of-drawer-item__plus {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--of-primary);
+  color: #fff;
+  font: 600 15px / 1 var(--of-font);
+}
+
+/* Stand-in for the page content in the settings preview (inside the site layout). */
+.of-settings-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  color: rgb(0 0 0 / 0.35);
+  font:
+    500 14px / 1.4 system-ui,
+    sans-serif;
+  background: repeating-linear-gradient(135deg, rgb(0 0 0 / 0.03) 0 12px, transparent 12px 24px);
+}

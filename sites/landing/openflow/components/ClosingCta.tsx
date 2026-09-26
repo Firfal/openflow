@@ -35,7 +35,7 @@ export const ClosingCta: ComponentConfig<ClosingCtaProps> = {
             {title}
           </h2>
         </SelectionFrame>
-        {text && <p className="mt-10 max-w-xl text-lg leading-8 text-graphite">{text}</p>}
+        {text && <p className="mt-10 max-w-xl text-lg leading-8 text-muted">{text}</p>}
         {buttonLabel && (
           <a {...linkProps(buttonLink)} className="btn mt-9 bg-ink text-white hover:bg-ink-3">
             {buttonLabel}

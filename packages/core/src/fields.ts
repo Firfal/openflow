@@ -74,10 +74,25 @@ export function linkProps(link: LinkValue | null | undefined): {
       };
 }
 
-/** Props to spread on an `<img>` element for an {@link ImageValue}. Returns `null` when empty. */
-export function imageProps(
-  image: ImageValue | null | undefined,
-): { src: string; alt: string; width?: number; height?: number } | null {
+/**
+ * Props to spread on an `<img>` element for an {@link ImageValue}. Returns `null` when empty.
+ * Also carries the element marker (`data-of`) that lets the owner click the image in the editor.
+ */
+export function imageProps(image: ImageValue | null | undefined): {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  "data-of"?: string;
+  "data-of-i"?: string;
+} | null {
   if (!image?.src) return null;
-  return { src: image.src, alt: image.alt ?? "", width: image.width, height: image.height };
+  const mark = (image as { __of?: { p: string; i?: string } }).__of;
+  return {
+    src: image.src,
+    alt: image.alt ?? "",
+    width: image.width,
+    height: image.height,
+    ...(mark ? { "data-of": mark.p, "data-of-i": mark.i } : {}),
+  };
 }

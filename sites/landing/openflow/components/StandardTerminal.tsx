@@ -107,14 +107,14 @@ export const StandardTerminal: ComponentConfig<StandardTerminalProps> = {
       <div className="grid items-start gap-16 lg:grid-cols-2 [&>*]:min-w-0">
         <div>
           <Heading title={title} intro={intro} surface={surface} />
-          <div className="mt-6 max-w-xl space-y-4 leading-7 text-graphite [&_code]:font-mono [&_code]:text-[15px]">
+          <div className="mt-6 max-w-xl space-y-4 leading-7 text-muted [&_code]:font-mono [&_code]:text-[15px]">
             {body}
           </div>
           {stats && stats.length > 0 && (
-            <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-line pt-8">
+            <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-rule pt-8">
               {stats.map((stat, index) => (
                 <div key={index} className="flex flex-col-reverse">
-                  <dt className="mt-1 text-sm text-graphite">{stat.label}</dt>
+                  <dt className="mt-1 text-sm text-muted">{stat.label}</dt>
                   <dd className="font-display text-4xl font-bold tracking-tight tabular-nums">
                     {stat.value}
                   </dd>

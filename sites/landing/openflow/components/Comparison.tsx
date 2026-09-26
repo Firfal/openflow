@@ -105,11 +105,11 @@ export const Comparison: ComponentConfig<ComparisonProps> = {
               <col className="w-[24%]" />
             </colgroup>
             <thead>
-              <tr className="text-sm text-graphite">
+              <tr className="text-sm text-muted">
                 <th scope="col" className="px-4 pb-4 font-medium">
                   {criterionLabel}
                 </th>
-                <th scope="col" className="px-5 pb-4 font-display text-lg font-bold text-ink">
+                <th scope="col" className="px-5 pb-4 font-display text-lg font-bold text-fg">
                   {featuredLabel}
                 </th>
                 <th scope="col" className="px-5 pb-4 font-medium">
@@ -122,13 +122,13 @@ export const Comparison: ComponentConfig<ComparisonProps> = {
             </thead>
             <tbody>
               {rows?.map((row, index) => (
-                <tr key={index} className="border-t border-line align-top">
+                <tr key={index} className="border-t border-rule align-top">
                   <th scope="row" className="px-4 py-4 font-semibold">
                     {row.criterion}
                   </th>
-                  <td className="px-5 py-4 font-medium text-ink">{row.featured}</td>
-                  <td className="px-5 py-4 text-graphite">{row.other}</td>
-                  <td className="px-5 py-4 text-graphite">{row.third}</td>
+                  <td className="px-5 py-4 font-medium text-fg">{row.featured}</td>
+                  <td className="px-5 py-4 text-muted">{row.other}</td>
+                  <td className="px-5 py-4 text-muted">{row.third}</td>
                 </tr>
               ))}
             </tbody>

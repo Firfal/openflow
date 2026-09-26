@@ -5,13 +5,8 @@ import { Features } from "./openflow/components/Features";
 import { Hero } from "./openflow/components/Hero";
 import { Testimonials } from "./openflow/components/Testimonials";
 import { TextImage } from "./openflow/components/TextImage";
-import { SiteFooter } from "./openflow/layout/SiteFooter";
-import { SiteHeader } from "./openflow/layout/SiteHeader";
-import {
-  type SiteSettingsValues,
-  settingsDefaults,
-  settingsFields,
-} from "./openflow/layout/settings";
+import { SiteLayout } from "./openflow/layout/SiteLayout";
+import { settingsDefaults, settingsFields } from "./openflow/layout/settings";
 
 /**
  * OpenFlow configuration: shared by the public site (static export) and the admin (/admin).
@@ -32,15 +27,6 @@ export default defineConfig({
   settings: {
     fields: settingsFields,
     defaultProps: settingsDefaults,
-    preview: ({ values, site }) => {
-      const settings = values as SiteSettingsValues;
-      return (
-        <div data-theme={settings.theme}>
-          <SiteHeader settings={settings} siteName={site.name} />
-          <div className="h-64 bg-stone-100" />
-          <SiteFooter settings={settings} siteName={site.name} />
-        </div>
-      );
-    },
   },
+  layout: SiteLayout,
 });

@@ -20,6 +20,28 @@
   --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
+/* Colours that follow the section surface (data-surface on <section>, see ui.tsx):
+   text-fg, text-muted, border-rule, divide-rule, bg-surface. */
+:root,
+[data-surface="calque"] {
+  --surface-bg: var(--color-paper);
+  --surface-fg: var(--color-ink);
+  --surface-muted: var(--color-graphite);
+  --surface-rule: var(--color-line);
+}
+[data-surface="encre"] {
+  --surface-bg: var(--color-ink);
+  --surface-fg: #ffffff;
+  --surface-muted: rgb(255 255 255 / 0.72);
+  --surface-rule: rgb(255 255 255 / 0.14);
+}
+@theme inline {
+  --color-surface: var(--surface-bg);
+  --color-fg: var(--surface-fg);
+  --color-muted: var(--surface-muted);
+  --color-rule: var(--surface-rule);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

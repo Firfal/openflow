@@ -1,5 +1,6 @@
 import { type LinkValue, linkField, linkProps } from "@openflow/core";
 import type { ComponentConfig } from "@puckeditor/core";
+import type { ReactNode } from "react";
 import { DemoToggle } from "./DemoToggle";
 
 export interface HeroEditorProps {
@@ -25,6 +26,23 @@ export interface HeroEditorProps {
 
 function Skeleton({ className }: { className: string }) {
   return <span className={`block rounded-full bg-ink/10 ${className}`} />;
+}
+
+/** Editor-only chip showing a demo text that is hidden or animated on the page. */
+function Chip({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-md bg-white/10 px-2 py-1 text-white ring-1 ring-white/15">
+      {children}
+    </span>
+  );
+}
+
+function ChipArrow() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3 w-3 text-white/40" fill="none" aria-hidden="true">
+      <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
 }
 
 function Cursor() {
@@ -270,6 +288,33 @@ export const HeroEditor: ComponentConfig<HeroEditorProps> = {
             <Cursor />
           </div>
         </DemoToggle>
+        {/* In the editor, the demo shows its final frame: the texts of the other frames (and those
+            only visible on large screens) are listed here so the owner can edit them in place. */}
+        {puck?.isEditing && (
+          <div className="mt-6 grid gap-3 rounded-xl border border-dashed border-white/25 p-4 text-sm">
+            <p className="flex flex-wrap items-center gap-2">
+              <Chip>{demoFieldLabel}</Chip>
+              <Chip>{demoBefore}</Chip>
+              <ChipArrow />
+              <Chip>{demoAfter}</Chip>
+            </p>
+            <p className="flex flex-wrap items-center gap-2">
+              <Chip>{demoPending}</Chip>
+              <ChipArrow />
+              <Chip>{demoSaved}</Chip>
+              <Chip>{demoPublish}</Chip>
+              <ChipArrow />
+              <Chip>{demoLive}</Chip>
+            </p>
+            <p className="flex flex-wrap items-center gap-2">
+              {demoTabs?.map((tab, index) => (
+                <Chip key={index}>{tab.label}</Chip>
+              ))}
+              <Chip>{demoPauseLabel}</Chip>
+              <Chip>{demoPlayLabel}</Chip>
+            </p>
+          </div>
+        )}
       </div>
     </section>
   ),

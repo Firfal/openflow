@@ -52,6 +52,10 @@ jobs:
       - run: pnpm --filter @openflow/e2e exec playwright install --with-deps chromium
       - name: Security rules + admin scenario on the Firebase emulators
         run: pnpm --filter @openflow/e2e test
+      - name: Editor ergonomics on the landing (drag and drop, collapsed content, site frame)
+        run: pnpm --filter @openflow/e2e test editor.test.ts
+        env:
+          OPENFLOW_E2E_SITE: ${{ github.workspace }}/sites/landing
       - uses: actions/upload-artifact@v4
         if: always()
         with:

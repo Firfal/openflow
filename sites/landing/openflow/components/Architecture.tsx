@@ -50,14 +50,13 @@ export const Architecture: ComponentConfig<ArchitectureProps> = {
   // sideways inside its own box instead of shrinking to an illegible size.
   render: ({ anchor, title, intro, image, services, surface }) => {
     const img = imageProps(image);
-    const rule = surface === "encre" ? "border-white/10" : "border-line";
     return (
       <Section anchor={anchor} surface={surface}>
         <div className="grid items-end gap-12 lg:grid-cols-[5fr_7fr] lg:gap-16 [&>*]:min-w-0">
           <Heading title={title} intro={intro} surface={surface} />
           <dl className="grid gap-x-10 sm:grid-cols-2">
             {services?.map((service, index) => (
-              <div key={index} className={`border-t py-3.5 ${rule}`}>
+              <div key={index} className={`border-t border-rule py-3.5`}>
                 <dt className="flex items-center gap-3 font-semibold">
                   <span className="h-2 w-2 shrink-0 bg-flame" aria-hidden="true" />
                   {service.name}

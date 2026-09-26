@@ -33,7 +33,8 @@ ajouter des éléments en dehors des blocs `// BEGIN openflow` … `// END openf
 - Chaque section : `fields` (libellés en français, clairs pour un non-technicien), `defaultProps`
   réalistes, `render` en Tailwind, responsive et accessible.
 - Enregistre chaque section dans `components` et dans une catégorie de `openflow.config.tsx`.
-- En-tête et pied de page : `openflow/layout/`, alimentés par `settings` (menu, coordonnées, réseaux sociaux).
+- En-tête et pied de page : `openflow/layout/SiteLayout.tsx`, déclaré dans `layout` de `defineConfig` et alimenté par
+  `settings` (menu, coordonnées, réseaux sociaux). L'admin affiche ce cadre autour de la page éditée.
 - Couleurs : ajuste les thèmes dans `app/globals.css` (`--site-accent`) et les options du réglage `theme`.
 
 Après chaque fichier écrit, les hooks OpenFlow t'envoient les erreurs `OF-xxx` : corrige-les tout de suite.

@@ -4,7 +4,12 @@ import { useCallback, useMemo, useState } from "react";
 import { useAutosave } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { saveSettings } from "./data.js";
-import { SaveIndicator } from "./editor.js";
+import {
+  EDITOR_IFRAME,
+  type EditorChrome,
+  EditorChromeContext,
+  SETTINGS_EDITOR_OVERRIDES,
+} from "./editor-ui.js";
 import { mapFields } from "./fields.js";
 import { errorMessage } from "./firebase.js";
 import { FR_DICTIONARY } from "./i18n.js";
@@ -115,11 +120,14 @@ function SiteForm() {
   );
 }
 
+const SETTINGS_UI = { leftSideBarVisible: false };
+
 /** Global content (navigation, footer…) edited with Puck's root fields, with an optional preview. */
 function GlobalContent() {
   const { config, services, settings, user } = useAdmin();
   const site = settings?.site ?? config.site;
   const settingsConfig = config.settings;
+  const Layout = config.layout;
   const save = useCallback(
     (data: Data) =>
       saveSettings(
@@ -130,23 +138,41 @@ function GlobalContent() {
     [services.db, user.email],
   );
   const autosave = useAutosave(save);
+  const { flush } = autosave;
+  const chrome = useMemo<EditorChrome>(
+    () => ({ saveState: autosave.state, saveError: autosave.error, retry: () => void flush() }),
+    [autosave.state, autosave.error, flush],
+  );
+  // The preview only depends on the site identity: keep the config stable across saves.
+  const siteKey = JSON.stringify(site);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `site` is tracked through `siteKey`.
+  const stableSite = useMemo(() => site, [siteKey]);
   const puckConfig = useMemo<Config>(
     () => ({
       components: {},
       root: {
         fields: mapFields(settingsConfig?.fields as Fields | undefined),
         defaultProps: settingsConfig?.defaultProps,
-        render: ({ children: _children, puck: _puck, editMode: _editMode, ...values }: any) =>
-          settingsConfig?.preview ? (
-            (settingsConfig.preview({ values, site }) ?? <div />)
-          ) : (
+        render: ({ children: _children, puck: _puck, editMode: _editMode, ...values }: any) => {
+          if (settingsConfig?.preview) {
+            return settingsConfig.preview({ values, site: stableSite }) ?? <div />;
+          }
+          if (Layout) {
+            return (
+              <Layout settings={values} site={stableSite} editing>
+                <div className="of-settings-placeholder">Contenu des pages</div>
+              </Layout>
+            );
+          }
+          return (
             <div style={{ padding: 32, fontFamily: "system-ui, sans-serif", color: "#555" }}>
               Ces réglages s'appliquent à toutes les pages du site.
             </div>
-          ),
+          );
+        },
       },
     }),
-    [settingsConfig, site],
+    [settingsConfig, stableSite, Layout],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: computed once, Puck owns the state afterwards.
   const data = useMemo<Data>(
@@ -158,26 +184,21 @@ function GlobalContent() {
   );
   if (!settingsConfig) return <p className="of-muted">Ce site n'a pas de contenu global.</p>;
   return (
-    <div className="of-editor of-editor--settings">
-      <Puck
-        config={puckConfig}
-        data={data}
-        onChange={autosave.schedule}
-        dictionary={FR_DICTIONARY}
-        headerTitle="Contenu commun à toutes les pages"
-        height="calc(100dvh - var(--of-topbar-height) - 56px)"
-        ui={{ leftSideBarVisible: false }}
-        overrides={{
-          headerActions: () => (
-            <SaveIndicator
-              state={autosave.state}
-              error={autosave.error}
-              onRetry={() => void autosave.flush()}
-            />
-          ),
-        }}
-      />
-    </div>
+    <EditorChromeContext.Provider value={chrome}>
+      <div className="of-editor of-editor--settings">
+        <Puck
+          config={puckConfig}
+          data={data}
+          onChange={autosave.schedule}
+          dictionary={FR_DICTIONARY}
+          headerTitle="Contenu commun à toutes les pages"
+          height="calc(100dvh - var(--of-topbar-height) - 56px)"
+          iframe={EDITOR_IFRAME}
+          ui={SETTINGS_UI}
+          overrides={SETTINGS_EDITOR_OVERRIDES}
+        />
+      </div>
+    </EditorChromeContext.Provider>
   );
 }
 

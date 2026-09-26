@@ -89,7 +89,7 @@ export const Showcase: ComponentConfig<ShowcaseProps> = {
           {callouts?.map((callout, index) => (
             <div key={index} className="border-l-2 border-cobalt pl-5">
               {callout.title && <h3 className="text-xl font-bold">{callout.title}</h3>}
-              {callout.text && <p className="mt-2 leading-7 text-graphite">{callout.text}</p>}
+              {callout.text && <p className="mt-2 leading-7 text-muted">{callout.text}</p>}
             </div>
           ))}
         </div>
@@ -114,9 +114,7 @@ export const Showcase: ComponentConfig<ShowcaseProps> = {
                     </a>
                   )}
                   {item.caption && (
-                    <figcaption className="mt-3 text-[15px] text-graphite">
-                      {item.caption}
-                    </figcaption>
+                    <figcaption className="mt-3 text-[15px] text-muted">{item.caption}</figcaption>
                   )}
                 </figure>
               );

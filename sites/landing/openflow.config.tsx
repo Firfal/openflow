@@ -8,13 +8,8 @@ import { HeroEditor } from "./openflow/components/HeroEditor";
 import { Showcase } from "./openflow/components/Showcase";
 import { StandardTerminal } from "./openflow/components/StandardTerminal";
 import { Steps } from "./openflow/components/Steps";
-import { SiteFooter } from "./openflow/layout/SiteFooter";
-import { SiteHeader } from "./openflow/layout/SiteHeader";
-import {
-  type SiteSettingsValues,
-  settingsDefaults,
-  settingsFields,
-} from "./openflow/layout/settings";
+import { SiteLayout } from "./openflow/layout/SiteLayout";
+import { settingsDefaults, settingsFields } from "./openflow/layout/settings";
 
 /**
  * The OpenFlow landing page is itself an OpenFlow site: every word below is editable in /admin.
@@ -47,15 +42,6 @@ export default defineConfig({
   settings: {
     fields: settingsFields,
     defaultProps: settingsDefaults,
-    preview: ({ values, site }) => {
-      const settings = values as SiteSettingsValues;
-      return (
-        <div>
-          <SiteHeader settings={settings} siteName={site.name} />
-          <div className="bg-calque h-72" />
-          <SiteFooter settings={settings} siteName={site.name} />
-        </div>
-      );
-    },
   },
+  layout: SiteLayout,
 });

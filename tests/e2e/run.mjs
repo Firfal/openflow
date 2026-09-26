@@ -8,7 +8,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const site = path.resolve(here, "../../templates/next-starter");
+// OPENFLOW_E2E_SITE=sites/landing runs the site-agnostic tests against another site.
+const site = path.resolve(
+  process.env.OPENFLOW_E2E_SITE ?? path.resolve(here, "../../templates/next-starter"),
+);
 
 writeFileSync(
   path.join(site, "functions", ".env.local"),

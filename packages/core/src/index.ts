@@ -1,4 +1,4 @@
-export type { OpenFlowConfig, SettingsConfig, SiteDefaults } from "./config.js";
+export type { LayoutProps, OpenFlowConfig, SettingsConfig, SiteDefaults } from "./config.js";
 export { defineConfig, toPuckConfig } from "./config.js";
 export type { ImageValue, LinkValue, OpenFlowFieldKind } from "./fields.js";
 export {
@@ -18,6 +18,15 @@ export {
   STORAGE_RULES_BLOCK,
   STORAGE_RULES_FILE,
 } from "./firebase-rules.js";
+export {
+  collectEditablePaths,
+  type ImageMarked,
+  MARK_KEY,
+  type Mark,
+  markComponent,
+  markProps,
+  prepareRenderConfig,
+} from "./marks.js";
 export type {
   MediaDoc,
   PageDoc,

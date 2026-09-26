@@ -10,10 +10,13 @@ export function CopyButton({
   text,
   label,
   copiedLabel,
+  editing = false,
 }: {
   text: string;
   label: ReactNode;
   copiedLabel: ReactNode;
+  /** In the editor, both labels are shown side by side so each can be edited in place. */
+  editing?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -21,6 +24,14 @@ export function CopyButton({
     const timer = setTimeout(() => setCopied(false), 2000);
     return () => clearTimeout(timer);
   }, [copied]);
+  if (editing) {
+    return (
+      <span className="flex items-center gap-2 text-xs text-white">
+        <span className="rounded-md bg-white/10 px-3 py-1.5">{label}</span>
+        <span className="rounded-md bg-white/10 px-3 py-1.5">{copiedLabel}</span>
+      </span>
+    );
+  }
   return (
     <button
       type="button"

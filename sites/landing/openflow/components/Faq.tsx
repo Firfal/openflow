@@ -45,7 +45,7 @@ export const Faq: ComponentConfig<FaqProps> = {
     <Section anchor={anchor} surface={surface}>
       <div className="grid gap-12 lg:grid-cols-[5fr_7fr] [&>*]:min-w-0">
         <Heading title={title} surface={surface} />
-        <div className="divide-y divide-line border-y border-line">
+        <div className="divide-y divide-rule border-y border-rule">
           {items?.map((item, index) => (
             <details key={index} className="group py-5">
               <summary className="flex cursor-pointer list-none items-start justify-between gap-6 text-lg font-semibold [&::-webkit-details-marker]:hidden">
@@ -62,7 +62,9 @@ export const Faq: ComponentConfig<FaqProps> = {
                 </svg>
               </summary>
               {item.answer && (
-                <p className="mt-3 max-w-2xl leading-7 text-graphite">{item.answer}</p>
+                <p className="mt-3 max-w-2xl leading-7 text-muted whitespace-pre-line">
+                  {item.answer}
+                </p>
               )}
             </details>
           ))}

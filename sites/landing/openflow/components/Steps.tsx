@@ -64,13 +64,13 @@ export const Steps: ComponentConfig<StepsProps> = {
         {steps?.map((step, index) => (
           <li key={index} className="relative">
             <span
-              className="relative z-10 flex h-10 w-10 items-center justify-center border-[1.5px] border-cobalt bg-paper font-display text-lg font-bold text-cobalt"
+              className="relative z-10 flex h-10 w-10 items-center justify-center border-[1.5px] border-cobalt bg-surface font-display text-lg font-bold text-cobalt"
               aria-hidden="true"
             >
               {index + 1}
             </span>
             {step.title && <h3 className="mt-7 text-2xl font-bold">{step.title}</h3>}
-            {step.text && <p className="mt-3 max-w-sm leading-7 text-graphite">{step.text}</p>}
+            {step.text && <p className="mt-3 max-w-sm leading-7 text-muted">{step.text}</p>}
             {step.detail && (
               <code
                 translate="no"

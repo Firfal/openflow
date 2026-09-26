@@ -121,6 +121,22 @@ render: ({ title }) => <img alt={title} ... />`,
 render: ({ title }) => <img alt={title} ... />`,
   },
   {
+    id: "OF-109",
+    title: "Champ éditable invisible dans l'éditeur",
+    severity: "warning",
+    level: "render",
+    status: "active",
+    why: "Le propriétaire modifie les textes directement sur la page. Un champ affiché seulement dans un état caché (`hidden`, `invisible`, `opacity-0`, `sr-only`, une animation, un très grand écran) ne peut pas être cliqué dans l'éditeur : il n'est modifiable qu'en cherchant dans le panneau latéral.",
+    fix: "Quand `puck?.isEditing` est vrai, affichez ce champ dans un élément visible (par exemple une ligne « coulisses » sous la section qui liste les textes des états cachés), ou montrez l'état qui le contient. Les éléments `<details>` n'ont pas besoin d'être modifiés : l'éditeur les ouvre.",
+    bad: `render: ({ savedLabel }) => <span className="opacity-0">{savedLabel}</span>`,
+    good: `render: ({ savedLabel, puck }) => (
+  <>
+    <span className="opacity-0">{savedLabel}</span>
+    {puck?.isEditing && <span className="chip">{savedLabel}</span>}
+  </>
+)`,
+  },
+  {
     id: "OF-201",
     title: "Contenu non conforme au schéma",
     severity: "error",

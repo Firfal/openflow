@@ -58,7 +58,18 @@ export const GetStarted: ComponentConfig<GetStartedProps> = {
     note: "Sans Claude Code : npx openflow create mon-site, puis npx openflow dev.",
     surface: "calque",
   },
-  render: ({ anchor, title, intro, blockTitle, lines, copyLabel, copiedLabel, note, surface }) => {
+  render: ({
+    anchor,
+    title,
+    intro,
+    blockTitle,
+    lines,
+    copyLabel,
+    copiedLabel,
+    note,
+    surface,
+    puck,
+  }) => {
     const all = (lines ?? []).map((line) => line.code).join("\n");
     return (
       <Section anchor={anchor} surface={surface}>
@@ -68,7 +79,12 @@ export const GetStarted: ComponentConfig<GetStartedProps> = {
             <div className="overflow-hidden rounded-2xl bg-ink text-white shadow-[0_40px_90px_-40px_rgb(15_30_51/0.6)] ring-1 ring-ink/10">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-2.5 text-xs text-white/55">
                 <span>{blockTitle}</span>
-                <CopyButton text={all} label={copyLabel} copiedLabel={copiedLabel} />
+                <CopyButton
+                  text={all}
+                  label={copyLabel}
+                  copiedLabel={copiedLabel}
+                  editing={puck?.isEditing}
+                />
               </div>
               <ol
                 className="space-y-5 overflow-x-auto px-5 py-6 font-mono text-[14px]"
@@ -87,7 +103,7 @@ export const GetStarted: ComponentConfig<GetStartedProps> = {
                 ))}
               </ol>
             </div>
-            {note && <p className="mt-5 text-[15px] text-graphite">{note}</p>}
+            {note && <p className="mt-5 text-[15px] text-muted">{note}</p>}
           </div>
         </div>
       </Section>
