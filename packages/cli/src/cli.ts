@@ -6,6 +6,7 @@ import { create } from "./commands/create.js";
 import { deploy } from "./commands/deploy.js";
 import { dev } from "./commands/dev.js";
 import { seed, snapshot } from "./commands/seed.js";
+import { setup } from "./commands/setup.js";
 import { CliError, cliVersion, log, siteDir } from "./util.js";
 
 const program = new Command();
@@ -98,6 +99,20 @@ program
   .action((options) => snapshot(siteDir(), options));
 
 program
+  .command("setup")
+  .description(
+    "prépare le projet Firebase : API, Firestore, Storage, droits des builds, connexion par e-mail, sauvegardes, alertes",
+  )
+  .option("--project <id>", "projet Firebase (plan Blaze)")
+  .option("--region <région>", "région des fonctions (OPENFLOW_REGION, europe-west1 par défaut)")
+  .option(
+    "--alert-email <email>",
+    "reçoit l'alerte si une publication échoue (le propriétaire par défaut)",
+  )
+  .option("--dry-run", "affiche ce qui serait fait, sans rien modifier")
+  .action((options) => setup(siteDir(), options));
+
+program
   .command("deploy")
   .description(
     "livre le site : contrôle, règles, fonctions, code source, contenu initial, 1re publication",
@@ -107,7 +122,14 @@ program
   .option("--bucket <nom>", "bucket Cloud Storage (par défaut <projet>.firebasestorage.app)")
   .option("--force", "déploie malgré des erreurs de conformité")
   .option("--no-publish", "ne lance pas de publication")
-  .action((options) => deploy(siteDir(), { ...options, noPublish: options.publish === false }));
+  .option("--no-setup", "ne vérifie pas la préparation du projet (openflow setup)")
+  .action((options) =>
+    deploy(siteDir(), {
+      ...options,
+      noPublish: options.publish === false,
+      noSetup: options.setup === false,
+    }),
+  );
 
 try {
   await program.parseAsync();

@@ -92,6 +92,7 @@ export {
   FUNCTION_NAMES,
   OWNER_CLAIM,
   PAGE_SIZE_WARNING_BYTES,
+  PUBLICATION_FAILED_LOG,
   publicStorageUrl,
   STORAGE_PATHS,
 } from "./model.js";

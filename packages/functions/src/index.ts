@@ -6,6 +6,7 @@ import {
   FUNCTION_NAMES,
   handleMcpMessage,
   OWNER_CLAIM,
+  PUBLICATION_FAILED_LOG,
   type ReleaseDoc,
   type SiteSchema,
   SnapshotError,
@@ -207,7 +208,10 @@ async function publishSite(by: string): Promise<{ releaseId: string }> {
           );
     await releaseRef.update({ status: "building", ...started });
   } catch (error) {
-    logger.error("OpenFlow build could not start", error);
+    logger.error(PUBLICATION_FAILED_LOG, {
+      releaseId: releaseRef.id,
+      reason: `Le build n'a pas pu démarrer : ${(error as Error).message}`,
+    });
     await releaseRef.update({
       status: "failed",
       error: (error as Error).message,
@@ -568,6 +572,11 @@ export const openflowOnBuildStatus = onMessagePublished(
         logUrl: build.logUrl ?? current.logUrl,
       });
     } else if (status === "failed") {
+      logger.error(PUBLICATION_FAILED_LOG, {
+        releaseId,
+        reason: build.failureInfo?.detail || build.statusDetail || `Build ${build.status}`,
+        logUrl: build.logUrl,
+      });
       await ref.update({
         status,
         finishedAt,

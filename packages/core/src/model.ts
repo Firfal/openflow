@@ -49,6 +49,12 @@ export const FUNCTION_NAMES = {
   mcp: "openflowMcp",
 } as const;
 
+/**
+ * Message logged by the functions when a publication fails: the alert set up by `openflow setup`
+ * (Cloud Monitoring) e-mails the owner when it appears.
+ */
+export const PUBLICATION_FAILED_LOG = "OpenFlow publication failed";
+
 /** `updatedBy` of the changes made by an AI assistant (the editor reloads them live). */
 export const AGENT_AUTHOR = "Assistant IA";
 

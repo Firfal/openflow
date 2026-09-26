@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "openflow": "./dist/cli.js"
+    "openflow": "./bin/openflow.js"
   },
   "exports": {
     ".": {
@@ -15,6 +15,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "bin",
     "dist",
     "template"
   ],
@@ -28,7 +29,8 @@
     "@openflow/core": "workspace:*",
     "@openflow/functions": "workspace:*",
     "commander": "^15.0.0",
-    "firebase-admin": "^14.5.0"
+    "firebase-admin": "^14.5.0",
+    "google-auth-library": "^11.1.0"
   },
   "devDependencies": {
     "@puckeditor/core": "0.23.0",

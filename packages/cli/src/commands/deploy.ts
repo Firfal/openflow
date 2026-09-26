@@ -17,6 +17,7 @@ import { CliError, capture, firebaseCli, log, run } from "../util.js";
 import { stageWorkspaceSite } from "../vendor.js";
 import { check } from "./check.js";
 import { seed } from "./seed.js";
+import { setup } from "./setup.js";
 
 const EXCLUDED =
   /(^|\/)(node_modules|\.next|out|\.openflow|\.firebase|\.git)(\/|$)|^functions\/lib\/|(^|\/)\.env(\..*)?$|^openflow\/\.snapshot\.json$|\.log$/;
@@ -78,6 +79,8 @@ export interface DeployOptions {
   force?: boolean;
   /** Skip the first publication. */
   noPublish?: boolean;
+  /** Skip `openflow setup` (project preparation). */
+  noSetup?: boolean;
 }
 
 /**
@@ -112,6 +115,14 @@ export async function deploy(site: string, options: DeployOptions) {
   ) {
     throw new CliError("Précisez l'e-mail du propriétaire : --owner client@exemple.fr");
   }
+
+  if (!options.noSetup) await setup(site, { project: projectId });
+  // The builds run as the account prepared by `openflow setup`.
+  const buildAccount = (await readFile(envFile, "utf8").catch(() => ""))
+    .split("\n")
+    .find((line) => line.startsWith("OPENFLOW_BUILD_SERVICE_ACCOUNT="))
+    ?.slice("OPENFLOW_BUILD_SERVICE_ACCOUNT=".length)
+    .trim();
 
   // Unpublished OpenFlow packages (monorepo, fork): deploy a standalone copy with vendor/.
   const staged = await stageWorkspaceSite(site, await sourceFiles(site));
@@ -209,7 +220,7 @@ export async function deploy(site: string, options: DeployOptions) {
           sourcePath: destination,
           snapshotPath: file,
           releaseId: ref.id,
-          serviceAccount: process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT,
+          serviceAccount: buildAccount || process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT,
         });
         await ref.update({ status: "building", ...started });
         log.ok(`Build lancé : ${started.logUrl}`);
@@ -229,7 +240,7 @@ export async function deploy(site: string, options: DeployOptions) {
 
   log.info(`
 Livraison :
-  1. Console Firebase > Authentication > Méthodes de connexion : activez « Lien par e-mail » et Google.
+  1. Connexion Google (facultative) : console Firebase > Authentication > Méthodes de connexion > Google.
   2. Envoyez au propriétaire l'adresse https://<votre-domaine>/admin/ : il se connecte avec ${options.owner ?? "son e-mail"}.
   3. Chaque « Publier » reconstruit le site (2 à 4 min). Relancez \`openflow deploy\` après toute modification du code.
   4. IA : le propriétaire colle https://<votre-domaine>/mcp dans Claude ou ChatGPT (Ajouter un connecteur),
