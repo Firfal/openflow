@@ -36,7 +36,7 @@ function GoogleLogo() {
   );
 }
 
-const EMAIL_KEY = "openflow:signin-email";
+const EMAIL_KEY = "cms:signin-email";
 const DEV_PASSWORD = "openflow-emulator";
 
 /**

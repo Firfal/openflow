@@ -5,13 +5,13 @@ statique publié.
 
 ## Désignation du propriétaire
 
-1. L'e-mail du propriétaire est un paramètre des Cloud Functions (`OPENFLOW_OWNER_EMAIL`, dans
+1. L'e-mail du propriétaire est un paramètre des Cloud Functions (`CMS_OWNER_EMAIL`, dans
    `functions/.env.<projet>`). Il est fixé par `openflow deploy --owner`. Plusieurs adresses sont
    possibles, séparées par des virgules.
-2. Après sa connexion (lien magique par e-mail ou Google), l'admin appelle `openflowClaimOwner`. La
-   fonction pose le claim personnalisé `of_owner: true` **uniquement si l'e-mail correspond et est vérifié**.
+2. Après sa connexion (lien magique par e-mail ou Google), l'admin appelle `cmsClaimOwner`. La
+   fonction pose le claim personnalisé `cms_owner: true` **uniquement si l'e-mail correspond et est vérifié**.
    Dans l'émulateur local, un e-mail non vérifié est accepté pour permettre la connexion rapide.
-3. Les fonctions sensibles (`openflowPublish`, `openflowRestoreRelease`) vérifient **le claim et l'e-mail**.
+3. Les fonctions sensibles (`cmsPublish`, `cmsRestoreRelease`) vérifient **le claim et l'e-mail**.
    Retirer un e-mail du paramètre révoque donc l'accès aux fonctions, même si le claim subsiste.
 4. Les règles Firestore et Storage ne vérifient que le claim. C'est pourquoi `openflow deploy` retire
    aussi le claim aux comptes qui ne figurent plus parmi les propriétaires et révoque leurs sessions.
@@ -22,24 +22,24 @@ le site.
 
 ## Règles Firestore et Storage
 
-Elles se trouvent dans des blocs `// BEGIN openflow` … `// END openflow`, dont le contenu de référence
+Elles se trouvent dans des blocs `// BEGIN cms` … `// END cms`, dont le contenu de référence
 est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifie qu'ils ne sont pas modifiés.
 
-- `of_site`, `of_pages`, `of_media` : lecture et écriture réservées au propriétaire. Les pages sont
+- `cms_site`, `cms_pages`, `cms_media` : lecture et écriture réservées au propriétaire. Les pages sont
   validées (champs obligatoires, statut).
-- `of_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
-- `of_system` : aucun accès client.
-- `of_agent_tokens` (IA connectées et clés d'accès) : lecture et suppression (déconnexion) par le
+- `cms_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
+- `cms_system` : aucun accès client.
+- `cms_agent_tokens` (IA connectées et clés d'accès) : lecture et suppression (déconnexion) par le
   propriétaire ; création uniquement par les fonctions ; seules les empreintes SHA-256 sont stockées.
-- `of_agent_clients`, `of_agent_requests`, `of_agent_codes` (connexion OAuth des IA) : aucun accès client.
-- `of_messages` (messages des formulaires) : lecture et suppression par le propriétaire, qui ne peut
-  modifier que `read` et `spam` ; création uniquement par la fonction `openflowSubmitForm`.
-- `of_rate_limits` (compteurs d'envois par visiteur) : aucun accès client.
-- Storage `openflow/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
+- `cms_agent_clients`, `cms_agent_requests`, `cms_agent_codes` (connexion OAuth des IA) : aucun accès client.
+- `cms_messages` (messages des formulaires) : lecture et suppression par le propriétaire, qui ne peut
+  modifier que `read` et `spam` ; création uniquement par la fonction `cmsSubmitForm`.
+- `cms_rate_limits` (compteurs d'envois par visiteur) : aucun accès client.
+- Storage `cms/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
   en type et en taille (images 15 Mo, vidéos 100 Mo) ; les SVG sont refusés pour éviter l'injection de
-  scripts. `openflow/media/optimized` (copies optimisées) : lecture publique, écriture par les fonctions
+  scripts. `cms/media/optimized` (copies optimisées) : lecture publique, écriture par les fonctions
   seulement.
-- Storage `openflow/source` et `openflow/snapshots` : aucun accès client.
+- Storage `cms/source` et `cms/snapshots` : aucun accès client.
 
 Ces règles sont testées sur les émulateurs (`tests/e2e/rules.test.ts`) : un visiteur anonyme et un
 utilisateur connecté non propriétaire sont refusés partout ; le propriétaire est autorisé.
@@ -62,7 +62,7 @@ utilisateur connecté non propriétaire sont refusés partout ; le propriétaire
 
 ## Assistant IA (MCP et WebMCP)
 
-Le serveur MCP (`https://<domaine>/mcp`, fonction `openflowMcp`) accepte deux types d'accès :
+Le serveur MCP (`https://<domaine>/mcp`, fonction `cmsMcp`) accepte deux types d'accès :
 - les IA que le propriétaire a autorisées lui-même sur l'écran d'autorisation de l'admin (OAuth 2.1 avec
   PKCE, adresses de retour vérifiées, jetons d'une heure renouvelés) ;
 - les clés qu'il a créées.
@@ -74,7 +74,7 @@ Détails : [assistant-ia.md](assistant-ia.md#sécurité).
 
 ## Formulaires
 
-La fonction `openflowSubmitForm` (`POST /forms/submit`) n'accepte un message que s'il correspond à un
+La fonction `cmsSubmitForm` (`POST /forms/submit`) n'accepte un message que s'il correspond à un
 formulaire **de la page publiée** : les champs inconnus sont refusés, les champs obligatoires, les formats
 (e-mail, téléphone), les choix et les longueurs sont vérifiés côté serveur. Contre le spam, dans l'ordre :
 
@@ -87,7 +87,7 @@ formulaire **de la page publiée** : les champs inconnus sont refusés, les cham
    gardé.
 
 Le propriétaire est prévenu de chaque message par e-mail, via Resend, dont la clé est dans Secret Manager
-(`openflow mail`). Sans clé, c'est l'alerte Cloud Monitoring « OpenFlow : nouveau message » qui le prévient.
+(`openflow mail`). Sans clé, c'est l'alerte Cloud Monitoring « Site : nouveau message » qui le prévient.
 
 ## Sauvegardes et alertes
 
@@ -112,7 +112,7 @@ qui protège les ressources ouvertes à tous. Or :
 - la seule fonction ouverte au public, les formulaires, vérifie directement le jeton reCAPTCHA Enterprise
   de chaque envoi, ce qui revient au même contrôle sans ajouter de script à l'admin.
 
-L'option `OPENFLOW_ENFORCE_APP_CHECK=true` existe pour un site qui initialiserait App Check lui-même ;
+L'option `CMS_ENFORCE_APP_CHECK=true` existe pour un site qui initialiserait App Check lui-même ;
 sans cela, elle bloquerait l'admin.
 
 ## Recommandations au propriétaire

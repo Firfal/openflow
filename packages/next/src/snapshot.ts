@@ -7,7 +7,7 @@ let cached: { key: string; promise: Promise<Snapshot> } | undefined;
 
 /** Where the published content comes from during `next build` / `next dev`. */
 export function snapshotSource(cwd = process.cwd()): { kind: "file" | "seed"; path: string } {
-  const fromEnv = process.env.OPENFLOW_SNAPSHOT;
+  const fromEnv = process.env.CMS_SNAPSHOT;
   if (fromEnv) return { kind: "file", path: path.resolve(cwd, fromEnv) };
   const local = path.join(cwd, SNAPSHOT_FILE);
   if (existsSync(local)) return { kind: "file", path: local };
@@ -15,8 +15,8 @@ export function snapshotSource(cwd = process.cwd()): { kind: "file" | "seed"; pa
 }
 
 /**
- * Returns the frozen content to render. During a publication, `OPENFLOW_SNAPSHOT` points to the
- * snapshot written by the `openflowPublish` function; locally, `openflow/.snapshot.json` or the
+ * Returns the frozen content to render. During a publication, `CMS_SNAPSHOT` points to the
+ * snapshot written by the `cmsPublish` function; locally, `openflow/.snapshot.json` or the
  * seed files are used. Firestore is never read at build time (OF-302).
  */
 export function getSnapshot(config: OpenFlowConfig): Promise<Snapshot> {

@@ -34,8 +34,8 @@ type State =
 
 /**
  * Consent screen of an AI assistant connecting with OAuth (`/admin/?view=connect&request=…`):
- * `openflowMcp` sends the owner here from the assistant; « Autoriser » gives it a single-use code
- * through `openflowAgentConsent`, then the browser goes back to the assistant.
+ * `cmsMcp` sends the owner here from the assistant; « Autoriser » gives it a single-use code
+ * through `cmsAgentConsent`, then the browser goes back to the assistant.
  */
 export function ConnectView({ requestId }: { requestId: string }) {
   const { services, settings, config, user, navigate } = useAdmin();

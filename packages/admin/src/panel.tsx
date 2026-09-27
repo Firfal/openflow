@@ -203,7 +203,7 @@ function useStoredToggle(key: string, initial: boolean): [boolean, () => void] {
  * header says which screen it acts on, and the browser remembers whether it is open.
  */
 function StyleBlock() {
-  const [open, toggle] = useStoredToggle("openflow:style-open", false);
+  const [open, toggle] = useStoredToggle("cms:style-open", false);
   const { screen, count } = useStyleSummary();
   const id = useId();
   return (

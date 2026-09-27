@@ -5,11 +5,11 @@
 ```
 Projet Firebase du client (plan Blaze)
 ├─ Firebase Hosting  → site statique (export Next.js) + /admin (page client-only)
-├─ Firebase Auth     → propriétaire (claim personnalisé `of_owner`)
+├─ Firebase Auth     → propriétaire (claim personnalisé `cms_owner`)
 ├─ Firestore         → brouillons des pages, réglages, historique des publications, messages
 ├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
-├─ Cloud Functions   → openflowClaimOwner, openflowPublish, openflowOnBuildStatus, openflowRestoreRelease,
-│                      openflowMcp, openflowAgentConsent, openflowOptimizeMedia, openflowSubmitForm
+├─ Cloud Functions   → cmsClaimOwner, cmsPublish, cmsOnBuildStatus, cmsRestoreRelease,
+│                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm
 ├─ Cloud Build       → reconstruit le site à chaque « Publier »
 └─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
                        reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
@@ -49,17 +49,17 @@ livraison, sans rien refaire de ce qui est déjà en place.
   les classes Tailwind sans `!important`. Écrans : tablette jusqu'à 1023 px, mobile jusqu'à 767 px.
 - **Thème** : les jetons choisis par le propriétaire (`config.theme`) sont émis dans `:root` par
   `createOpenFlowLayout` (`buildThemeCss`) et remplacent les variables `--color-*` et `--font-*` du site.
-- **Médias optimisés** : à l'import, `openflowOptimizeMedia` (déclencheur Storage) crée des copies WebP de
+- **Médias optimisés** : à l'import, `cmsOptimizeMedia` (déclencheur Storage) crée des copies WebP de
   480 à 2560 px pour les images (qualité 82) et des MP4 H.264 1080p (CRF 22) et 720p (CRF 23) pour les vidéos,
   avec une image d'aperçu. Ces réglages ont été mesurés sur une vraie vidéo 1080p : 31,5 Mo deviennent 8 Mo
   pour un score VMAF de 93,6, le seuil où la copie ne se distingue plus de l'original. À la publication, le
   snapshot ajoute ces copies aux valeurs d'image et de vidéo : `imageProps` produit un `srcset` et
   `videoProps` des `<source>` (720p sur mobile). L'original reste la solution de repli.
-- **Formulaires** : `<OpenFlowForm>` envoie à `/forms/submit` (réécriture vers `openflowSubmitForm`), qui
+- **Formulaires** : `<OpenFlowForm>` envoie à `/forms/submit` (réécriture vers `cmsSubmitForm`), qui
   vérifie l'envoi contre la page publiée (voir [securite.md](securite.md#formulaires)).
 - **Mesure d'audience** : si le propriétaire a saisi un identifiant Google Analytics, `createOpenFlowLayout`
   ajoute `<OpenFlowAnalytics>`, qui ne charge rien avant l'accord du visiteur.
-- **Le build ne lit jamais Firestore** : il lit le fichier désigné par `OPENFLOW_SNAPSHOT`. En local, il
+- **Le build ne lit jamais Firestore** : il lit le fichier désigné par `CMS_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 
 ## Édition
@@ -76,28 +76,28 @@ livraison, sans rien refaire de ce qui est déjà en place.
   La feuille de style est recalculée à chaque modification et injectée dans l'iframe de l'éditeur.
 - Un **assistant IA** peut modifier le site par la discussion, avec les mêmes outils
   (`packages/core/src/agent/`) :
-  - un serveur MCP à l'adresse `https://<domaine>/mcp` (réécriture Hosting vers la fonction `openflowMcp`),
+  - un serveur MCP à l'adresse `https://<domaine>/mcp` (réécriture Hosting vers la fonction `cmsMcp`),
     avec connexion OAuth et écran d'autorisation dans l'admin ;
   - WebMCP dans l'admin.
 
   Le site publié expose aussi `llms.txt` et `llms-full.txt` aux IA qui le lisent. Voir
   [assistant-ia.md](assistant-ia.md).
-- Chaque modification est sauvegardée automatiquement dans `of_pages/{id}.data` (debounce de 800 ms). Toutes les
+- Chaque modification est sauvegardée automatiquement dans `cms_pages/{id}.data` (debounce de 800 ms). Toutes les
   sauvegardes en attente sont forcées avant une publication.
 
 ## Publication
 
 1. L'admin valide les brouillons (sections connues, types des champs).
-2. La fonction appelable `openflowPublish` vérifie que l'appelant est le propriétaire, refuse une seconde
+2. La fonction appelable `cmsPublish` vérifie que l'appelant est le propriétaire, refuse une seconde
    publication concurrente, fige le contenu dans un **snapshot** (pages visibles, liens internes recalculés à
-   partir des slugs, identifiants garantis), l'écrit dans `openflow/snapshots/{releaseId}.json`, crée
-   `of_releases/{releaseId}`, puis lance le build.
+   partir des slugs, identifiants garantis), l'écrit dans `cms/snapshots/{releaseId}.json`, crée
+   `cms_releases/{releaseId}`, puis lance le build.
 3. **Cloud Build**, à partir de l'archive du code envoyée par `openflow deploy`, sans dépendance à GitHub :
    - `gcloud storage cp` du snapshot ;
    - installation des dépendances (npm, pnpm ou yarn selon le fichier de verrouillage) ;
-   - `next build` avec `OPENFLOW_SNAPSHOT` ;
+   - `next build` avec `CMS_SNAPSHOT` ;
    - `firebase deploy --only hosting`.
-4. Cloud Build publie son statut sur le sujet Pub/Sub `cloud-builds`. `openflowOnBuildStatus` met à jour la
+4. Cloud Build publie son statut sur le sujet Pub/Sub `cloud-builds`. `cmsOnBuildStatus` met à jour la
    publication (`building`, puis `live` ou `failed`) et mémorise la version Hosting.
 5. **Restaurer** appelle `releases.create` de l'API REST Hosting sur la version précédente. C'est instantané.
 

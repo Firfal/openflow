@@ -6,23 +6,23 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       { "source": "/admin/**", "destination": "/admin/index.html" },
-      { "source": "/mcp", "run": { "serviceId": "openflowmcp", "region": "europe-west1" } },
-      { "source": "/mcp/**", "run": { "serviceId": "openflowmcp", "region": "europe-west1" } },
+      { "source": "/mcp", "run": { "serviceId": "cmsmcp", "region": "europe-west1" } },
+      { "source": "/mcp/**", "run": { "serviceId": "cmsmcp", "region": "europe-west1" } },
       {
         "source": "/.well-known/oauth-protected-resource",
-        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+        "run": { "serviceId": "cmsmcp", "region": "europe-west1" }
       },
       {
         "source": "/.well-known/oauth-protected-resource/**",
-        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+        "run": { "serviceId": "cmsmcp", "region": "europe-west1" }
       },
       {
         "source": "/.well-known/oauth-authorization-server",
-        "run": { "serviceId": "openflowmcp", "region": "europe-west1" }
+        "run": { "serviceId": "cmsmcp", "region": "europe-west1" }
       },
       {
         "source": "/forms/submit",
-        "run": { "serviceId": "openflowsubmitform", "region": "europe-west1" }
+        "run": { "serviceId": "cmssubmitform", "region": "europe-west1" }
       }
     ],
     "headers": [
@@ -57,7 +57,7 @@
   "functions": [
     {
       "source": "functions",
-      "codebase": "openflow",
+      "codebase": "cms",
       "ignore": ["node_modules", ".git", "*.log", "src"],
       "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
     }

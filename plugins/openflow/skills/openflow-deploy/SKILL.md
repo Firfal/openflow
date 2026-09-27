@@ -31,8 +31,8 @@ npx openflow setup --project <id> [--alert-email <email>] [--domain www.exemple.
 déjà en place et affiche ce qu'elle change (`--dry-run` pour seulement le voir) :
 - vérifie le plan Blaze et active les API Google nécessaires ;
 - crée Firestore (mode production) et le bucket Storage ;
-- crée le compte de build `openflow-builder` (Hosting Admin, lecture Firebase et Storage, journaux) et
-  l'écrit dans `functions/.env.<id>` (`OPENFLOW_BUILD_SERVICE_ACCOUNT`) ; donne au compte des fonctions le
+- crée le compte de build `cms-builder` (Hosting Admin, lecture Firebase et Storage, journaux) et
+  l'écrit dans `functions/.env.<id>` (`CMS_BUILD_SERVICE_ACCOUNT`) ; donne au compte des fonctions le
   droit de lancer les builds, de restaurer une version et d'évaluer reCAPTCHA ;
 - active la connexion par lien e-mail. **Google** demande un client OAuth : si le propriétaire veut ce
   bouton, active-le dans la console (Authentication > Méthode de connexion > Google) ;
@@ -63,7 +63,7 @@ Cette commande :
   configuration dans `/__/firebase/init.json` ;
 - envoie le code source dans Storage ;
 - importe le contenu de départ sans jamais écraser un contenu existant, et met à jour le schéma des
-  sections (`of_system/schema`) lu par le serveur MCP ;
+  sections (`cms_system/schema`) lu par le serveur MCP ;
 - lance la première publication.
 
 Le propriétaire peut ensuite brancher son IA (Claude, ChatGPT, Cursor…) sur `https://<domaine>/mcp` : il se

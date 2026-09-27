@@ -82,5 +82,5 @@ contributors: `docs/interface-admin.md`.
   means updating `tests/e2e/*.test.ts` and `sites/landing/visuals/admin.mjs`.
 - Check a change with screenshots in light and dark (emulators + Playwright, 1440×900 and 390×844), then
   `pnpm lint`, `pnpm typecheck`, and `pnpm --filter @openflow/e2e test` (template and
-  `OPENFLOW_E2E_SITE=$PWD/sites/landing`).
+  `CMS_E2E_SITE=$PWD/sites/landing`).
 - Owner-facing behaviour changes go in `docs/interface-admin.md`.

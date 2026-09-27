@@ -4,7 +4,7 @@ import { getOpenFlowFieldKind, imageField, linkField, videoField } from "../fiel
 
 /**
  * Serializable description of a site (sections, fields, settings, theme), without React code.
- * Written to Firestore by `openflow deploy` / `openflow seed` (`of_system/schema`), it lets the
+ * Written to Firestore by `openflow deploy` / `openflow seed` (`cms_system/schema`), it lets the
  * MCP server (Cloud Functions) describe the site to an AI and validate its changes.
  */
 export const SITE_SCHEMA_VERSION = 1;

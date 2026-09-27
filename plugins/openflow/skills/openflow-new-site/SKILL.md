@@ -16,14 +16,19 @@ question groupée, puis avance avec des hypothèses raisonnables.
 
 ## 2. Partir du modèle (ne jamais tout écrire à la main)
 
+Les paquets OpenFlow ne sont pas publiés sur npm : le site se crée dans le dossier `sites/` du dépôt
+OpenFlow (https://github.com/Firfal/openflow, ou la copie privée de l'agence), depuis sa racine :
+
 ```bash
-npx openflow@latest create <dossier> --name "<Nom du site>"
-cd <dossier> && npm install
+pnpm install && pnpm build          # une fois, si le dépôt vient d'être cloné
+pnpm openflow create sites/<dossier> --name "<Nom du site>"
+pnpm install                        # relie le site aux paquets du dépôt
+cd sites/<dossier>
 ```
 
 Le modèle contient déjà les parties invariantes : `firebase.json`, les règles de sécurité, les Cloud Functions,
 la route `/admin`, le rendu statique, `AGENTS.md` et les hooks. **Ne modifie pas ces fichiers**, sauf pour
-ajouter des éléments en dehors des blocs `// BEGIN openflow` … `// END openflow`.
+ajouter des éléments en dehors des blocs `// BEGIN cms` … `// END cms`.
 
 ## 3. Concevoir les sections
 

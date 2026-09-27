@@ -102,7 +102,7 @@ describe("form submissions", () => {
     const { value, db, mailed } = deps();
     const result = await handleSubmission(good, "1.2.3.4", value);
     expect(result).toEqual({ status: 200, body: { ok: true } });
-    const saved = [...db.store.entries()].find(([k]) => k.startsWith("of_messages/"))?.[1];
+    const saved = [...db.store.entries()].find(([k]) => k.startsWith("cms_messages/"))?.[1];
     expect(saved).toMatchObject({
       formId: "form1",
       page: "/contact/",
@@ -124,14 +124,14 @@ describe("form submissions", () => {
         status: 200,
         body: { ok: true },
       });
-      expect([...db.store.keys()].some((k) => k.startsWith("of_messages/"))).toBe(false);
+      expect([...db.store.keys()].some((k) => k.startsWith("cms_messages/"))).toBe(false);
     }
   });
 
   it("keeps low reCAPTCHA scores apart, without notification", async () => {
     const { value, db, mailed } = deps({ recaptchaScore: async () => 0.1 });
     await handleSubmission(good, "1.2.3.4", value);
-    const saved = [...db.store.entries()].find(([k]) => k.startsWith("of_messages/"))?.[1];
+    const saved = [...db.store.entries()].find(([k]) => k.startsWith("cms_messages/"))?.[1];
     expect(saved).toMatchObject({ spam: true, score: 0.1 });
     expect(mailed).toHaveLength(0);
   });
@@ -163,7 +163,7 @@ describe("form submissions", () => {
   it("logs the message for the e-mail alert when no e-mail service is configured", async () => {
     const { value, logs } = deps({ notify: async () => false });
     await handleSubmission(good, "1.2.3.5", value);
-    expect(logs).toContain("OpenFlow form submission");
+    expect(logs).toContain("CMS form submission");
   });
 
   it("writes an e-mail that escapes the visitor's text", () => {

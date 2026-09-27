@@ -21,8 +21,8 @@ describe("owner", () => {
 
   it("finds the accounts that kept the claim after an owner change", () => {
     const users = [
-      { email: "ancien@exemple.fr", customClaims: { of_owner: true, autre: 1 } },
-      { email: "Nouveau@exemple.fr", customClaims: { of_owner: true } },
+      { email: "ancien@exemple.fr", customClaims: { cms_owner: true, autre: 1 } },
+      { email: "Nouveau@exemple.fr", customClaims: { cms_owner: true } },
       { email: "visiteur@exemple.fr" },
     ];
     expect(formerOwners(users, ["nouveau@exemple.fr"]).map((u) => u.email)).toEqual([
@@ -52,9 +52,9 @@ describe("owner", () => {
   });
 
   it("requires the claim and a still-configured email", () => {
-    expect(isOwnerToken({ email: "a@x.fr", of_owner: true }, ["a@x.fr"])).toBe(true);
+    expect(isOwnerToken({ email: "a@x.fr", cms_owner: true }, ["a@x.fr"])).toBe(true);
     expect(isOwnerToken({ email: "a@x.fr" }, ["a@x.fr"])).toBe(false);
-    expect(isOwnerToken({ email: "old@x.fr", of_owner: true }, ["new@x.fr"])).toBe(false);
+    expect(isOwnerToken({ email: "old@x.fr", cms_owner: true }, ["new@x.fr"])).toBe(false);
     expect(isOwnerToken(undefined, ["a@x.fr"])).toBe(false);
   });
 });
@@ -64,14 +64,14 @@ describe("cloud build", () => {
     const request = buildRequest({
       projectId: "mon-site",
       bucket: "mon-site.firebasestorage.app",
-      sourcePath: "openflow/source/abc.tgz",
+      sourcePath: "cms/source/abc.tgz",
       snapshotPath: snapshotPath("R1"),
       releaseId: "R1",
-      serviceAccount: "openflow-builder@mon-site.iam.gserviceaccount.com",
+      serviceAccount: "cms-builder@mon-site.iam.gserviceaccount.com",
     });
     expect(request.source.storageSource).toEqual({
       bucket: "mon-site.firebasestorage.app",
-      object: "openflow/source/abc.tgz",
+      object: "cms/source/abc.tgz",
     });
     expect(request.steps.map((step) => step.id)).toEqual([
       "snapshot",
@@ -80,17 +80,17 @@ describe("cloud build", () => {
       "deploy",
     ]);
     expect(request.steps[0]!.args).toContain(
-      "gs://mon-site.firebasestorage.app/openflow/snapshots/R1.json",
+      "gs://mon-site.firebasestorage.app/cms/snapshots/R1.json",
     );
-    expect(request.steps[2]!.env).toContain("OPENFLOW_SNAPSHOT=openflow/.snapshot.json");
+    expect(request.steps[2]!.env).toContain("CMS_SNAPSHOT=openflow/.snapshot.json");
     expect(request.steps[3]!.args).toEqual(
       expect.arrayContaining(["deploy", "--only", "hosting", "--project", "mon-site"]),
     );
-    expect(request.substitutions).toEqual({ _OPENFLOW_RELEASE_ID: "R1" });
+    expect(request.substitutions).toEqual({ _CMS_RELEASE_ID: "R1" });
     // Cloud Build rejects a substitution no step uses, unless the option is loose.
     expect(request.options.substitutionOption).toBe("ALLOW_LOOSE");
     expect(request.serviceAccount).toBe(
-      "projects/mon-site/serviceAccounts/openflow-builder@mon-site.iam.gserviceaccount.com",
+      "projects/mon-site/serviceAccounts/cms-builder@mon-site.iam.gserviceaccount.com",
     );
   });
 

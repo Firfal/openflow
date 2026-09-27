@@ -36,7 +36,7 @@ export const Faq: ComponentConfig<FaqProps> = {
       },
       {
         question: "Proposez-vous des devis gratuits ?",
-        answer: "Oui, contactez-nous et nous vous répondons sous 48 heures.",
+        answer: "Oui, contactez-nous et nous vous répondons sous 48 heures.",
       },
     ],
     tone: "muted",

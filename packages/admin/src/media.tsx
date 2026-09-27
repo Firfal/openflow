@@ -175,7 +175,7 @@ export function MediaLibrary({
   );
 }
 
-/** What the site serves instead of the original (see `openflowOptimizeMedia`). */
+/** What the site serves instead of the original (see `cmsOptimizeMedia`). */
 function optimizationLabel(media: MediaEntry): string {
   const state = media.optimization?.status;
   if (state === "failed") return "Impossible : l'original est utilisé";

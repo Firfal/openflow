@@ -15,7 +15,7 @@ interface Problem {
 
 /**
  * « Publier » button (dashboard and editor bars): validates drafts, lists what changed since the
- * last publication, calls `openflowPublish` and follows the release until it is live.
+ * last publication, calls `cmsPublish` and follows the release until it is live.
  */
 export function PublishControl({ compact = false }: { compact?: boolean }) {
   const { config, services, pages, releases, settings, notify, navigate } = useAdmin();

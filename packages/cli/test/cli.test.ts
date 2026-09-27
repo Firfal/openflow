@@ -16,9 +16,13 @@ import {
 } from "../src/index.js";
 
 describe("openflow create", () => {
-  it("copies the starter and rewrites names, dependencies and project", async () => {
+  it("copies the starter and rewrites names, dependencies and project (CLI from npm)", async () => {
     const dir = path.join(await mkdtemp(path.join(tmpdir(), "openflow-create-")), "boulangerie");
-    await create(dir, { name: "Boulangerie Dupont", project: "boulangerie-dupont" });
+    await create(dir, {
+      name: "Boulangerie Dupont",
+      project: "boulangerie-dupont",
+      repository: false,
+    });
 
     for (const file of [
       "openflow.config.tsx",
@@ -53,14 +57,47 @@ describe("openflow create", () => {
     expect(JSON.parse(await readFile(path.join(dir, ".firebaserc"), "utf8"))).toEqual({
       projects: { default: "boulangerie-dupont" },
     });
-    await expect(create(dir, {})).rejects.toThrow(/n'est pas vide/);
+    await expect(create(dir, { repository: false })).rejects.toThrow(/n'est pas vide/);
+  });
+});
+
+describe("openflow create in the OpenFlow repository", () => {
+  async function repository() {
+    const root = await mkdtemp(path.join(tmpdir(), "openflow-repo-"));
+    await writeFile(
+      path.join(root, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n  - sites/*\n  - sites/*/functions\n",
+    );
+    return root;
+  }
+
+  it("creates the site in sites/ and keeps the workspace packages (not on npm)", async () => {
+    const root = await repository();
+    const dir = path.join(root, "sites", "boulangerie");
+    await create(dir, { name: "Boulangerie", repository: root });
+    const pkg = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@openflow/next"]).toBe("workspace:*");
+    const functionsPkg = JSON.parse(
+      await readFile(path.join(dir, "functions/package.json"), "utf8"),
+    );
+    expect(functionsPkg.dependencies["@openflow/functions"]).toBe("workspace:*");
+  });
+
+  it("refuses a folder outside the repository's sites/", async () => {
+    const root = await repository();
+    const outside = path.join(await mkdtemp(path.join(tmpdir(), "openflow-out-")), "site");
+    await expect(create(outside, { repository: root })).rejects.toThrow(/sites\//);
+    await expect(create(path.join(root, "autre", "site"), { repository: root })).rejects.toThrow(
+      /sites\//,
+    );
+    expect(existsSync(outside)).toBe(false);
   });
 });
 
 describe("site package name", () => {
   it("never collides with a dependency of the starter", async () => {
     const dir = path.join(await mkdtemp(path.join(tmpdir(), "openflow-name-")), "site");
-    await create(dir, { name: "OpenFlow" });
+    await create(dir, { name: "OpenFlow", repository: false });
     const pkg = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
     expect(pkg.name).toBe("openflow-site");
     expect(Object.keys(pkg.devDependencies)).toContain("openflow");
@@ -70,7 +107,7 @@ describe("site package name", () => {
 describe("source archive", () => {
   it("excludes dependencies, build output, secrets and local state", async () => {
     const dir = path.join(await mkdtemp(path.join(tmpdir(), "openflow-source-")), "site");
-    await create(dir, {});
+    await create(dir, { repository: false });
     for (const file of [
       "node_modules/x/index.js",
       "out/index.html",

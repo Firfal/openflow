@@ -15,10 +15,27 @@ ou Framer, avec un backend 100 % Firebase.**
   automatique à chaque écart et se corrige seul.
 - Open-source (MIT). L'éditeur visuel est [Puck](https://puckeditor.com) ; OpenFlow apporte tout le reste.
 
-> Statut : **phase 1 (fondations)**. Les paquets ne sont pas encore publiés sur npm : utilisez le monorepo
-> (voir « Contribuer »). Feuille de route : [docs/roadmap.md](docs/roadmap.md).
+> Statut : **phase 1 (fondations)**. OpenFlow s'utilise depuis ce dépôt GitHub : les paquets ne sont pas
+> publiés sur npm, chaque site vit dans le dossier `sites/`. Feuille de route : [docs/roadmap.md](docs/roadmap.md).
 
-## Créer un site avec Claude Code
+## Créer un site
+
+Les sites se créent dans le dossier `sites/` de ce dépôt, où ils utilisent directement les paquets
+OpenFlow. Pour des sites clients qui ne doivent pas être publics, travaillez dans une copie privée du dépôt
+(un dépôt privé qui suit celui-ci pour recevoir les mises à jour).
+
+```bash
+git clone https://github.com/Firfal/openflow && cd openflow
+pnpm install && pnpm build
+pnpm openflow create sites/boulangerie --name "Boulangerie Dupont"
+pnpm install                       # relie le nouveau site aux paquets
+cd sites/boulangerie
+npx openflow dev                   # site + /admin sur les émulateurs Firebase
+npx openflow check --level build   # conformité à la norme OFS
+npx openflow deploy --project mon-projet --owner client@exemple.fr
+```
+
+Avec Claude Code, ouvert dans le dépôt :
 
 ```text
 /plugin marketplace add Firfal/openflow
@@ -31,15 +48,8 @@ Le plugin fournit :
 - les skills `openflow`, `openflow-new-site`, `openflow-design` et `openflow-deploy` ;
 - des hooks qui lancent `openflow check` après chaque modification et avant la fin de chaque tâche.
 
-Sans Claude Code :
-
-```bash
-npx openflow create mon-site --name "Boulangerie Dupont"
-cd mon-site && npm install
-npx openflow dev                   # site + /admin sur les émulateurs Firebase
-npx openflow check --level build   # conformité à la norme OFS
-npx openflow deploy --project mon-projet --owner client@exemple.fr
-```
+`openflow deploy` embarque les paquets du dépôt dans la livraison (`vendor/`) : Cloud Build et Cloud
+Functions n'ont pas besoin de npm pour les installer.
 
 ## Documentation
 
@@ -67,7 +77,7 @@ packages/
   functions/   @openflow/functions  Cloud Functions (propriétaire, publication, historique)
   cli/         openflow             create, dev, check, hook, seed, build, deploy
 templates/next-starter/             site de départ (conforme à 100 %)
-sites/landing/                      landing du projet, créée et éditée avec OpenFlow
+sites/                              les sites (landing du projet, sites clients)
 plugins/openflow/                   plugin Claude Code (skills, hooks)
 tests/e2e/                          règles de sécurité et scénario admin sur les émulateurs
 docs/                               spécification (FR)

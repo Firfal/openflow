@@ -80,7 +80,7 @@ champs propres à OpenFlow (image, vidéo, lien et formulaire), branchés sur Fi
 ## Formulaires
 
 Le propriétaire choisit les champs d'un formulaire (libellé, type, obligatoire, choix) ; les messages
-arrivent dans l'admin (« Messages ») et par e-mail. La fonction `openflowSubmitForm` vérifie chaque envoi
+arrivent dans l'admin (« Messages ») et par e-mail. La fonction `cmsSubmitForm` vérifie chaque envoi
 contre la page publiée et filtre le spam (champ piège, temps de saisie, limite par visiteur, reCAPTCHA).
 
 ```tsx

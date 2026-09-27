@@ -149,7 +149,7 @@ export const HeroEditor: ComponentConfig<HeroEditorProps> = {
     primaryLink: null,
     secondaryLabel: "Comment ça marche",
     secondaryLink: null,
-    installCommand: "npx openflow create mon-site",
+    installCommand: "pnpm openflow create sites/mon-site",
     demoUrl: "boulangerie-dupont.fr/admin",
     demoTabs: [{ label: "Pages" }, { label: "Réglages" }, { label: "Historique" }],
     demoFieldLabel: "Titre principal",

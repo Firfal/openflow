@@ -61,7 +61,7 @@ export const snapshotSchema = z.object({
   settings: z.record(z.string(), z.unknown()).default({}),
   /** Theme tokens (`:root` variables), e.g. `{ "color-ink": "#101820" }`. */
   theme: z.record(z.string(), z.string()).default({}),
-  /** Public keys of the site's integrations (reCAPTCHA), from `of_system/integrations`. */
+  /** Public keys of the site's integrations (reCAPTCHA), from `cms_system/integrations`. */
   integrations: z.object({ recaptchaSiteKey: z.string().optional() }).default({}),
   pages: z.array(snapshotPageSchema),
 });
@@ -72,7 +72,7 @@ export type Snapshot = Omit<z.infer<typeof snapshotSchema>, "pages"> & { pages: 
 export interface SnapshotInput {
   releaseId: string;
   createdAt?: string;
-  /** Public keys of the integrations (`of_system/integrations`). */
+  /** Public keys of the integrations (`cms_system/integrations`). */
   integrations?: { recaptchaSiteKey?: string };
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;

@@ -23,9 +23,9 @@ import { imageDimensions } from "@openflow/core/node";
 import type { Firestore } from "firebase-admin/firestore";
 
 /** Prefix of OpenFlow assistant keys (recognisable in logs and secret scanners). */
-export const AGENT_TOKEN_PREFIX = "ofk_";
+export const AGENT_TOKEN_PREFIX = "cmsk_";
 /** Prefix of the OAuth access tokens given to connected assistants (see `oauth.ts`). */
-export const OAUTH_ACCESS_TOKEN_PREFIX = "ofa_";
+export const OAUTH_ACCESS_TOKEN_PREFIX = "cmsa_";
 
 export function hashAgentToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -50,8 +50,8 @@ export async function createAgentToken(
 }
 
 /**
- * Finds the assistant presenting `token`: an owner-created key (`ofk_…`, `Authorization: Bearer`
- * or `?key=`) or an OAuth access token (`ofa_…`, valid one hour).
+ * Finds the assistant presenting `token`: an owner-created key (`cmsk_…`, `Authorization: Bearer`
+ * or `?key=`) or an OAuth access token (`cmsa_…`, valid one hour).
  */
 export async function verifyAgentToken(
   db: Firestore,

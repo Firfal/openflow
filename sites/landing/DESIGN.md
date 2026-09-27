@@ -48,7 +48,7 @@ est un outil : le terminal et le code sont sur l'encre.
 │ Titre (Bricolage 64–80)        ┌─ fenêtre admin animée ───────────────┐
 │ Sous-titre                     │ url   Pages Réglages  [Enregistré][Publier]
 │ [GitHub] [Documentation]       │ ┌ page ────────────┐ ┌ champs ───┐ │
-│ $ npx openflow create mon-site │ │ ┌┄┄sélection┄┄┐  │ │ Titre …   │ │
+│ $ pnpm openflow create sites/… │ │ ┌┄┄sélection┄┄┐  │ │ Titre …   │ │
 │                                │ │   texte ▌       │ │           │ │
 └────────────────────────────────└─────────────────────────────────────┘
  1 ─────────── 2 ─────────── 3        (vraie séquence : numérotation justifiée)

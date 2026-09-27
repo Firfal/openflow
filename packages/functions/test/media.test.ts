@@ -70,23 +70,23 @@ describe("media optimization", () => {
   it("finds the object path of Storage URLs, and skips its own copies", () => {
     expect(
       storagePathOf(
-        "https://firebasestorage.googleapis.com/v0/b/site.firebasestorage.app/o/openflow%2Fmedia%2Fa.jpg?alt=media&token=x",
+        "https://firebasestorage.googleapis.com/v0/b/site.firebasestorage.app/o/cms%2Fmedia%2Fa.jpg?alt=media&token=x",
       ),
-    ).toBe("openflow/media/a.jpg");
-    expect(
-      storagePathOf("https://storage.googleapis.com/site.appspot.com/openflow/media/a.jpg"),
-    ).toBe("openflow/media/a.jpg");
+    ).toBe("cms/media/a.jpg");
+    expect(storagePathOf("https://storage.googleapis.com/site.appspot.com/cms/media/a.jpg")).toBe(
+      "cms/media/a.jpg",
+    );
     expect(storagePathOf("/images/a.webp")).toBeUndefined();
-    expect(isOriginalMedia("openflow/media/a.jpg")).toBe(true);
-    expect(isOriginalMedia("openflow/media/optimized/a/960.webp")).toBe(false);
+    expect(isOriginalMedia("cms/media/a.jpg")).toBe(true);
+    expect(isOriginalMedia("cms/media/optimized/a/960.webp")).toBe(false);
   });
 
   it("adds the copies to published values, and nothing else", () => {
     const library = new Map<string, MediaDoc>([
       [
-        "openflow/media/a.jpg",
+        "cms/media/a.jpg",
         {
-          path: "openflow/media/a.jpg",
+          path: "cms/media/a.jpg",
           url: "u",
           name: "a.jpg",
           contentType: "image/jpeg",
@@ -96,9 +96,9 @@ describe("media optimization", () => {
         },
       ],
       [
-        "openflow/media/b.mp4",
+        "cms/media/b.mp4",
         {
-          path: "openflow/media/b.mp4",
+          path: "cms/media/b.mp4",
           url: "u",
           name: "b.mp4",
           contentType: "video/mp4",
@@ -115,10 +115,10 @@ describe("media optimization", () => {
           type: "Hero",
           props: {
             image: {
-              src: "https://firebasestorage.googleapis.com/v0/b/x/o/openflow%2Fmedia%2Fa.jpg?alt=media",
+              src: "https://firebasestorage.googleapis.com/v0/b/x/o/cms%2Fmedia%2Fa.jpg?alt=media",
               alt: "A",
             },
-            video: { src: "https://storage.googleapis.com/x/openflow/media/b.mp4" },
+            video: { src: "https://storage.googleapis.com/x/cms/media/b.mp4" },
             other: { src: "/images/static.webp", alt: "" },
           },
         },
@@ -143,10 +143,10 @@ describe("media optimization", () => {
     })
       .jpeg({ quality: 90 })
       .toBuffer();
-    const storage = memoryStorage({ "openflow/media/photo.jpg": original });
-    const result = await optimizeImage(storage, "openflow/media/photo.jpg");
+    const storage = memoryStorage({ "cms/media/photo.jpg": original });
+    const result = await optimizeImage(storage, "cms/media/photo.jpg");
     expect(result?.variants?.map((v) => v.width)).toEqual([480, 960, 1440, 1920, 2560]);
-    expect(Object.keys(storage.files)).toContain("openflow/media/optimized/photo/960.webp");
+    expect(Object.keys(storage.files)).toContain("cms/media/optimized/photo/960.webp");
     for (const variant of result!.variants!) expect(variant.size).toBeLessThan(original.length);
   }, 60_000);
 
@@ -166,11 +166,11 @@ describe("media optimization", () => {
       "4M",
       source,
     ]);
-    const storage = memoryStorage({ "openflow/media/clip.webm": readFileSync(source) });
-    const result = await optimizeVideo(storage, "openflow/media/clip.webm");
+    const storage = memoryStorage({ "cms/media/clip.webm": readFileSync(source) });
+    const result = await optimizeVideo(storage, "cms/media/clip.webm");
     expect(result?.variants?.map((v) => [v.width, v.height])).toEqual([[1280, 720]]);
     expect(result?.poster).toContain("poster.webp");
-    const mp4 = storage.files["openflow/media/optimized/clip/720p.mp4"]!;
+    const mp4 = storage.files["cms/media/optimized/clip/720p.mp4"]!;
     // `faststart`: the index (moov) comes before the data (mdat).
     expect(mp4.indexOf("moov")).toBeLessThan(mp4.indexOf("mdat"));
   }, 120_000);

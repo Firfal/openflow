@@ -7,7 +7,7 @@ import {
 } from "../src/commands/setup.js";
 
 describe("openflow setup", () => {
-  const builder = "serviceAccount:openflow-builder@p.iam.gserviceaccount.com";
+  const builder = "serviceAccount:cms-builder@p.iam.gserviceaccount.com";
   const runtime = "serviceAccount:1-compute@developer.gserviceaccount.com";
 
   it("adds only the missing roles, and never removes a member", () => {

@@ -56,7 +56,10 @@ export const RUNTIME_ROLES = [
   "roles/recaptchaenterprise.agent",
 ];
 
-export const BUILDER_ACCOUNT_ID = "openflow-builder";
+export const BUILDER_ACCOUNT_ID = "cms-builder";
+
+/** Name of the reCAPTCHA Enterprise key of the forms, found again by it on each run. */
+export const RECAPTCHA_KEY_NAME = "Formulaires du site";
 
 interface Binding {
   role: string;
@@ -100,7 +103,7 @@ export function firestoreLocation(region: string): string {
 
 export interface SetupOptions {
   project?: string;
-  /** Region of the functions (`OPENFLOW_REGION`, `europe-west1` by default). */
+  /** Region of the functions (`CMS_REGION`, `europe-west1` by default). */
   region?: string;
   /** Who receives the alert when a publication fails (the owner's e-mail by default). */
   alertEmail?: string;
@@ -172,12 +175,12 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
     ...(await readEnv(path.join(site, "functions", ".env"))),
     ...(await readEnv(envFile)),
   };
-  const region = options.region ?? env.OPENFLOW_REGION ?? "europe-west1";
-  const owners = (env.OPENFLOW_OWNER_EMAIL ?? "")
+  const region = options.region ?? env.CMS_REGION ?? "europe-west1";
+  const owners = (env.CMS_OWNER_EMAIL ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const alertEmail = options.alertEmail ?? env.OPENFLOW_ALERT_EMAIL ?? owners[0];
+  const alertEmail = options.alertEmail ?? env.CMS_ALERT_EMAIL ?? owners[0];
   const dry = Boolean(options.dryRun);
   const act = async (label: string, change: () => Promise<unknown>) => {
     if (dry) {
@@ -288,7 +291,7 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
       send(client, iamApi, "POST", {
         accountId: BUILDER_ACCOUNT_ID,
         serviceAccount: {
-          displayName: "OpenFlow builder",
+          displayName: "Builds du site",
           description: "Reconstruit le site à chaque publication (Cloud Build).",
         },
       }),
@@ -336,10 +339,10 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
       }),
     );
   }
-  if (env.OPENFLOW_BUILD_SERVICE_ACCOUNT === builder) log.ok(`functions/.env.${projectId} à jour`);
+  if (env.CMS_BUILD_SERVICE_ACCOUNT === builder) log.ok(`functions/.env.${projectId} à jour`);
   else {
-    await act(`functions/.env.${projectId} : OPENFLOW_BUILD_SERVICE_ACCOUNT`, () =>
-      setEnv(envFile, "OPENFLOW_BUILD_SERVICE_ACCOUNT", builder),
+    await act(`functions/.env.${projectId} : CMS_BUILD_SERVICE_ACCOUNT`, () =>
+      setEnv(envFile, "CMS_BUILD_SERVICE_ACCOUNT", builder),
     );
   }
 
@@ -412,8 +415,8 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
       `${monitoring}/alertPolicies`,
       "GET",
     );
-    const displayName = "OpenFlow : publication en échec";
-    const messageAlert = "OpenFlow : nouveau message";
+    const displayName = "Site : publication en échec";
+    const messageAlert = "Site : nouveau message";
     const hasPolicy = (name: string) => policies.alertPolicies?.some((p) => p.displayName === name);
     if (channel && hasPolicy(displayName) && hasPolicy(messageAlert)) {
       log.ok(`Alertes par e-mail : publication en échec, nouveau message (${alertEmail})`);
@@ -425,7 +428,7 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
             channel = (
               await send<{ name: string }>(client, `${monitoring}/notificationChannels`, "POST", {
                 type: "email",
-                displayName: `OpenFlow · ${alertEmail}`,
+                displayName: `Alertes du site · ${alertEmail}`,
                 labels: { email_address: alertEmail },
               })
             ).name;
@@ -497,11 +500,11 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
         recaptchaApi,
         "GET",
       );
-      let name = keys.keys?.find((k) => k.displayName === "OpenFlow")?.name;
+      let name = keys.keys?.find((k) => k.displayName === RECAPTCHA_KEY_NAME)?.name;
       if (!name) {
         name = (
           await send<{ name: string }>(client, recaptchaApi, "POST", {
-            displayName: "OpenFlow",
+            displayName: RECAPTCHA_KEY_NAME,
             webSettings: {
               allowedDomains: domains,
               integrationType: "SCORE",

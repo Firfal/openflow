@@ -1,74 +1,74 @@
 /**
  * Canonical OpenFlow security rules. Sites may add their own rules outside the
- * `// BEGIN openflow` / `// END openflow` markers; the block itself must stay identical (OF-303).
+ * `// BEGIN cms` / `// END cms` markers; the block itself must stay identical (OF-303).
  */
-export const RULES_BEGIN_MARKER = "// BEGIN openflow";
-export const RULES_END_MARKER = "// END openflow";
+export const RULES_BEGIN_MARKER = "// BEGIN cms";
+export const RULES_END_MARKER = "// END cms";
 
-export const FIRESTORE_RULES_BLOCK = `function ofIsOwner() {
-  return request.auth != null && request.auth.token.get('of_owner', false) == true;
+export const FIRESTORE_RULES_BLOCK = `function cmsIsOwner() {
+  return request.auth != null && request.auth.token.get('cms_owner', false) == true;
 }
-match /of_site/{docId} {
-  allow read, write: if ofIsOwner();
+match /cms_site/{docId} {
+  allow read, write: if cmsIsOwner();
 }
-match /of_pages/{pageId} {
-  allow read, delete: if ofIsOwner();
-  allow create, update: if ofIsOwner()
+match /cms_pages/{pageId} {
+  allow read, delete: if cmsIsOwner();
+  allow create, update: if cmsIsOwner()
     && request.resource.data.keys().hasAll(['slug', 'title', 'status', 'data'])
     && request.resource.data.slug is string
     && request.resource.data.title is string
     && request.resource.data.status in ['draft', 'published'];
 }
-match /of_media/{mediaId} {
-  allow read, write: if ofIsOwner();
+match /cms_media/{mediaId} {
+  allow read, write: if cmsIsOwner();
 }
-match /of_releases/{releaseId} {
-  allow read: if ofIsOwner();
+match /cms_releases/{releaseId} {
+  allow read: if cmsIsOwner();
   allow write: if false;
 }
-match /of_system/{docId} {
+match /cms_system/{docId} {
   allow read, write: if false;
 }
-match /of_agent_tokens/{tokenId} {
-  allow read, delete: if ofIsOwner();
+match /cms_agent_tokens/{tokenId} {
+  allow read, delete: if cmsIsOwner();
   allow create, update: if false;
 }
-match /of_agent_clients/{clientId} {
+match /cms_agent_clients/{clientId} {
   allow read, write: if false;
 }
-match /of_agent_requests/{requestId} {
+match /cms_agent_requests/{requestId} {
   allow read, write: if false;
 }
-match /of_agent_codes/{codeId} {
+match /cms_agent_codes/{codeId} {
   allow read, write: if false;
 }
-match /of_messages/{messageId} {
-  allow read, delete: if ofIsOwner();
-  allow update: if ofIsOwner()
+match /cms_messages/{messageId} {
+  allow read, delete: if cmsIsOwner();
+  allow update: if cmsIsOwner()
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'spam']);
   allow create: if false;
 }
-match /of_rate_limits/{visitorId} {
+match /cms_rate_limits/{visitorId} {
   allow read, write: if false;
 }`;
 
-export const STORAGE_RULES_BLOCK = `function ofIsOwner() {
-  return request.auth != null && request.auth.token.get('of_owner', false) == true;
+export const STORAGE_RULES_BLOCK = `function cmsIsOwner() {
+  return request.auth != null && request.auth.token.get('cms_owner', false) == true;
 }
-match /openflow/media/{fileName} {
+match /cms/media/{fileName} {
   allow read: if true;
-  allow create, update: if ofIsOwner() && (
+  allow create, update: if cmsIsOwner() && (
     (request.resource.size < 15 * 1024 * 1024
       && request.resource.contentType.matches('image/(png|jpeg|gif|webp|avif)|application/pdf'))
     || (request.resource.size < 100 * 1024 * 1024
       && request.resource.contentType.matches('video/(mp4|webm|quicktime)')));
-  allow delete: if ofIsOwner();
+  allow delete: if cmsIsOwner();
 }
-match /openflow/media/optimized/{allPaths=**} {
+match /cms/media/optimized/{allPaths=**} {
   allow read: if true;
   allow write: if false;
 }
-match /openflow/{allPaths=**} {
+match /cms/{allPaths=**} {
   allow read, write: if false;
 }`;
 

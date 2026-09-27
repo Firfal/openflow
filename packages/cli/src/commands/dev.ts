@@ -34,10 +34,10 @@ function waitForPort(port: number, timeoutMs = 90_000): Promise<void> {
 async function ensureDevOwner(site: string, owner: string): Promise<void> {
   const file = path.join(site, "functions", ".env.local");
   const content = existsSync(file) ? await readFile(file, "utf8") : "";
-  if (/^OPENFLOW_OWNER_EMAIL=/m.test(content)) return;
+  if (/^CMS_OWNER_EMAIL=/m.test(content)) return;
   await writeFile(
     file,
-    `${content}${content && !content.endsWith("\n") ? "\n" : ""}OPENFLOW_OWNER_EMAIL=${owner}\n`,
+    `${content}${content && !content.endsWith("\n") ? "\n" : ""}CMS_OWNER_EMAIL=${owner}\n`,
   );
 }
 
@@ -72,7 +72,7 @@ export async function dev(site: string, options: { port?: string; owner?: string
       "--only",
       "auth,firestore,storage,functions",
     ],
-    { cwd: site, stdio: "inherit", env: { ...process.env, OPENFLOW_LOCAL_SITE_DIR: site } },
+    { cwd: site, stdio: "inherit", env: { ...process.env, CMS_LOCAL_SITE_DIR: site } },
   );
   children.push(emulators);
   emulators.on("exit", (code) => {
@@ -88,7 +88,7 @@ export async function dev(site: string, options: { port?: string; owner?: string
   const server = spawn(next.command, [...next.args, "dev", "--port", port], {
     cwd: site,
     stdio: "inherit",
-    env: { ...process.env, NEXT_PUBLIC_OPENFLOW_EMULATORS: "1" },
+    env: { ...process.env, NEXT_PUBLIC_CMS_EMULATORS: "1" },
   });
   children.push(server);
   log.info(`

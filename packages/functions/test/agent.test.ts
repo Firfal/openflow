@@ -8,16 +8,16 @@ import {
 
 describe("assistant keys", () => {
   it("reads the key from the Authorization header or the ?key= parameter", () => {
-    expect(tokenFromRequest({ authorization: "Bearer ofk_abc" }, {})).toBe("ofk_abc");
-    expect(tokenFromRequest({}, { key: "ofk_def" })).toBe("ofk_def");
+    expect(tokenFromRequest({ authorization: "Bearer cmsk_abc" }, {})).toBe("cmsk_abc");
+    expect(tokenFromRequest({}, { key: "cmsk_def" })).toBe("cmsk_def");
     expect(tokenFromRequest({ authorization: "Basic xyz" }, {})).toBeUndefined();
   });
 
   it("stores a stable SHA-256 of the key", () => {
-    expect(AGENT_TOKEN_PREFIX).toBe("ofk_");
-    expect(hashAgentToken("ofk_x")).toMatch(/^[0-9a-f]{64}$/);
-    expect(hashAgentToken("ofk_x")).toBe(hashAgentToken("ofk_x"));
-    expect(hashAgentToken("ofk_x")).not.toBe(hashAgentToken("ofk_y"));
+    expect(AGENT_TOKEN_PREFIX).toBe("cmsk_");
+    expect(hashAgentToken("cmsk_x")).toMatch(/^[0-9a-f]{64}$/);
+    expect(hashAgentToken("cmsk_x")).toBe(hashAgentToken("cmsk_x"));
+    expect(hashAgentToken("cmsk_x")).not.toBe(hashAgentToken("cmsk_y"));
   });
 });
 

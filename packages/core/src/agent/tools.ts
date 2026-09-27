@@ -21,7 +21,7 @@ import type { FieldSchema, SiteSchema } from "./schema.js";
 
 /**
  * Tools that let an AI assistant edit an OpenFlow site by chat. The same definitions are served by
- * the MCP server (Cloud Functions, `openflowMcp`) and registered with WebMCP by the admin, each
+ * the MCP server (Cloud Functions, `cmsMcp`) and registered with WebMCP by the admin, each
  * with its own {@link AgentBackend} (Firebase Admin SDK or the owner's browser session).
  *
  * Every change is a draft: nothing is online before `publish`.

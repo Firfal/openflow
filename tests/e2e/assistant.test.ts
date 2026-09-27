@@ -11,12 +11,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 // OAuth connection (discovery, registration, consent in the admin, tokens, refresh, disconnect),
 // changes shown live in the editor, revocation, and the same tools exposed to WebMCP.
 const site =
-  process.env.OPENFLOW_E2E_SITE ??
-  path.resolve(import.meta.dirname, "../../templates/next-starter");
+  process.env.CMS_E2E_SITE ?? path.resolve(import.meta.dirname, "../../templates/next-starter");
 const PORT = 3102;
 const ADMIN = `http://localhost:${PORT}/admin/`;
 const OWNER = "proprietaire@exemple.fr";
-const FUNCTION = "http://127.0.0.1:5001/demo-openflow/europe-west1/openflowMcp";
+const FUNCTION = "http://127.0.0.1:5001/demo-openflow/europe-west1/cmsMcp";
 const MCP = FUNCTION;
 /** Address shown in the admin: `/mcp`, as `https://<site>/mcp` in production. */
 const MCP_URL = `${FUNCTION}/mcp`;
@@ -87,7 +86,7 @@ beforeAll(async () => {
   server = spawn(path.join(site, "node_modules", ".bin", "next"), ["dev", "--port", String(PORT)], {
     cwd: site,
     stdio: "ignore",
-    env: { ...process.env, NEXT_PUBLIC_OPENFLOW_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
+    env: { ...process.env, NEXT_PUBLIC_CMS_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
   });
   await waitForHttp(ADMIN, 180_000);
   browser = await chromium.launch();
@@ -123,7 +122,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
     await page.getByRole("heading", { name: "Assistant IA", exact: true }).waitFor();
     // With the emulators the address is the function's (`https://<site>/mcp` in production).
     expect(await page.locator(".of-copy__value").first().innerText()).toMatch(
-      /:5001\/demo-openflow\/europe-west1\/openflowMcp\/mcp$/,
+      /:5001\/demo-openflow\/europe-west1\/cmsMcp\/mcp$/,
     );
     await page.screenshot({ path: path.join(SCREENSHOTS, "05-assistant.png") });
     await page.getByText("Clé d'accès", { exact: true }).click();
@@ -132,11 +131,11 @@ describe("assistant IA (MCP et WebMCP)", () => {
     const value = page.locator(".of-key-created .of-copy__value").first();
     await value.waitFor({ timeout: 30_000 });
     key = (await value.innerText()).trim();
-    expect(key).toMatch(/^ofk_[\w-]{40,}$/);
+    expect(key).toMatch(/^cmsk_[\w-]{40,}$/);
     await page.getByRole("button", { name: "J'ai copié la clé" }).click();
     await page.getByText("Claude e2e").waitFor();
     // Only the hash is stored.
-    const stored = (await db.collection("of_agent_tokens").get()).docs.map((d) => d.data());
+    const stored = (await db.collection("cms_agent_tokens").get()).docs.map((d) => d.data());
     expect(stored).toHaveLength(1);
     expect(JSON.stringify(stored)).not.toContain(key);
   });
@@ -147,8 +146,8 @@ describe("assistant IA (MCP et WebMCP)", () => {
     expect(refused.headers.get("www-authenticate")).toContain(
       `resource_metadata="${FUNCTION}/.well-known/oauth-protected-resource/mcp"`,
     );
-    expect((await mcp("tools/list", {}, "ofk_wrong")).status).toBe(401);
-    expect((await mcp("tools/list", {}, "ofa_wrong")).status).toBe(401);
+    expect((await mcp("tools/list", {}, "cmsk_wrong")).status).toBe(401);
+    expect((await mcp("tools/list", {}, "cmsa_wrong")).status).toBe(401);
   });
 
   it("speaks MCP: initialize, tools/list, tools/call", async () => {
@@ -242,7 +241,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
     };
     const tokens = await form(server.token_endpoint, exchange);
     expect(tokens.status).toBe(200);
-    expect(tokens.body.access_token).toMatch(/^ofa_/);
+    expect(tokens.body.access_token).toMatch(/^cmsa_/);
     expect((await form(server.token_endpoint, exchange)).body.error).toBe("invalid_grant");
     expect((await mcp("tools/list", {}, tokens.body.access_token, MCP_URL)).status).toBe(200);
 
@@ -345,7 +344,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
       )
       .toBe("rgb(0, 0, 255)");
     await page.getByText("L'assistant IA a modifié cette page.").first().waitFor();
-    const saved = (await db.doc("of_pages/accueil").get()).data();
+    const saved = (await db.doc("cms_pages/accueil").get()).data();
     expect(saved?.updatedBy).toBe("Assistant IA");
     expect(saved?.data.content[0].props._style.fields.title.base.color).toBe("#0000ff");
   });
@@ -372,7 +371,8 @@ describe("assistant IA (MCP et WebMCP)", () => {
     // The editor saves it, as for any change of the owner (undoable in Puck).
     await expect
       .poll(
-        async () => (await db.doc("of_pages/accueil").get()).data()?.data.content[0].props.subtitle,
+        async () =>
+          (await db.doc("cms_pages/accueil").get()).data()?.data.content[0].props.subtitle,
         {
           timeout: 30_000,
         },

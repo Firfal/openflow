@@ -212,7 +212,7 @@ return img && <img {...img} className="rounded-xl" />;`,
     level: "fast",
     status: "active",
     why: "`firebase.json`, `firestore.rules` et `storage.rules` garantissent que seul le propriétaire modifie le site et que l'admin est servi correctement.",
-    fix: 'Ne modifiez pas les blocs `// BEGIN openflow` … `// END openflow` des règles. Gardez `hosting.public: "out"` et la réécriture `/admin/**` vers `/admin/index.html` dans `firebase.json`. Vous pouvez ajouter vos propres règles en dehors des blocs.',
+    fix: 'Ne modifiez pas les blocs `// BEGIN cms` … `// END cms` des règles. Gardez `hosting.public: "out"` et la réécriture `/admin/**` vers `/admin/index.html` dans `firebase.json`. Vous pouvez ajouter vos propres règles en dehors des blocs.',
   },
   {
     id: "OF-304",
@@ -230,7 +230,7 @@ return img && <img {...img} className="rounded-xl" />;`,
     level: "fast",
     status: "active",
     why: "Le propriétaire branche Claude, ChatGPT ou son éditeur sur `https://<site>/mcp` pour modifier le site en discutant, et les IA qui lisent le site trouvent son contenu dans `llms.txt`. Sans les réécritures, l'assistant ne peut pas se connecter ; sans `llms.txt`, les IA comprennent moins bien le site.",
-    fix: 'Gardez dans `firebase.json` les réécritures `/mcp`, `/mcp/**`, `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/**` et `/.well-known/oauth-authorization-server` vers `{ "run": { "serviceId": "openflowmcp", "region": "<région des fonctions>" } }` (la région de `OPENFLOW_REGION`, `europe-west1` par défaut). Gardez `app/llms.txt/route.ts` (`createLlmsTxt`) et `app/llms-full.txt/route.ts` (`createLlmsFullTxt`), de `@openflow/next/data`, avec `dynamic = "force-static"`.',
+    fix: 'Gardez dans `firebase.json` les réécritures `/mcp`, `/mcp/**`, `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/**` et `/.well-known/oauth-authorization-server` vers `{ "run": { "serviceId": "cmsmcp", "region": "<région des fonctions>" } }` (la région de `CMS_REGION`, `europe-west1` par défaut). Gardez `app/llms.txt/route.ts` (`createLlmsTxt`) et `app/llms-full.txt/route.ts` (`createLlmsFullTxt`), de `@openflow/next/data`, avec `dynamic = "force-static"`.',
     good: `// app/llms.txt/route.ts
 import { createLlmsTxt } from "@openflow/next/data";
 import config from "@/openflow.config";

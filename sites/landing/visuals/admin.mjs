@@ -16,7 +16,7 @@ const PORT = 3101;
 if (!process.argv.includes("--inside")) {
   writeFileSync(
     path.join(site, "functions", ".env.local"),
-    `OPENFLOW_OWNER_EMAIL=${OWNER}\nOPENFLOW_LOCAL_SITE_DIR=${site}\n`,
+    `CMS_OWNER_EMAIL=${OWNER}\nCMS_LOCAL_SITE_DIR=${site}\n`,
   );
   const build = spawnSync("npm", ["--prefix", "functions", "run", "build"], {
     cwd: site,
@@ -73,7 +73,7 @@ if (seed.status !== 0) process.exit(seed.status ?? 1);
 const server = spawn(bin("next"), ["dev", "--port", String(PORT)], {
   cwd: site,
   stdio: "ignore",
-  env: { ...process.env, NEXT_PUBLIC_OPENFLOW_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
+  env: { ...process.env, NEXT_PUBLIC_CMS_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
 });
 const browser = await chromium.launch();
 const page = await browser.newPage({

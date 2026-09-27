@@ -4,7 +4,7 @@
   "status": "published",
   "seo": {
     "title": "Contact",
-    "description": "Écrivez-nous : nous répondons sous 48 heures."
+    "description": "Écrivez-nous : nous répondons sous 48 heures."
   },
   "data": {
     "root": {
@@ -12,11 +12,27 @@
     },
     "content": [
       {
+        "type": "Hero",
+        "props": {
+          "id": "hero-contact",
+          "eyebrow": "Contact",
+          "title": "Parlons de votre projet",
+          "subtitle": "Une question, un devis, une visite sur place : écrivez-nous, nous répondons sous 48 heures.",
+          "primaryLabel": "",
+          "primaryLink": null,
+          "secondaryLabel": "",
+          "secondaryLink": null,
+          "image": null,
+          "layout": "centered",
+          "tone": "light"
+        }
+      },
+      {
         "type": "ContactForm",
         "props": {
           "id": "contact-form",
-          "title": "Contactez-nous",
-          "intro": "Une question, un projet ? Écrivez-nous : nous répondons sous 48 heures.",
+          "title": "Écrivez-nous",
+          "intro": "Remplissez le formulaire : votre message arrive directement chez nous, et nous vous répondons par e-mail ou par téléphone.",
           "formFields": [
             {
               "label": "Nom",

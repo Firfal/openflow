@@ -10,7 +10,7 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
 /**
  * A contact form of the site, declared by the owner in a section (`formFieldsField`) and sent to
- * `openflowSubmitForm` (`/forms/submit`). Works on the static site: labels, validation messages
+ * `cmsSubmitForm` (`/forms/submit`). Works on the static site: labels, validation messages
  * and states are accessible (errors linked to their field, status announced). The section passes
  * its classes (Tailwind or other) through `classNames`.
  *
@@ -43,7 +43,7 @@ export interface OpenFlowFormProps {
   /** In the editor: the form is shown but never sent. */
   editing?: boolean;
   classNames?: OpenFlowFormClassNames;
-  /** Defaults to `/forms/submit` (the emulator's function with `NEXT_PUBLIC_OPENFLOW_EMULATORS`). */
+  /** Defaults to `/forms/submit` (the emulator's function with `NEXT_PUBLIC_CMS_EMULATORS`). */
   endpoint?: string;
 }
 
@@ -80,9 +80,9 @@ declare global {
 }
 
 function defaultEndpoint(): string {
-  if (process.env.NEXT_PUBLIC_OPENFLOW_EMULATORS === "1" && typeof window !== "undefined") {
-    const region = process.env.NEXT_PUBLIC_OPENFLOW_REGION || "europe-west1";
-    return `http://${window.location.hostname}:5001/demo-openflow/${region}/openflowSubmitForm`;
+  if (process.env.NEXT_PUBLIC_CMS_EMULATORS === "1" && typeof window !== "undefined") {
+    const region = process.env.NEXT_PUBLIC_CMS_REGION || "europe-west1";
+    return `http://${window.location.hostname}:5001/demo-openflow/${region}/cmsSubmitForm`;
   }
   return "/forms/submit";
 }
@@ -102,11 +102,11 @@ function autoComplete(field: FormFieldDef): string | undefined {
   return undefined;
 }
 
-/** reCAPTCHA key published by the layout (`<meta name="openflow-recaptcha">`), if any. */
+/** reCAPTCHA key published by the layout (`<meta name="cms-recaptcha">`), if any. */
 function recaptchaKey(): string | undefined {
   if (typeof document === "undefined") return undefined;
   return (
-    document.querySelector<HTMLMetaElement>('meta[name="openflow-recaptcha"]')?.content || undefined
+    document.querySelector<HTMLMetaElement>('meta[name="cms-recaptcha"]')?.content || undefined
   );
 }
 

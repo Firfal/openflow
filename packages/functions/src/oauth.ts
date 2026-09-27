@@ -16,10 +16,10 @@ import { hashAgentToken, OAUTH_ACCESS_TOKEN_PREFIX } from "./agent.js";
 
 export const OAUTH_SCOPE = "site";
 export const ACCESS_TOKEN_PREFIX = OAUTH_ACCESS_TOKEN_PREFIX;
-export const REFRESH_TOKEN_PREFIX = "ofr_";
-const CODE_PREFIX = "ofcode_";
-const CLIENT_PREFIX = "ofcli_";
-const SECRET_PREFIX = "ofs_";
+export const REFRESH_TOKEN_PREFIX = "cmsr_";
+const CODE_PREFIX = "cmscode_";
+const CLIENT_PREFIX = "cmscli_";
+const SECRET_PREFIX = "cmssec_";
 
 export const ACCESS_TOKEN_TTL_S = 3600;
 export const REFRESH_TOKEN_TTL_MS = 90 * 24 * 3600 * 1000;
@@ -31,7 +31,7 @@ export const MAX_REGISTRATION_BYTES = 8 * 1024;
 type AuthMethod = "none" | "client_secret_post" | "client_secret_basic";
 const AUTH_METHODS: AuthMethod[] = ["none", "client_secret_post", "client_secret_basic"];
 
-/** `of_agent_clients/{clientId}` */
+/** `cms_agent_clients/{clientId}` */
 export interface AgentClientDoc {
   name: string;
   redirectUris: string[];
@@ -41,7 +41,7 @@ export interface AgentClientDoc {
   lastUsedAt?: string;
 }
 
-/** `of_agent_requests/{id}`: an authorization request waiting for the owner. */
+/** `cms_agent_requests/{id}`: an authorization request waiting for the owner. */
 export interface AgentRequestDoc {
   clientId: string;
   clientName: string;
@@ -54,7 +54,7 @@ export interface AgentRequestDoc {
   expiresAt: string;
 }
 
-/** `of_agent_codes/{hash}`: an authorization code given after consent. */
+/** `cms_agent_codes/{hash}`: an authorization code given after consent. */
 interface AgentCodeDoc {
   clientId: string;
   clientName: string;
@@ -329,7 +329,7 @@ export function routeOf(path: string): { route: OAuthRoute; suffix: string } {
 
 /**
  * Splits a request path into the function's prefix and the route path: the emulator serves
- * `/<project>/<region>/openflowMcp/…`, `cloudfunctions.net` serves `/openflowMcp/…`, Hosting and
+ * `/<project>/<region>/cmsMcp/…`, `cloudfunctions.net` serves `/cmsMcp/…`, Hosting and
  * Cloud Run serve the path as is.
  */
 export function splitFunctionPath(

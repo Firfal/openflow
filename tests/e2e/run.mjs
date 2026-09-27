@@ -8,15 +8,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-// OPENFLOW_E2E_SITE=sites/landing runs the site-agnostic tests against another site.
+// CMS_E2E_SITE=sites/landing runs the site-agnostic tests against another site.
 const site = path.resolve(
-  process.env.OPENFLOW_E2E_SITE ?? path.resolve(here, "../../templates/next-starter"),
+  process.env.CMS_E2E_SITE ?? path.resolve(here, "../../templates/next-starter"),
 );
 
 writeFileSync(
   path.join(site, "functions", ".env.local"),
   // The OAuth consent screen of the assistant test (assistant.test.ts serves the site on 3102).
-  `OPENFLOW_OWNER_EMAIL=proprietaire@exemple.fr\nOPENFLOW_LOCAL_SITE_DIR=${site}\nOPENFLOW_ADMIN_URL=http://localhost:3102/admin/\n`,
+  `CMS_OWNER_EMAIL=proprietaire@exemple.fr\nCMS_LOCAL_SITE_DIR=${site}\nCMS_ADMIN_URL=http://localhost:3102/admin/\n`,
 );
 const build = spawnSync("npm", ["--prefix", "functions", "run", "build"], {
   cwd: site,
@@ -35,6 +35,6 @@ const result = spawnSync(
     "auth,firestore,storage,functions",
     `${vitest} run --root ${here} ${process.argv.slice(2).join(" ")}`,
   ],
-  { cwd: site, stdio: "inherit", env: { ...process.env, OPENFLOW_E2E_SITE: site } },
+  { cwd: site, stdio: "inherit", env: { ...process.env, CMS_E2E_SITE: site } },
 );
 process.exit(result.status ?? 1);

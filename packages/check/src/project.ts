@@ -39,7 +39,7 @@ interface HostingConfig {
   }>;
 }
 
-/** Paths of the site's MCP server and of its OAuth discovery (Hosting → `openflowMcp`). */
+/** Paths of the site's MCP server and of its OAuth discovery (Hosting → `cmsMcp`). */
 export const MCP_REWRITES = [
   "/mcp",
   "/mcp/**",
@@ -48,14 +48,14 @@ export const MCP_REWRITES = [
   "/.well-known/oauth-authorization-server",
 ];
 
-/** `OPENFLOW_REGION` of the functions (`functions/.env*`), `europe-west1` by default. */
+/** `CMS_REGION` of the functions (`functions/.env*`), `europe-west1` by default. */
 async function functionRegions(siteDir: string): Promise<string[]> {
   const dir = path.join(siteDir, "functions");
   const regions = new Set<string>();
   const files = existsSync(dir) ? await readdir(dir) : [];
   for (const file of files) {
     if (!file.startsWith(".env") || file === ".env.local") continue;
-    const match = /^OPENFLOW_REGION\s*=\s*"?([\w-]+)"?\s*$/m.exec(
+    const match = /^CMS_REGION\s*=\s*"?([\w-]+)"?\s*$/m.exec(
       await readFile(path.join(dir, file), "utf8"),
     );
     if (match) regions.add(match[1]!);
@@ -71,7 +71,7 @@ async function checkAiAccess(siteDir: string, site: HostingConfig | undefined): 
     const missing: string[] = [];
     for (const source of MCP_REWRITES) {
       const rewrite = site.rewrites?.find((entry) => entry.source === source);
-      if (rewrite?.run?.serviceId !== "openflowmcp") {
+      if (rewrite?.run?.serviceId !== "cmsmcp") {
         missing.push(source);
       } else if (!regions.includes(rewrite.run.region ?? "")) {
         issues.push(
@@ -88,7 +88,7 @@ async function checkAiAccess(siteDir: string, site: HostingConfig | undefined): 
         issue(
           "OF-305",
           "firebase.json",
-          `Réécritures vers le serveur MCP (service openflowmcp) absentes : ${missing.join(", ")}.`,
+          `Réécritures vers le serveur MCP (service cmsmcp) absentes : ${missing.join(", ")}.`,
         ),
       );
     }
@@ -225,7 +225,7 @@ export async function checkProject(siteDir: string): Promise<Issue[]> {
     }
     const status = compareRulesBlock(await readFile(full, "utf8"), block);
     if (status === "missing") {
-      issues.push(issue("OF-303", file, "Bloc `// BEGIN openflow` … `// END openflow` absent."));
+      issues.push(issue("OF-303", file, "Bloc `// BEGIN cms` … `// END cms` absent."));
     } else if (status === "modified") {
       issues.push(
         issue("OF-303", file, "Le bloc de règles OpenFlow a été modifié (sécurité propriétaire)."),

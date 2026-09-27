@@ -16,7 +16,7 @@ function formatDate(iso?: string) {
 }
 
 /**
- * Address of the site's MCP server: `https://<site>/mcp` (Hosting rewrite to `openflowMcp`), or the
+ * Address of the site's MCP server: `https://<site>/mcp` (Hosting rewrite to `cmsMcp`), or the
  * function itself with the local emulators (`openflow dev` has no Hosting).
  */
 export function mcpEndpoint(services: Services): string {
@@ -84,7 +84,7 @@ const CLIENTS: Array<{ id: ClientId; label: string }> = [
   { id: "other", label: "Autre" },
 ];
 
-const CLIENT_KEY = "openflow:ai-client";
+const CLIENT_KEY = "cms:ai-client";
 
 function storedClient(): ClientId {
   try {
@@ -533,7 +533,7 @@ export function AssistantSettings() {
   );
 }
 
-const PROMO_KEY = "openflow:ai-card-hidden";
+const PROMO_KEY = "cms:ai-card-hidden";
 
 /** Card of the Pages view until an assistant is connected (or the owner hides it). */
 export function AiPromo() {

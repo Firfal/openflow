@@ -27,7 +27,7 @@
             "kind": "url",
             "href": "#fonctionnement"
           },
-          "installCommand": "npx openflow create mon-site",
+          "installCommand": "pnpm openflow create sites/mon-site",
           "demoUrl": "boulangerie-dupont.fr/admin",
           "demoTabs": [
             {
@@ -288,7 +288,7 @@
           "id": "demarrer",
           "anchor": "demarrer",
           "title": "Démarrer depuis Claude Code",
-          "intro": "Installez le plugin, puis décrivez le site à créer. Claude s'occupe du reste, norme comprise.",
+          "intro": "Clonez le dépôt GitHub, ouvrez-y Claude Code et installez le plugin, puis décrivez le site à créer. Claude s'occupe du reste, norme comprise.",
           "blockTitle": "Dans Claude Code",
           "lines": [
             {
@@ -306,7 +306,7 @@
           ],
           "copyLabel": "Copier",
           "copiedLabel": "Copié",
-          "note": "Sans Claude Code : npx openflow create mon-site, puis npx openflow dev pour lancer le site et l'admin sur les émulateurs Firebase.",
+          "note": "Sans Claude Code : dans le dépôt, pnpm openflow create sites/mon-site, puis npx openflow dev dans le dossier du site pour lancer le site et l'admin sur les émulateurs Firebase.",
           "surface": "calque"
         }
       },

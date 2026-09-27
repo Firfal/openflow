@@ -118,7 +118,7 @@ describe("project checks", () => {
   it("detects weakened rules and missing static export", async () => {
     const dir = await makeSite("project-bad", {
       "firestore.rules":
-        "rules_version = '2';\n// BEGIN openflow\nallow read, write: if true;\n// END openflow\n",
+        "rules_version = '2';\n// BEGIN cms\nallow read, write: if true;\n// END cms\n",
       "storage.rules": null,
       "next.config.ts": "export default {};",
       "middleware.ts": "export function middleware() {}",
@@ -155,7 +155,7 @@ describe("AI access (OF-305)", () => {
   });
 
   it("warns when the rewrites target another region than the functions", async () => {
-    const dir = await makeSite("ai-region", { "functions/.env": "OPENFLOW_REGION=us-central1\n" });
+    const dir = await makeSite("ai-region", { "functions/.env": "CMS_REGION=us-central1\n" });
     const issues = (await checkProject(dir)).filter((i) => i.rule === "OF-305");
     expect(issues).toHaveLength(5);
     expect(issues[0]!.message).toContain("us-central1");

@@ -13,7 +13,7 @@ export type Route =
   | { view: "media" }
   | { view: "assistant" }
   | { view: "messages" }
-  /** Consent screen of an AI assistant connecting with OAuth (`openflowMcp` sends the owner here). */
+  /** Consent screen of an AI assistant connecting with OAuth (`cmsMcp` sends the owner here). */
   | { view: "connect"; request: string }
   | { view: "history" };
 

@@ -105,7 +105,7 @@ program
     "prépare le projet Firebase : API, Firestore, Storage, droits des builds, connexion par e-mail, sauvegardes, alertes",
   )
   .option("--project <id>", "projet Firebase (plan Blaze)")
-  .option("--region <région>", "région des fonctions (OPENFLOW_REGION, europe-west1 par défaut)")
+  .option("--region <région>", "région des fonctions (CMS_REGION, europe-west1 par défaut)")
   .option(
     "--alert-email <email>",
     "reçoit l'alerte si une publication échoue (le propriétaire par défaut)",

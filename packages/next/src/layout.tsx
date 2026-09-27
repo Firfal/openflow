@@ -32,7 +32,7 @@ export function createOpenFlowLayout(config: OpenFlowConfig) {
           </style>
         )}
         {/* reCAPTCHA key of the forms (loaded only when a visitor starts filling one). */}
-        {recaptchaKey && <meta name="openflow-recaptcha" content={recaptchaKey} />}
+        {recaptchaKey && <meta name="cms-recaptcha" content={recaptchaKey} />}
         {Layout ? (
           <Layout settings={settings} site={site}>
             {children}

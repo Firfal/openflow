@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 /** Appearance of the admin itself (not of the site): follows the system unless the owner picks one. */
 export type UiTheme = "system" | "light" | "dark";
 
-const KEY = "openflow:ui-theme";
+const KEY = "cms:ui-theme";
 const ATTRIBUTE = "data-of-theme";
 
 function read(): UiTheme {

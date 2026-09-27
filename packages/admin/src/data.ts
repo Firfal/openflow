@@ -226,7 +226,7 @@ export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 export type MediaKind = "image" | "video";
 
-/** Uploads a file to `openflow/media/` and records it in `of_media`. */
+/** Uploads a file to `cms/media/` and records it in `cms_media`. */
 export async function uploadMedia(
   services: Services,
   file: File,

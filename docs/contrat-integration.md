@@ -2,14 +2,15 @@
 
 ## Comment Claude Code crée un site OpenFlow
 
-1. L'agence installe le plugin :
+1. L'agence ouvre Claude Code dans le dépôt OpenFlow (ou sa copie privée) et installe le plugin :
    ```
    /plugin marketplace add Firfal/openflow
    /plugin install openflow@openflow
    ```
 2. Elle demande : « Crée le site de la boulangerie Dupont avec OpenFlow ».
 3. Le skill `openflow-new-site` guide Claude :
-   - `npx openflow create` copie le template : infrastructure, sécurité, admin, `AGENTS.md`, hooks ;
+   - `pnpm openflow create sites/<nom>` copie le template dans le dossier `sites/` du dépôt (les paquets
+     ne sont pas publiés sur npm) : infrastructure, sécurité, admin, `AGENTS.md`, hooks ;
    - Claude conçoit les sections (`openflow/components/`) et le contenu de départ (`openflow/seed/`), en suivant
      le skill `openflow-design` (plan de design, réflexes génériques à éviter, accessibilité, captures) ;
    - `openflow check --level build`, puis `openflow dev` pour prévisualiser le site et l'admin.

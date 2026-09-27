@@ -10,11 +10,11 @@ import { missingBindings, withBindings } from "./setup.js";
 /**
  * `openflow mail`: the messages of the site's forms are e-mailed to the owner through Resend
  * (https://resend.com, free up to 3,000 e-mails a month). The API key is typed here (never in the
- * code, never in a chat) and stored in Secret Manager (`openflow-mail-key`), readable only by the
+ * code, never in a chat) and stored in Secret Manager (`cms-mail-key`), readable only by the
  * functions. Without it, the owner is warned by the Cloud Monitoring alert of `openflow setup`.
  */
 
-export const MAIL_SECRET = "openflow-mail-key";
+export const MAIL_SECRET = "cms-mail-key";
 
 export interface MailOptions {
   project?: string;
@@ -46,7 +46,7 @@ export async function mail(site: string, options: MailOptions): Promise<void> {
   const envFile = path.join(site, "functions", `.env.${projectId}`);
   const env = existsSync(envFile) ? await readFile(envFile, "utf8") : "";
   const owners =
-    /^OPENFLOW_OWNER_EMAIL=(.*)$/m
+    /^CMS_OWNER_EMAIL=(.*)$/m
       .exec(env)?.[1]
       ?.split(",")
       .map((s) => s.trim()) ?? [];
@@ -89,7 +89,7 @@ export async function mail(site: string, options: MailOptions): Promise<void> {
     await client.request({
       url: `${secrets}?secretId=${MAIL_SECRET}`,
       method: "POST",
-      data: { replication: { automatic: {} }, labels: { openflow: "mail" } },
+      data: { replication: { automatic: {} }, labels: { cms: "mail" } },
     });
   }
   await client.request({
@@ -97,7 +97,7 @@ export async function mail(site: string, options: MailOptions): Promise<void> {
     method: "POST",
     data: { payload: { data: Buffer.from(key).toString("base64") } },
   });
-  log.ok("Clé enregistrée dans Secret Manager (openflow-mail-key)");
+  log.ok("Clé enregistrée dans Secret Manager (cms-mail-key)");
 
   // Only the functions' account can read it.
   const project = (
@@ -124,8 +124,8 @@ export async function mail(site: string, options: MailOptions): Promise<void> {
   log.ok("Les fonctions peuvent lire la clé");
 
   if (options.from) {
-    const lines = env.split("\n").filter((line) => line && !line.startsWith("OPENFLOW_MAIL_FROM="));
-    lines.push(`OPENFLOW_MAIL_FROM=${options.from}`);
+    const lines = env.split("\n").filter((line) => line && !line.startsWith("CMS_MAIL_FROM="));
+    lines.push(`CMS_MAIL_FROM=${options.from}`);
     await writeFile(envFile, `${lines.join("\n")}\n`);
     log.ok(`Expéditeur : ${options.from} (relancez openflow deploy pour l'appliquer)`);
   }

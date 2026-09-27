@@ -77,13 +77,13 @@ if (getApps().length === 0) {
 }
 
 /** E-mail(s) of the site owner, e.g. `client@exemple.fr` (comma-separated for several). */
-export const ownerEmail = defineString("OPENFLOW_OWNER_EMAIL", {
+export const ownerEmail = defineString("CMS_OWNER_EMAIL", {
   description: "E-mail du propriétaire du site (plusieurs adresses séparées par des virgules)",
 });
 
-const region = process.env.OPENFLOW_REGION || "europe-west1";
+const region = process.env.CMS_REGION || "europe-west1";
 const emulator = process.env.FUNCTIONS_EMULATOR === "true";
-const enforceAppCheck = process.env.OPENFLOW_ENFORCE_APP_CHECK === "true";
+const enforceAppCheck = process.env.CMS_ENFORCE_APP_CHECK === "true";
 
 function projectId(): string {
   if (process.env.GCLOUD_PROJECT) return process.env.GCLOUD_PROJECT;
@@ -95,13 +95,13 @@ function projectId(): string {
 }
 
 function builder(): Builder {
-  const configured = process.env.OPENFLOW_BUILDER;
+  const configured = process.env.CMS_BUILDER;
   if (configured === "local" || configured === "cloud-build") return configured;
   return emulator ? "local" : "cloud-build";
 }
 
 function hostingSite(): string {
-  return process.env.OPENFLOW_HOSTING_SITE || projectId();
+  return process.env.CMS_HOSTING_SITE || projectId();
 }
 
 function assertOwner(request: CallableRequest): TokenInfo {
@@ -114,10 +114,10 @@ function assertOwner(request: CallableRequest): TokenInfo {
 }
 
 /**
- * Grants the `of_owner` claim to the signed-in user when their verified email matches
- * `OPENFLOW_OWNER_EMAIL`. The admin calls it right after sign-in.
+ * Grants the `cms_owner` claim to the signed-in user when their verified email matches
+ * `CMS_OWNER_EMAIL`. The admin calls it right after sign-in.
  */
-export const openflowClaimOwner = onCall({ region, enforceAppCheck }, async (request) => {
+export const cmsClaimOwner = onCall({ region, enforceAppCheck }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Connectez-vous pour continuer.");
   const decision = ownerDecision(
     request.auth.token as TokenInfo,
@@ -206,11 +206,11 @@ async function publishSite(by: string): Promise<{ releaseId: string }> {
             sourcePath: source!.path,
             snapshotPath: file,
             releaseId: releaseRef.id,
-            hostingTarget: process.env.OPENFLOW_HOSTING_TARGET || undefined,
-            serviceAccount: process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT || undefined,
+            hostingTarget: process.env.CMS_HOSTING_TARGET || undefined,
+            serviceAccount: process.env.CMS_BUILD_SERVICE_ACCOUNT || undefined,
           })
         : await startLocalBuild(
-            process.env.OPENFLOW_LOCAL_SITE_DIR || path.resolve(process.cwd(), ".."),
+            process.env.CMS_LOCAL_SITE_DIR || path.resolve(process.cwd(), ".."),
             snapshot,
             releaseRef.id,
           );
@@ -234,7 +234,7 @@ async function publishSite(by: string): Promise<{ releaseId: string }> {
 }
 
 /** "Publier" (admin): see {@link publishSite}. */
-export const openflowPublish = onCall(
+export const cmsPublish = onCall(
   { region, enforceAppCheck, timeoutSeconds: 120, memory: "512MiB" },
   async (request) => {
     const token = assertOwner(request);
@@ -251,7 +251,7 @@ export const openflowPublish = onCall(
  * Creates an access key for an AI assistant (MCP). The key is returned once; only its SHA-256
  * is stored. The owner revokes it from the admin (Réglages > Assistant IA).
  */
-export const openflowCreateAgentToken = onCall({ region, enforceAppCheck }, async (request) => {
+export const cmsCreateAgentToken = onCall({ region, enforceAppCheck }, async (request) => {
   const token = assertOwner(request);
   const label = String((request.data as { label?: unknown })?.label ?? "");
   const created = await createAgentToken(getFirestore(), {
@@ -267,7 +267,7 @@ export const openflowCreateAgentToken = onCall({ region, enforceAppCheck }, asyn
  * AI assistant asks to connect with OAuth: `{ requestId }` describes the request,
  * `{ requestId, decision: "approve" | "deny" }` answers it and returns where to send the browser.
  */
-export const openflowAgentConsent = onCall({ region, enforceAppCheck }, async (request) => {
+export const cmsAgentConsent = onCall({ region, enforceAppCheck }, async (request) => {
   const token = assertOwner(request);
   const data = (request.data ?? {}) as { requestId?: unknown; decision?: unknown };
   const db = getFirestore();
@@ -307,7 +307,7 @@ function siteOrigin(schema: SiteSchema | undefined): string {
 }
 
 /** Hosts the MCP server answers for, besides the site's and Firebase's (custom domains). */
-const extraHosts = (process.env.OPENFLOW_MCP_HOSTS ?? "")
+const extraHosts = (process.env.CMS_MCP_HOSTS ?? "")
   .split(",")
   .map((host) => host.trim().toLowerCase())
   .filter(Boolean);
@@ -361,7 +361,7 @@ function requestUrls(
 }
 
 function adminUrl(schema: SiteSchema | undefined): string {
-  return process.env.OPENFLOW_ADMIN_URL || new URL("/admin/", siteOrigin(schema)).toString();
+  return process.env.CMS_ADMIN_URL || new URL("/admin/", siteOrigin(schema)).toString();
 }
 
 const jsonRpcError = (code: number, message: string) => ({
@@ -376,10 +376,10 @@ const jsonRpcError = (code: number, message: string) => ({
  *
  * Address: `https://<site>/mcp` (Hosting rewrite, see `firebase.json`), also reachable at the
  * function's own addresses. Assistants connect with OAuth (`oauth.ts`: metadata, registration,
- * consent in the admin, tokens), or with an owner-created key (`Authorization: Bearer ofk_…`, or
- * `?key=ofk_…` for clients without custom headers).
+ * consent in the admin, tokens), or with an owner-created key (`Authorization: Bearer cmsk_…`, or
+ * `?key=cmsk_…` for clients without custom headers).
  */
-export const openflowMcp = onRequest(
+export const cmsMcp = onRequest(
   {
     region,
     timeoutSeconds: 120,
@@ -548,11 +548,11 @@ export const openflowMcp = onRequest(
 );
 
 /** Follows Cloud Build (topic `cloud-builds`) and updates the matching release. */
-export const openflowOnBuildStatus = onMessagePublished(
+export const cmsOnBuildStatus = onMessagePublished(
   { topic: "cloud-builds", region },
   async (event) => {
     const build = event.data.message.json as CloudBuildEvent;
-    const releaseId = build.substitutions?._OPENFLOW_RELEASE_ID;
+    const releaseId = build.substitutions?._CMS_RELEASE_ID;
     if (!releaseId) return;
     const status = releaseStatusFromBuild(build);
     if (!status) return;
@@ -598,7 +598,7 @@ export const openflowOnBuildStatus = onMessagePublished(
 );
 
 /** "Remettre en ligne": re-releases the Hosting version of a previous publication, instantly. */
-export const openflowRestoreRelease = onCall({ region, enforceAppCheck }, async (request) => {
+export const cmsRestoreRelease = onCall({ region, enforceAppCheck }, async (request) => {
   assertOwner(request);
   const releaseId = (request.data as { releaseId?: unknown })?.releaseId;
   if (typeof releaseId !== "string" || !releaseId)
@@ -617,7 +617,7 @@ export const openflowRestoreRelease = onCall({ region, enforceAppCheck }, async 
     await releaseHostingVersion(
       hostingSite(),
       release.hostingVersion,
-      `OpenFlow : restauration de ${releaseId}`,
+      `Restauration de ${releaseId}`,
     );
   }
   await markLive(db, releaseId, { restoredAt: new Date().toISOString() });
@@ -632,7 +632,7 @@ const OPTIMIZED_VIDEOS = /^video\/(mp4|webm|quicktime)$/;
  * for `srcset`, 1080p and 720p MP4 copies of videos with a poster (see `media.ts`). The copies are
  * recorded in the library entry and used by the next publications; the original is kept.
  */
-export const openflowOptimizeMedia = onObjectFinalized(
+export const cmsOptimizeMedia = onObjectFinalized(
   { region, memory: "4GiB", cpu: 2, timeoutSeconds: 540, maxInstances: 3 },
   async (event) => {
     const { name, contentType = "", bucket: bucketName, size } = event.data;
@@ -723,7 +723,7 @@ async function recaptchaScore(token: string, siteKey: string): Promise<number | 
 }
 
 /** Secret Manager secret holding the Resend key (`openflow mail`), optional. */
-const MAIL_SECRET = "openflow-mail-key";
+const MAIL_SECRET = "cms-mail-key";
 let mailKeyCache: { at: number; key?: string } | undefined;
 
 async function mailKey(): Promise<string | undefined> {
@@ -756,7 +756,7 @@ async function notifyOwner(message: MessageDoc): Promise<boolean> {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.OPENFLOW_MAIL_FROM || "Site web <onboarding@resend.dev>",
+      from: process.env.CMS_MAIL_FROM || "Site web <onboarding@resend.dev>",
       to: owners,
       ...(message.email ? { reply_to: message.email } : {}),
       ...email,
@@ -770,7 +770,7 @@ async function notifyOwner(message: MessageDoc): Promise<boolean> {
  * Forms of the published site: `POST /forms/submit` (Hosting rewrite), checked against the
  * published page and the spam defences, then recorded for the owner (admin « Messages »).
  */
-export const openflowSubmitForm = onRequest(
+export const cmsSubmitForm = onRequest(
   { region, memory: "256MiB", maxInstances: 5, invoker: "public", cors: false },
   async (req, res) => {
     res.set("Access-Control-Allow-Origin", "*");

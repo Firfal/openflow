@@ -106,12 +106,12 @@ export async function deploy(site: string, options: DeployOptions) {
     const existing = existsSync(envFile) ? await readFile(envFile, "utf8") : "";
     const lines = existing
       .split("\n")
-      .filter((line) => line && !line.startsWith("OPENFLOW_OWNER_EMAIL="));
-    lines.push(`OPENFLOW_OWNER_EMAIL=${options.owner}`);
+      .filter((line) => line && !line.startsWith("CMS_OWNER_EMAIL="));
+    lines.push(`CMS_OWNER_EMAIL=${options.owner}`);
     await writeFile(envFile, `${lines.join("\n")}\n`);
   } else if (
     !existsSync(envFile) ||
-    !(await readFile(envFile, "utf8")).includes("OPENFLOW_OWNER_EMAIL=")
+    !(await readFile(envFile, "utf8")).includes("CMS_OWNER_EMAIL=")
   ) {
     throw new CliError("Précisez l'e-mail du propriétaire : --owner client@exemple.fr");
   }
@@ -120,8 +120,8 @@ export async function deploy(site: string, options: DeployOptions) {
   // The builds run as the account prepared by `openflow setup`.
   const buildAccount = (await readFile(envFile, "utf8").catch(() => ""))
     .split("\n")
-    .find((line) => line.startsWith("OPENFLOW_BUILD_SERVICE_ACCOUNT="))
-    ?.slice("OPENFLOW_BUILD_SERVICE_ACCOUNT=".length)
+    .find((line) => line.startsWith("CMS_BUILD_SERVICE_ACCOUNT="))
+    ?.slice("CMS_BUILD_SERVICE_ACCOUNT=".length)
     .trim();
 
   // Unpublished OpenFlow packages (monorepo, fork): deploy a standalone copy with vendor/.
@@ -134,7 +134,7 @@ export async function deploy(site: string, options: DeployOptions) {
     const firebase = firebaseCli(site);
     // `--force`: without it, a first non-interactive deploy exits with an error after deploying,
     // because it will not set the cleanup policy of the functions' container images. Deletions it
-    // would also allow are limited to the `openflow` functions codebase.
+    // would also allow are limited to the `cms` functions codebase.
     await run(
       firebase.command,
       [
@@ -152,10 +152,10 @@ export async function deploy(site: string, options: DeployOptions) {
     // A changed `--owner` must not leave the owner claim to the previous account.
     const ownerLine = (await readFile(envFile, "utf8"))
       .split("\n")
-      .find((line) => line.startsWith("OPENFLOW_OWNER_EMAIL="));
+      .find((line) => line.startsWith("CMS_OWNER_EMAIL="));
     const revoked = await revokeFormerOwners(
       auth(handle),
-      parseOwners(ownerLine?.slice("OPENFLOW_OWNER_EMAIL=".length)),
+      parseOwners(ownerLine?.slice("CMS_OWNER_EMAIL=".length)),
     );
     if (revoked.length > 0) log.warn(`Droits de propriétaire retirés à : ${revoked.join(", ")}`);
 
@@ -220,7 +220,7 @@ export async function deploy(site: string, options: DeployOptions) {
           sourcePath: destination,
           snapshotPath: file,
           releaseId: ref.id,
-          serviceAccount: buildAccount || process.env.OPENFLOW_BUILD_SERVICE_ACCOUNT,
+          serviceAccount: buildAccount || process.env.CMS_BUILD_SERVICE_ACCOUNT,
         });
         await ref.update({ status: "building", ...started });
         log.ok(`Build lancé : ${started.logUrl}`);

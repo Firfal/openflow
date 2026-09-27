@@ -14,7 +14,7 @@ import {
 import type { Firestore } from "firebase-admin/firestore";
 
 /**
- * Media optimization, run by `openflowOptimizeMedia` on every file added to the media library:
+ * Media optimization, run by `cmsOptimizeMedia` on every file added to the media library:
  * - images: WebP copies at several widths for `srcset` (quality 82: indistinguishable from the
  *   original on screen, several times lighter), orientation applied, metadata (GPS…) removed;
  * - videos: H.264 MP4 in 1080p and 720p, CRF 22 and 23 (visually transparent), with a

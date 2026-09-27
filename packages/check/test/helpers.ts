@@ -7,7 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** Temporary sites live inside the package so that `react`, `@puckeditor/core`… resolve. */
 export const TMP = path.join(here, ".tmp");
 
-const MCP_RUN = { serviceId: "openflowmcp", region: "europe-west1" };
+const MCP_RUN = { serviceId: "cmsmcp", region: "europe-west1" };
 
 export const FIREBASE_JSON = {
   hosting: {

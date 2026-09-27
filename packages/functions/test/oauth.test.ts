@@ -114,9 +114,9 @@ describe("OAuth for the MCP server", () => {
       grant_type: "refresh_token",
       refresh_token: "r",
     });
-    const basic = `Basic ${Buffer.from("ofcli_a:s%3Acret").toString("base64")}`;
+    const basic = `Basic ${Buffer.from("cmscli_a:s%3Acret").toString("base64")}`;
     expect(tokenRequestParams({}, basic)).toMatchObject({
-      client_id: "ofcli_a",
+      client_id: "cmscli_a",
       client_secret: "s:cret",
     });
   });
@@ -156,17 +156,18 @@ describe("OAuth for the MCP server", () => {
   });
 
   it("strips the function's own prefix (emulator, cloudfunctions.net)", () => {
-    expect(
-      splitFunctionPath("/demo/europe-west1/openflowMcp/mcp/oauth/token", "openflowMcp"),
-    ).toEqual({ prefix: "/demo/europe-west1/openflowMcp", path: "/mcp/oauth/token" });
-    expect(splitFunctionPath("/openflowMcp", "openflowMcp")).toEqual({
-      prefix: "/openflowMcp",
+    expect(splitFunctionPath("/demo/europe-west1/cmsMcp/mcp/oauth/token", "cmsMcp")).toEqual({
+      prefix: "/demo/europe-west1/cmsMcp",
+      path: "/mcp/oauth/token",
+    });
+    expect(splitFunctionPath("/cmsMcp", "cmsMcp")).toEqual({
+      prefix: "/cmsMcp",
       path: "/",
     });
-    expect(splitFunctionPath("/mcp", "openflowMcp")).toEqual({ prefix: "", path: "/mcp" });
-    expect(splitFunctionPath("/openflowMcpX/y", "openflowMcp")).toEqual({
+    expect(splitFunctionPath("/mcp", "cmsMcp")).toEqual({ prefix: "", path: "/mcp" });
+    expect(splitFunctionPath("/cmsMcpX/y", "cmsMcp")).toEqual({
       prefix: "",
-      path: "/openflowMcpX/y",
+      path: "/cmsMcpX/y",
     });
   });
 

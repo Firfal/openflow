@@ -26,7 +26,7 @@ export type Builder = "cloud-build" | "local";
 // ---------------------------------------------------------------------------------------------
 // Owner
 
-/** Parses `OPENFLOW_OWNER_EMAIL` ("a@x.fr, b@y.fr") into lowercase emails. */
+/** Parses `CMS_OWNER_EMAIL` ("a@x.fr, b@y.fr") into lowercase emails. */
 export function parseOwners(value: string | undefined): string[] {
   return (value ?? "")
     .split(/[,;\s]+/)
@@ -55,7 +55,7 @@ export function ownerDecision(
     return {
       ok: false,
       code: "failed-precondition",
-      message: "Aucun propriétaire n'est configuré (paramètre OPENFLOW_OWNER_EMAIL des fonctions).",
+      message: "Aucun propriétaire n'est configuré (paramètre CMS_OWNER_EMAIL des fonctions).",
     };
   }
   const email = token.email?.toLowerCase();
@@ -228,7 +228,7 @@ export function buildRequest(input: BuildInput) {
         name: node,
         entrypoint: "npx",
         args: ["next", "build"],
-        env: ["OPENFLOW_SNAPSHOT=openflow/.snapshot.json", "NEXT_TELEMETRY_DISABLED=1"],
+        env: ["CMS_SNAPSHOT=openflow/.snapshot.json", "NEXT_TELEMETRY_DISABLED=1"],
       },
       {
         id: "deploy",
@@ -250,8 +250,8 @@ export function buildRequest(input: BuildInput) {
     ],
     // Read back by onBuildStatus from the Pub/Sub event. No step uses it, hence ALLOW_LOOSE:
     // Cloud Build rejects unused substitutions otherwise.
-    substitutions: { _OPENFLOW_RELEASE_ID: input.releaseId },
-    tags: ["openflow", `openflow-${input.releaseId.toLowerCase()}`],
+    substitutions: { _CMS_RELEASE_ID: input.releaseId },
+    tags: ["cms", `cms-${input.releaseId.toLowerCase()}`],
     timeout: "1200s",
     options: { logging: "CLOUD_LOGGING_ONLY", substitutionOption: "ALLOW_LOOSE" },
     ...(input.serviceAccount
@@ -376,7 +376,7 @@ export async function ensureWebApp(
       await client.request<Operation>({
         url: `${FIREBASE_API}/projects/${projectId}/webApps`,
         method: "POST",
-        data: { displayName: "OpenFlow" },
+        data: { displayName: "Site web" },
       })
     ).data;
     for (let attempt = 0; !operation.done && attempt < 30; attempt++) {

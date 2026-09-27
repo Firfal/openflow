@@ -42,7 +42,7 @@ export const ContactForm: ComponentConfig<ContactFormProps> = {
   },
   defaultProps: {
     title: "Contactez-nous",
-    intro: "Une question, un projet ? Écrivez-nous : nous répondons sous 48 heures.",
+    intro: "Une question, un projet ? Écrivez-nous : nous répondons sous 48 heures.",
     formFields: [
       { label: "Nom", type: "text", required: "yes", options: "" },
       { label: "E-mail", type: "email", required: "yes", options: "" },

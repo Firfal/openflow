@@ -13,10 +13,10 @@ import {
 import type { Firestore } from "firebase-admin/firestore";
 
 /**
- * Forms of the published site (`POST /forms/submit`, Hosting rewrite to `openflowSubmitForm`).
+ * Forms of the published site (`POST /forms/submit`, Hosting rewrite to `cmsSubmitForm`).
  * A message is accepted only if it matches a form of the page as it is published, and passes the
  * spam defences: hidden field (honeypot), minimum filling time, a limit per visitor, and the
- * reCAPTCHA score when `openflow setup` created a key. Accepted messages go to `of_messages`.
+ * reCAPTCHA score when `openflow setup` created a key. Accepted messages go to `cms_messages`.
  */
 
 export const RATE_LIMIT = { max: 5, windowMs: 10 * 60 * 1000 };

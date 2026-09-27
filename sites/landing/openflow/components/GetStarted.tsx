@@ -40,7 +40,7 @@ export const GetStarted: ComponentConfig<GetStartedProps> = {
     anchor: "demarrer",
     title: "Démarrer depuis Claude Code",
     intro:
-      "Installez le plugin, puis décrivez le site à créer. Claude s'occupe du reste, norme comprise.",
+      "Clonez le dépôt GitHub, ouvrez-y Claude Code et installez le plugin, puis décrivez le site à créer. Claude s'occupe du reste, norme comprise.",
     blockTitle: "Claude Code",
     lines: [
       {
@@ -55,7 +55,7 @@ export const GetStarted: ComponentConfig<GetStartedProps> = {
     ],
     copyLabel: "Copier",
     copiedLabel: "Copié",
-    note: "Sans Claude Code : npx openflow create mon-site, puis npx openflow dev.",
+    note: "Sans Claude Code : dans le dépôt, pnpm openflow create sites/mon-site, puis npx openflow dev.",
     surface: "calque",
   },
   render: ({

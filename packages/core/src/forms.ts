@@ -3,8 +3,8 @@ import { slugify } from "./slug.js";
 
 /**
  * Contact forms: the owner declares the fields of a form in a section (labels, types, required),
- * visitors send it, `openflowSubmitForm` checks each value against the definition of the
- * published page and records the message in `of_messages`, read in the admin (« Messages »).
+ * visitors send it, `cmsSubmitForm` checks each value against the definition of the
+ * published page and records the message in `cms_messages`, read in the admin (« Messages »).
  */
 
 export type FormFieldType = "text" | "email" | "tel" | "textarea" | "select" | "checkbox";
@@ -18,7 +18,7 @@ export interface FormFieldDef {
   options?: string;
 }
 
-/** Name of the section prop that holds the form definition (read by `openflowSubmitForm`). */
+/** Name of the section prop that holds the form definition (read by `cmsSubmitForm`). */
 export const FORM_FIELDS_PROP = "formFields";
 
 export const FORM_FIELD_TYPES: Array<{ label: string; value: FormFieldType }> = [
@@ -139,7 +139,7 @@ export function validateSubmission(
   return { ok: true, submission: { fields, ...(email ? { email } : {}) } };
 }
 
-/** `of_messages/{id}`: a message sent with a form of the site. */
+/** `cms_messages/{id}`: a message sent with a form of the site. */
 export interface MessageDoc {
   formId: string;
   /** Address of the page of the form (`/contact/`). */

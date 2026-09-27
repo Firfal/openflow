@@ -8,8 +8,8 @@ export default function AdminPage() {
     <OpenFlowAdmin
       config={config}
       firebase={{
-        emulators: process.env.NEXT_PUBLIC_OPENFLOW_EMULATORS === "1",
-        region: process.env.NEXT_PUBLIC_OPENFLOW_REGION,
+        emulators: process.env.NEXT_PUBLIC_CMS_EMULATORS === "1",
+        region: process.env.NEXT_PUBLIC_CMS_REGION,
       }}
     />
   );

@@ -24,7 +24,7 @@ function formatDate(iso: string) {
 }
 
 /**
- * « Messages »: what visitors sent with the site's contact forms (`openflowSubmitForm`), newest
+ * « Messages »: what visitors sent with the site's contact forms (`cmsSubmitForm`), newest
  * first. Likely spam (low reCAPTCHA score) is kept apart in « Indésirables ».
  */
 export function MessagesView() {

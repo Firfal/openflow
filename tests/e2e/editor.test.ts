@@ -4,12 +4,11 @@ import { type Browser, chromium, type FrameLocator, type Page } from "playwright
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 // Editor ergonomics on the emulators, for any OpenFlow site (template by default,
-// OPENFLOW_E2E_SITE=sites/landing for the landing): adding and reordering sections with the mouse,
+// CMS_E2E_SITE=sites/landing for the landing): adding and reordering sections with the mouse,
 // collapsed content opened while editing, the site frame around the page, and media replaced
 // from the page.
 const site =
-  process.env.OPENFLOW_E2E_SITE ??
-  path.resolve(import.meta.dirname, "../../templates/next-starter");
+  process.env.CMS_E2E_SITE ?? path.resolve(import.meta.dirname, "../../templates/next-starter");
 const PORT = 3101;
 const ADMIN = `http://localhost:${PORT}/admin/`;
 const OWNER = "proprietaire@exemple.fr";
@@ -72,7 +71,7 @@ beforeAll(async () => {
   server = spawn(path.join(site, "node_modules", ".bin", "next"), ["dev", "--port", String(PORT)], {
     cwd: site,
     stdio: "ignore",
-    env: { ...process.env, NEXT_PUBLIC_OPENFLOW_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
+    env: { ...process.env, NEXT_PUBLIC_CMS_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
   });
   await waitForHttp(ADMIN, 180_000);
   browser = await chromium.launch();

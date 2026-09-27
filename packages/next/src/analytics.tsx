@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
  * Rendered by `createOpenFlowLayout` when the owner filled in the measurement ID (G-…).
  */
 
-const STORAGE_KEY = "openflow-consent";
+const STORAGE_KEY = "cms-consent";
 const MAX_AGE_MS = 182 * 24 * 3600 * 1000;
 
 type Choice = "granted" | "denied";

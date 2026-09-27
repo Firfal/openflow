@@ -9,7 +9,7 @@ Deux portes d'entrée utilisent **les mêmes outils** (définis une seule fois d
 | | Serveur MCP | WebMCP |
 |---|---|---|
 | Pour | Claude (claude.ai, application, Claude Code), ChatGPT, Cursor, VS Code, tout client MCP | L'assistant IA intégré au navigateur |
-| Où | `https://<domaine du site>/mcp` (réécriture Hosting vers la fonction `openflowMcp`) | L'admin (`/admin`), tant qu'elle est ouverte |
+| Où | `https://<domaine du site>/mcp` (réécriture Hosting vers la fonction `cmsMcp`) | L'admin (`/admin`), tant qu'elle est ouverte |
 | Accès | Connexion OAuth (« Se connecter », puis « Autoriser » dans l'admin), ou clé créée dans l'admin | La session du propriétaire |
 | Page ouverte dans l'éditeur | Mise à jour en direct (notification) | Modifiée à travers Puck (annulable) |
 
@@ -37,7 +37,7 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 - La liste **IA connectées** montre chaque assistant et sa dernière utilisation ; « Déconnecter » lui retire
   l'accès aussitôt.
 - Pour un outil qui ne sait pas se connecter (script, ancien client), une **clé d'accès** reste possible,
-  repliée en bas de la page : en-tête `Authorization: Bearer ofk_…`, ou `?key=ofk_…` pour les outils sans
+  repliée en bas de la page : en-tête `Authorization: Bearer cmsk_…`, ou `?key=cmsk_…` pour les outils sans
   en-têtes. Elle n'est affichée qu'une fois et se révoque d'un clic.
 
 ## Outils
@@ -67,7 +67,7 @@ valeurs possibles.
   `ping`, `tools/list`, `tools/call`), sans dépendance.
 - **Adresse** : `firebase.json` réécrit `/mcp`, `/mcp/**` et les adresses de découverte OAuth
   (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`) vers le service
-  Cloud Run de la fonction (`"run": { "serviceId": "openflowmcp", "region": … }`). Ce type de réécriture ne
+  Cloud Run de la fonction (`"run": { "serviceId": "cmsmcp", "region": … }`). Ce type de réécriture ne
   demande aucun droit sur Cloud Functions au compte de build. La norme le vérifie (OF-305), avec la
   région des fonctions. Les adresses propres de la fonction (`cloudfunctions.net`, `run.app`) restent
   valables.
@@ -84,11 +84,11 @@ valeurs possibles.
   | `/mcp/oauth/token` | Code d'autorisation avec PKCE S256 ; jeton de rafraîchissement renouvelé à chaque usage |
   | `/mcp/oauth/revoke` | Révocation (RFC 7009) |
 
-  L'écran d'autorisation appelle `openflowAgentConsent` (réservée au propriétaire), qui délivre un code à
-  usage unique. Le jeton d'accès (`ofa_…`) vaut une heure, le jeton de rafraîchissement (`ofr_…`) 90 jours
+  L'écran d'autorisation appelle `cmsAgentConsent` (réservée au propriétaire), qui délivre un code à
+  usage unique. Le jeton d'accès (`cmsa_…`) vaut une heure, le jeton de rafraîchissement (`cmsr_…`) 90 jours
   glissants.
 - **Schéma du site** : la Cloud Function n'exécute pas le code React du site. `openflow seed` (lancé par
-  `openflow deploy`) écrit dans `of_system/schema` une description sérialisable des sections, champs,
+  `openflow deploy`) écrit dans `cms_system/schema` une description sérialisable des sections, champs,
   réglages et du thème (`buildSiteSchema`) ; la fonction en reconstruit une config de validation
   (`configFromSchema`).
 - **Édition en direct** : l'éditeur écoute la page ouverte. Une modification signée `Assistant IA`
@@ -109,10 +109,10 @@ valeurs possibles.
 - **Écran d'autorisation** : il affiche où l'assistant renvoie le navigateur. Il confirme les assistants
   connus (claude.ai, chatgpt.com) et avertit pour tout autre site web. La page de l'admin ne peut pas être
   intégrée dans un autre site (`X-Frame-Options`).
-- **Secrets** : clés `ofk_` et jetons `ofa_` / `ofr_` de 256 bits aléatoires, codes à usage unique
+- **Secrets** : clés `cmsk_` et jetons `cmsa_` / `cmsr_` de 256 bits aléatoires, codes à usage unique
   (5 minutes). Seules leurs empreintes SHA-256 sont stockées.
-  - `of_agent_tokens` : le propriétaire peut lister et supprimer, jamais écrire.
-  - `of_agent_clients`, `of_agent_requests`, `of_agent_codes` : réservées aux fonctions.
+  - `cms_agent_tokens` : le propriétaire peut lister et supprimer, jamais écrire.
+  - `cms_agent_clients`, `cms_agent_requests`, `cms_agent_codes` : réservées aux fonctions.
 - **Purge** : les demandes et codes expirés, et les clients jamais utilisés depuis 30 jours, sont purgés
   à chaque nouvel enregistrement.
 - **Charge** : la fonction est limitée à 10 instances.

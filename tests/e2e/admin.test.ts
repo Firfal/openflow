@@ -7,8 +7,7 @@ import { type Browser, chromium, type Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const site =
-  process.env.OPENFLOW_E2E_SITE ??
-  path.resolve(import.meta.dirname, "../../templates/next-starter");
+  process.env.CMS_E2E_SITE ?? path.resolve(import.meta.dirname, "../../templates/next-starter");
 const PORT = 3100;
 const ADMIN = `http://localhost:${PORT}/admin/`;
 const OWNER = "proprietaire@exemple.fr";
@@ -69,7 +68,7 @@ beforeAll(async () => {
   server = spawn(path.join(site, "node_modules", ".bin", "next"), ["dev", "--port", String(PORT)], {
     cwd: site,
     stdio: "ignore",
-    env: { ...process.env, NEXT_PUBLIC_OPENFLOW_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
+    env: { ...process.env, NEXT_PUBLIC_CMS_EMULATORS: "1", NEXT_TELEMETRY_DISABLED: "1" },
   });
   await waitForHttp(ADMIN, 180_000);
   browser = await chromium.launch();
@@ -123,7 +122,7 @@ describe("admin OpenFlow (émulateurs)", () => {
 
     const saved = await waitFor(
       async () => {
-        const data = (await db.doc("of_pages/accueil").get()).data();
+        const data = (await db.doc("cms_pages/accueil").get()).data();
         const title = data?.data?.content?.[0]?.props?.title;
         return title === NEW_TITLE ? title : undefined;
       },
@@ -151,14 +150,14 @@ describe("admin OpenFlow (émulateurs)", () => {
       .setInputFiles({ name: "photo-test.png", mimeType: "image/png", buffer: png });
     const media = await waitFor(
       async () => {
-        const snap = await db.collection("of_media").get();
+        const snap = await db.collection("cms_media").get();
         return snap.docs.find((d) => d.data().name === "photo-test.png")?.data();
       },
       30_000,
       "média enregistré",
     );
-    expect(media.path).toMatch(/^openflow\/media\/.+-photo-test\.png$/);
-    // openflowOptimizeMedia (Storage trigger) adds the WebP copies to the library entry. Behind an
+    expect(media.path).toMatch(/^cms\/media\/.+-photo-test\.png$/);
+    // cmsOptimizeMedia (Storage trigger) adds the WebP copies to the library entry. Behind an
     // HTTPS proxy, firebase-tools routes the emulators' internal calls through it and Storage
     // triggers never fire: checked in CI (no proxy), skipped here.
     if (process.env.HTTPS_PROXY || process.env.https_proxy) {
@@ -168,14 +167,14 @@ describe("admin OpenFlow (émulateurs)", () => {
     } else {
       const optimized = await waitFor(
         async () => {
-          const snap = await db.collection("of_media").where("path", "==", media.path).get();
+          const snap = await db.collection("cms_media").where("path", "==", media.path).get();
           const data = snap.docs[0]?.data();
           return data?.optimization?.status === "done" ? data : undefined;
         },
         60_000,
         "copies optimisées",
       );
-      expect(optimized.variants[0].url).toContain("openflow%2Fmedia%2Foptimized%2F");
+      expect(optimized.variants[0].url).toContain("cms%2Fmedia%2Foptimized%2F");
     }
     await page.getByText("Enregistré", { exact: true }).waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "Retour aux pages" }).click();
@@ -208,7 +207,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await expect.poll(color, { timeout: 10_000 }).not.toBe("rgb(255, 0, 0)");
     const saved = await waitFor(
       async () => {
-        const data = (await db.doc("of_pages/accueil").get()).data();
+        const data = (await db.doc("cms_pages/accueil").get()).data();
         return data?.data?.content?.[0]?.props?._style?.fields?.title?.mobile?.color;
       },
       30_000,
@@ -236,7 +235,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       .toBe("#123456");
     const theme = await waitFor(
       async () => {
-        const value = (await db.doc("of_site/settings").get()).data()?.theme?.["color-brand"];
+        const value = (await db.doc("cms_site/settings").get()).data()?.theme?.["color-brand"];
         return value === "#123456" ? value : undefined;
       },
       30_000,
@@ -253,7 +252,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Mettre en ligne" }).click();
     const release = await waitFor(
       async () => {
-        const snap = await db.collection("of_releases").get();
+        const snap = await db.collection("cms_releases").get();
         const live = snap.docs.find(
           (d) => d.data().status === "live" || d.data().status === "failed",
         );
@@ -307,7 +306,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     }
     const message = await waitFor(
       async () => {
-        const snap = await db.collection("of_messages").get();
+        const snap = await db.collection("cms_messages").get();
         return snap.docs[0]?.data();
       },
       30_000,
@@ -319,7 +318,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(message.read).toBe(false);
 
     // A bot (hidden field filled, sent at once) is told « ok » but nothing is recorded.
-    const bot = await fetch("http://127.0.0.1:5001/demo-openflow/europe-west1/openflowSubmitForm", {
+    const bot = await fetch("http://127.0.0.1:5001/demo-openflow/europe-west1/cmsSubmitForm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -343,13 +342,13 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.screenshot({ path: path.join(SCREENSHOTS, "06-messages.png") });
     await waitFor(
       async () => {
-        const snap = await db.collection("of_messages").get();
+        const snap = await db.collection("cms_messages").get();
         return snap.docs[0]?.data().read === true ? true : undefined;
       },
       30_000,
       "message lu",
     );
-    expect((await db.collection("of_messages").get()).size).toBe(1);
+    expect((await db.collection("cms_messages").get()).size).toBe(1);
     await dialog.getByRole("button", { name: "Fermer" }).click();
   });
 
@@ -360,7 +359,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Enregistrer" }).click();
     const name = await waitFor(
       async () => {
-        const value = (await db.doc("of_site/settings").get()).data()?.site?.name;
+        const value = (await db.doc("cms_site/settings").get()).data()?.site?.name;
         return value === "Boulangerie du Test" ? value : undefined;
       },
       30_000,

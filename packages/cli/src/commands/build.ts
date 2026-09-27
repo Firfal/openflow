@@ -32,7 +32,7 @@ export async function buildSite(site: string, options: BuildOptions): Promise<vo
   try {
     await run(next.command, [...next.args, "build"], {
       cwd: site,
-      env: { ...process.env, OPENFLOW_SNAPSHOT: snapshot, NEXT_TELEMETRY_DISABLED: "1" },
+      env: { ...process.env, CMS_SNAPSHOT: snapshot, NEXT_TELEMETRY_DISABLED: "1" },
     });
     if (options.report) await report(options.report, { ok: true });
     log.ok("Site exporté dans out/");

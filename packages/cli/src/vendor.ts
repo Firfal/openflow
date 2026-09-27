@@ -47,11 +47,28 @@ export function findWorkspaceRoot(start: string): string | undefined {
   }
 }
 
-/** Maps each workspace package name to its directory (`packages:` globs of the form `dir` or `dir/*`). */
-export async function workspacePackages(root: string): Promise<Map<string, string>> {
+/** The `packages:` globs of `pnpm-workspace.yaml` (`dir` or `dir/*`, `!` for exclusions). */
+export async function workspacePatterns(root: string): Promise<string[]> {
   const yaml = await readFile(path.join(root, "pnpm-workspace.yaml"), "utf8");
   const block = yaml.match(/^packages:\s*\n((?:\s+-\s+.*\n?)+)/m)?.[1] ?? "";
-  const patterns = [...block.matchAll(/-\s+["']?([^"'\n]+?)["']?\s*$/gm)].map((m) => m[1] ?? "");
+  return [...block.matchAll(/-\s+["']?([^"'\n]+?)["']?\s*$/gm)].map((m) => m[1] ?? "");
+}
+
+/** Whether `dir` is a package of the workspace rooted at `root` (matched by a `packages:` glob). */
+export async function inWorkspace(root: string, dir: string): Promise<boolean> {
+  const rel = path.relative(root, path.resolve(dir)).split(path.sep).join("/");
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return false;
+  return (await workspacePatterns(root)).some(
+    (pattern) =>
+      !pattern.startsWith("!") &&
+      (pattern === rel ||
+        (pattern.endsWith("/*") && path.posix.dirname(rel) === pattern.slice(0, -2))),
+  );
+}
+
+/** Maps each workspace package name to its directory (`packages:` globs of the form `dir` or `dir/*`). */
+export async function workspacePackages(root: string): Promise<Map<string, string>> {
+  const patterns = await workspacePatterns(root);
   const map = new Map<string, string>();
   for (const pattern of patterns) {
     if (pattern.startsWith("!")) continue;
