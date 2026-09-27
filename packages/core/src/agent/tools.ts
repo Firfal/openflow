@@ -552,15 +552,22 @@ tool({
           name,
           label: collection.label,
           path: `/${collection.path}/`,
+          kind: collection.kind ?? "article",
           itemSection: collection.component,
           titleField: titleFieldOf(collection),
           dateField: collection.dateField,
+          // Events and offers: the fields of their day, time, place and price.
+          ...(collection.endDateField ? { endDateField: collection.endDateField } : {}),
+          ...(collection.timeField ? { timeField: collection.timeField } : {}),
+          ...(collection.locationField ? { locationField: collection.locationField } : {}),
+          ...(collection.priceField ? { priceField: collection.priceField } : {}),
           count: items.length,
           latest: latest?.map((entry) => ({
             id: entry.id,
             title: entry.title,
             path: entry.href,
             date: entry.date,
+            ...(entry.price ? { price: entry.price } : {}),
             status: items.find((p) => p.id === entry.id)?.status,
           })),
         };
@@ -982,7 +989,7 @@ tool({
       .string()
       .optional()
       .describe(
-        "Date de publication AAAA-MM-JJ (aujourd'hui par défaut), si la collection en a une.",
+        "Date AAAA-MM-JJ, si la collection en a une : date de publication (aujourd'hui par défaut), ou jour de l'événement pour une collection d'événements (kind « event »).",
       ),
     path: z
       .string()

@@ -28,8 +28,10 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   prop `formFields`, `formId={id}` (voir `champs.md`).
 - Collections (`collections` dans la config) : des contenus de même forme, chacun avec sa page. Ici
   « Actualités » : la section `Article` (un élément, sur `/actualites/<titre>/`), la section de liste
-  `ArticleList` (`getCollection(puck.metadata, "actualites")`) et le flux `app/rss.xml/`. Pour une autre
-  collection (réalisations, événements, équipe), reprends ce modèle (voir « Collections » dans `contrat.md`).
+  `ArticleList` (`getCollection(puck.metadata, "actualites")`) et le flux `app/rss.xml/`. Et
+  « Événements » (`kind: "event"`) : la section `Event` (jour, heure, lieu, tarif, lus par Google et les
+  IA) et l'agenda `EventList`. Pour une autre collection (réalisations, prestations, équipe), reprends ces
+  modèles (voir « Collections » dans `contrat.md`).
 - Export statique (`output: "export"`) sur Firebase Hosting. Il n'y a **pas de serveur Next.js**.
 
 ## Contrat des sections (obligatoire)

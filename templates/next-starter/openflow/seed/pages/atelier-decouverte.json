@@ -1,0 +1,45 @@
+{
+  "slug": "evenements/atelier-decouverte",
+  "title": "Atelier découverte : réaliser sa première pièce",
+  "status": "published",
+  "collection": "evenements",
+  "seo": {},
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Event",
+        "props": {
+          "id": "evenement",
+          "title": "Atelier découverte : réaliser sa première pièce",
+          "date": "2026-11-14",
+          "endDate": "",
+          "time": "14 h 30",
+          "place": "À l’atelier, 12 rue de l’Exemple, Paris",
+          "price": "35 €",
+          "excerpt": "Trois heures pour apprendre les gestes de base et repartir avec votre pièce. Huit places, dès 12 ans.",
+          "cover": {
+            "src": "/images/atelier.svg",
+            "alt": "Illustration de l’atelier",
+            "width": 1200,
+            "height": 900
+          },
+          "body": "<p>Un artisan de l’équipe vous guide pas à pas, du choix de la matière à la finition.</p><h2>Informations pratiques</h2><ul><li>Durée : 3 heures, de 14 h 30 à 17 h 30.</li><li>Matériel fourni, tablier conseillé.</li><li>Huit participants au plus, dès 12 ans accompagné.</li></ul>",
+          "whenLabel": "Date",
+          "untilLabel": "Jusqu’au",
+          "timeLabel": "Heure",
+          "placeLabel": "Lieu",
+          "priceLabel": "Tarif",
+          "ctaLabel": "Réserver ma place",
+          "ctaLink": {
+            "kind": "page",
+            "pageId": "contact",
+            "href": "/contact/"
+          }
+        }
+      }
+    ]
+  }
+}

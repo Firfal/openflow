@@ -1,0 +1,43 @@
+{
+  "slug": "evenements",
+  "title": "Événements",
+  "status": "published",
+  "seo": {
+    "title": "Événements et ateliers",
+    "description": "Portes ouvertes, ateliers découverte et rendez-vous de l’atelier : dates, horaires, lieux et tarifs."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-evenements",
+          "eyebrow": "Agenda",
+          "title": "Venez nous rencontrer",
+          "subtitle": "Portes ouvertes, ateliers découverte : des moments pour voir le travail de près et poser vos questions.",
+          "primaryLabel": "",
+          "primaryLink": null,
+          "secondaryLabel": "",
+          "secondaryLink": null,
+          "image": null,
+          "layout": "centered",
+          "tone": "muted"
+        }
+      },
+      {
+        "type": "EventList",
+        "props": {
+          "id": "agenda",
+          "title": "Prochains rendez-vous",
+          "intro": "",
+          "count": "all",
+          "emptyText": "Pas d’événement prévu pour le moment : revenez bientôt.",
+          "tone": "light"
+        }
+      }
+    ]
+  }
+}

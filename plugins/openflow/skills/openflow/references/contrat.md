@@ -215,7 +215,24 @@ de liste les affichent toutes seules, triés.
    - `app/rss.xml/route.ts` (`createRssFeed(config)`) publie le flux des collections ; les pages
      l'annoncent d'elles-mêmes.
 
-4. **Contenu de départ** : un fichier `openflow/seed/pages/<id>.json` par élément, avec
+4. **Le type des éléments** (`kind`), pour Google et les assistants IA : chaque page d'élément publie
+   ses données structurées schema.org.
+
+   | `kind` | Pour | Données structurées | Champs utiles |
+   |---|---|---|---|
+   | `article` (défaut) | actualités, blog, réalisations | `Article` | `dateField` (publication) |
+   | `event` | ateliers, portes ouvertes, concerts | `Event` : jour, heure, lieu (ou l'adresse de l'établissement), prix, gratuité | `dateField` (premier jour, obligatoire), `endDateField`, `timeField` (« 10 h »), `locationField`, `priceField` |
+   | `service` | prestations, formules | `Service` avec `Offer` (prix), prestataire et zone de l'établissement | `priceField` |
+   | `product` | produits | `Product` avec `Offer` | `priceField` |
+
+   Le prix s'écrit comme le propriétaire le dit (« 35 € », « À partir de 120 € », « Gratuit ») :
+   OpenFlow en déduit le montant. Les événements se trient par défaut « à venir » (`sort: "upcoming"` : le
+   plus proche d'abord, puis les passés) et chaque entrée de liste porte `date`, `endDate`, `time`,
+   `location` et `price`. La liste d'un agenda filtre les événements passés
+   (`(event.endDate ?? event.date) >= today()`) : ils la quittent à la publication suivante, leur page reste.
+   Exemple complet dans le modèle de départ : sections `Event` et `EventList`, collection `evenements`.
+
+5. **Contenu de départ** : un fichier `openflow/seed/pages/<id>.json` par élément, avec
    `"collection": "actualites"`, une adresse sous le `path` (`"slug": "actualites/mon-article"`) et une seule
    section `Article`. Crée aussi la page qui les liste (`"slug": "actualites"`, avec la section de liste)
    et son lien dans le menu.

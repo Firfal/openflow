@@ -113,8 +113,26 @@ export interface CollectionConfig {
   descriptionField?: string;
   /** Image field of `component` illustrating the item (lists, social previews, admin list). */
   imageField?: string;
-  /** Order of the items: newest first (`date`, default with a `dateField`) or by `title`. */
-  sort?: "date" | "title";
+  /**
+   * What the items are, for Google and AI assistants (schema.org structured data of each item's
+   * page): `article` (default: news, blog posts, projects), `event` (workshops, open days,
+   * concerts: `dateField` is the day it starts), `service` (a service offered, with its price) or
+   * `product`.
+   */
+  kind?: "article" | "event" | "service" | "product";
+  /** Events: `dateField()` of the last day, for events over several days. */
+  endDateField?: string;
+  /** Events: text field of the start time (« 10:00 », « 14 h 30 »). */
+  timeField?: string;
+  /** Events: text field of the place; the business address (Établissement) by default. */
+  locationField?: string;
+  /** Events, services, products: text or number field of the price (« 25 », « 12,50 € », « Gratuit »). */
+  priceField?: string;
+  /**
+   * Order of the items: newest first (`date`, default with a `dateField`), by `title`, or
+   * `upcoming` (default for events: coming events first, the soonest first, then past ones).
+   */
+  sort?: "date" | "title" | "upcoming";
   /** Icon in the admin menu (default `layers`). */
   icon?: CollectionIcon;
 }

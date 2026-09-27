@@ -43,6 +43,7 @@ export {
   formatOpeningHours,
   formatTime,
   mapUrl,
+  postalAddress,
   type TimeRange,
   upcomingClosures,
   WEEKDAYS,
@@ -55,6 +56,7 @@ export {
   COLLECTION_NAME,
   type CollectionEntry,
   collectionEntry,
+  collectionSort,
   findItemComponent,
   getCollection,
   getCollectionConfig,
@@ -180,6 +182,8 @@ export {
   itemEntry,
   jsonLdScript,
   pageJsonLd,
+  parsePrice,
+  parseTime,
   shareImageUrl,
 } from "./seo.js";
 export {

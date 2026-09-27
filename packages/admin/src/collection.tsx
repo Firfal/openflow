@@ -1,4 +1,4 @@
-import { collectionEntry, formatDate, sortEntries } from "@openflow/core";
+import { collectionEntry, formatDate, sortEntries, today } from "@openflow/core";
 import { useEffect, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { deletePage, duplicatePage, type PageEntry } from "./data.js";
@@ -178,8 +178,16 @@ export function CollectionView({ name }: { name: string }) {
                         </button>
                         <span className="of-list__meta">
                           {entry.date && (
-                            <time dateTime={entry.date}>{formatDate(entry.date, lang)}</time>
+                            <time dateTime={entry.date}>
+                              {formatDate(entry.date, lang)}
+                              {entry.endDate ? ` – ${formatDate(entry.endDate, lang)}` : ""}
+                              {entry.time ? ` · ${entry.time}` : ""}
+                            </time>
                           )}
+                          {collection.kind === "event" &&
+                            entry.date &&
+                            (entry.endDate ?? entry.date) < today() && <span>Passé</span>}
+                          {entry.price && <span>{entry.price}</span>}
                           <span className="of-mono">{entry.href}</span>
                           <span>Modifié {timeAgo(page.updatedAt)}</span>
                         </span>

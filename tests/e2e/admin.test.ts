@@ -446,6 +446,14 @@ describe("admin OpenFlow (émulateurs)", () => {
       expect(html.indexOf(ITEM_TITLE)).toBeLessThan(html.indexOf("Nous ouvrons un second atelier"));
       expect(readFileSync(path.join(site, "out", "rss.xml"), "utf8")).toContain(ITEM_TITLE);
       expect(readFileSync(path.join(site, "out", "llms.txt"), "utf8")).toContain("## Actualités");
+      // Events: their day, time, place and price for Google and AI assistants.
+      const event = readFileSync(
+        path.join(site, "out", "evenements", "atelier-decouverte", "index.html"),
+        "utf8",
+      );
+      expect(event).toContain('"@type":"Event"');
+      expect(event).toContain('"startDate":"2026-11-14T14:30"');
+      expect(event).toContain('"price":35');
     }
     expect(existsSync(path.join(site, "out", "admin", "index.html"))).toBe(true);
     await page

@@ -22,8 +22,14 @@ export interface CollectionEntry<Values extends Record<string, any> = Record<str
   /** Address of the item's page, e.g. `/actualites/ouverture-du-samedi/`. */
   href: string;
   title: string;
-  /** Publication date (`YYYY-MM-DD`), with a `dateField` in the collection. */
+  /** Publication date (`YYYY-MM-DD`), with a `dateField` in the collection; for events, the first day. */
   date?: string;
+  /** Events: last day (`endDateField`), time (`timeField`) and place (`locationField`). */
+  endDate?: string;
+  time?: string;
+  location?: string;
+  /** Events, services, products: the price as written (`priceField`). */
+  price?: string;
   /** The description field, or the beginning of the item's text. */
   description?: string;
   /** The collection's image field. */
@@ -207,6 +213,18 @@ export function collectionEntry(
     (typeof excerpt === "string" && excerpt) ||
     undefined;
   const image = collection.imageField ? fields[collection.imageField] : undefined;
+  const text = (key: string | undefined) => {
+    const value = key ? fields[key] : undefined;
+    return typeof value === "number"
+      ? String(value)
+      : typeof value === "string" && value.trim()
+        ? value.trim()
+        : undefined;
+  };
+  const endDate = collection.endDateField ? fields[collection.endDateField] : undefined;
+  const time = text(collection.timeField);
+  const location = text(collection.locationField);
+  const price = text(collection.priceField);
   return {
     id: page.id,
     collection: page.collection ?? "",
@@ -214,6 +232,10 @@ export function collectionEntry(
     href: slugToPath(page.slug),
     title: page.title,
     ...(isValidDate(date) ? { date } : {}),
+    ...(isValidDate(endDate) && endDate !== date ? { endDate } : {}),
+    ...(time ? { time } : {}),
+    ...(location ? { location } : {}),
+    ...(price ? { price } : {}),
     ...(description ? { description } : {}),
     ...(image !== undefined ? { image: image as ImageValue | null } : {}),
     readingTime: Math.max(1, Math.round((Number(words) || 0) / WORDS_PER_MINUTE)),
@@ -221,11 +243,38 @@ export function collectionEntry(
   };
 }
 
-/** Items in the collection's order: newest first (`date`) or alphabetical (`title`). */
-export function sortEntries(entries: CollectionEntry[], collection: CollectionConfig) {
+/** Default order of a collection's items. */
+export function collectionSort(collection: CollectionConfig): "date" | "title" | "upcoming" {
+  return (
+    collection.sort ??
+    (collection.dateField ? (collection.kind === "event" ? "upcoming" : "date") : "title")
+  );
+}
+
+/**
+ * Items in the collection's order: newest first (`date`), alphabetical (`title`), or coming
+ * events first then past ones (`upcoming`, as of `today`).
+ */
+export function sortEntries(
+  entries: CollectionEntry[],
+  collection: CollectionConfig,
+  todayDate = today(),
+) {
   const byTitle = (a: CollectionEntry, b: CollectionEntry) =>
     a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true });
-  const sort = collection.sort ?? (collection.dateField ? "date" : "title");
+  const sort = collectionSort(collection);
+  if (sort === "upcoming") {
+    const last = (entry: CollectionEntry) => entry.endDate ?? entry.date ?? "";
+    const coming = entries.filter((entry) => entry.date && last(entry) >= todayDate);
+    const past = entries.filter((entry) => !coming.includes(entry));
+    const soonest = (a: CollectionEntry, b: CollectionEntry) =>
+      (a.date ?? "").localeCompare(b.date ?? "") ||
+      (a.time ?? "").localeCompare(b.time ?? "") ||
+      byTitle(a, b);
+    const latest = (a: CollectionEntry, b: CollectionEntry) =>
+      !a.date ? 1 : !b.date ? -1 : b.date.localeCompare(a.date) || byTitle(a, b);
+    return [...coming.sort(soonest), ...past.sort(latest)];
+  }
   return [...entries].sort((a, b) => {
     if (sort === "date" && a.date !== b.date) {
       if (!a.date) return 1;
@@ -379,6 +428,15 @@ export function validateCollections(config: OpenFlowConfig, file: string): Issue
     expect(collection.dateField, ["date"], "la date", "un champ `dateField()`");
     expect(collection.descriptionField, ["text", "textarea"], "la description", "un champ texte");
     expect(collection.imageField, ["image"], "l'image", "un champ `imageField()`");
+    expect(collection.endDateField, ["date"], "la date de fin", "un champ `dateField()`");
+    expect(collection.timeField, ["text"], "l'heure", "un champ texte");
+    expect(collection.locationField, ["text", "textarea"], "le lieu", "un champ texte");
+    expect(collection.priceField, ["text", "number"], "le prix", "un champ texte ou nombre");
+    if (collection.kind === "event" && !collection.dateField) {
+      error(
+        `${where} : une collection d'événements a besoin d'un \`dateField\` (le jour de l'événement).`,
+      );
+    }
   }
   return issues;
 }

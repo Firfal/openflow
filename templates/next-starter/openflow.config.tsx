@@ -3,6 +3,8 @@ import { Article } from "./openflow/components/Article";
 import { ArticleList } from "./openflow/components/ArticleList";
 import { CallToAction } from "./openflow/components/CallToAction";
 import { ContactForm } from "./openflow/components/ContactForm";
+import { Event } from "./openflow/components/Event";
+import { EventList } from "./openflow/components/EventList";
 import { Faq } from "./openflow/components/Faq";
 import { Features } from "./openflow/components/Features";
 import { Hero } from "./openflow/components/Hero";
@@ -25,7 +27,7 @@ export default defineConfig({
     header: { title: "En-têtes", components: ["Hero"] },
     content: {
       title: "Contenu",
-      components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList"],
+      components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList", "EventList"],
     },
     conversion: { title: "Conversion", components: ["CallToAction", "ContactForm"] },
   },
@@ -39,9 +41,11 @@ export default defineConfig({
     CallToAction,
     ContactForm,
     Article,
+    EventList,
+    Event,
   },
   // News items: each one has its page at /actualites/<titre>/, written in the admin
-  // (menu « Actualités »); « Liste d'actualités » shows the latest ones.
+  // (menu « Actualités »); « Liste d'actualités » shows the latest ones. Same for events.
   collections: {
     actualites: {
       label: "Actualités",
@@ -52,6 +56,23 @@ export default defineConfig({
       descriptionField: "excerpt",
       imageField: "cover",
       icon: "newspaper",
+    },
+    // Events (workshops, open days…): Google and AI assistants read their day, place and price
+    // (schema.org Event); « Agenda des événements » lists the coming ones.
+    evenements: {
+      label: "Événements",
+      addLabel: "Nouvel événement",
+      path: "evenements",
+      component: "Event",
+      kind: "event",
+      dateField: "date",
+      endDateField: "endDate",
+      timeField: "time",
+      locationField: "place",
+      priceField: "price",
+      descriptionField: "excerpt",
+      imageField: "cover",
+      icon: "calendar",
     },
   },
   settings: {

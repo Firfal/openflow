@@ -55,13 +55,15 @@ const business = {
 
 describe("business profile", () => {
   it("reads the week in French, grouping days with the same hours", () => {
-    expect(formatOpeningHours(tuesdayToSaturday)).toEqual([
+    // Non-breaking spaces keep « 12 h 30 » and « : » on their line; compared as plain spaces.
+    const plain = (lines: string[]) => lines.map((line) => line.replace(/\u00a0/g, " "));
+    expect(plain(formatOpeningHours(tuesdayToSaturday))).toEqual([
       "Lundi : fermé",
       "Du mardi au vendredi : 9 h – 12 h 30, 14 h – 19 h",
       "Samedi : 8 h – 13 h",
       "Dimanche : fermé",
     ]);
-    expect(formatOpeningHours({ sa: [{ opens: "10:00", closes: "18:00" }] })).toEqual([
+    expect(plain(formatOpeningHours({ sa: [{ opens: "10:00", closes: "18:00" }] }))).toEqual([
       "Du lundi au vendredi : fermé",
       "Samedi : 10 h – 18 h",
       "Dimanche : fermé",
@@ -156,7 +158,9 @@ describe("business profile", () => {
     const llms = buildLlmsTxt(snapshot, config);
     expect(llms).toContain("## Informations pratiques");
     expect(llms).toContain("- Adresse : 12 rue du Four, 75006 Paris");
-    expect(llms).toContain("  - Du mardi au vendredi : 9 h – 12 h 30, 14 h – 19 h");
+    expect(llms.replace(/\u00a0/g, " ")).toContain(
+      "  - Du mardi au vendredi : 9 h – 12 h 30, 14 h – 19 h",
+    );
     expect(llms).toContain("- Fermé du 10 août 2026 au 20 août 2026 (congés d'été)");
   });
 

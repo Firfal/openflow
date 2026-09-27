@@ -35,6 +35,10 @@
         "label": "Actualités",
         "link": { "kind": "page", "pageId": "actualites", "href": "/actualites/" }
       },
+      {
+        "label": "Événements",
+        "link": { "kind": "page", "pageId": "evenements", "href": "/evenements/" }
+      },
       { "label": "Contact", "link": { "kind": "page", "pageId": "contact", "href": "/contact/" } }
     ],
     "headerCtaLabel": "Nous contacter",

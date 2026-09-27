@@ -45,6 +45,9 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   plus ancien (ou par titre), avec leur image, leur date, leur adresse et **un seul statut**, comme les
   pages.
   - Filtres **Tous**, **Visibles**, **Masqués** (avec leur nombre) et recherche par titre.
+  - Une collection d'événements affiche le jour (et l'heure, le dernier jour), « Passé » pour un événement
+    terminé et le tarif ; les prochains viennent en premier. Sa fenêtre de création demande la « Date de
+    l'événement ».
   - « Nouvel article » (le libellé vient de la collection) demande le titre, l'adresse (sous celle de la
     collection, ex. `/actualites/…`), la date de publication et la visibilité, puis ouvre l'éditeur.
   - « Modifier » ouvre l'élément dans l'éditeur, comme une page ; le menu « ⋯ » propose Paramètres et

@@ -88,10 +88,13 @@ const SCHEMA_DAYS: Record<Weekday, string> = {
   su: "Sunday",
 };
 
-/** `"09:00"` → « 9 h », `"12:30"` → « 12 h 30 » (French). */
+/** No line break inside « 12 h 30 » or before « : » (French typography). */
+const NBSP = "\u00a0";
+
+/** `"09:00"` → « 9 h », `"12:30"` → « 12 h 30 » (French, with non-breaking spaces). */
 export function formatTime(time: string): string {
   const [h, m] = time.split(":");
-  return `${Number(h)} h${m && m !== "00" ? ` ${m}` : ""}`;
+  return `${Number(h)}${NBSP}h${m && m !== "00" ? `${NBSP}${m}` : ""}`;
 }
 
 const rangesText = (ranges: TimeRange[]) =>
@@ -121,7 +124,7 @@ export function formatOpeningHours(hours: BusinessInfo["hours"]): string[] {
         : days.length === 2
           ? `${capitalize(first)} et ${DAY_NAMES[days[1] as Weekday]}`
           : `Du ${first} au ${DAY_NAMES[days.at(-1) as Weekday]}`;
-    return `${label} : ${text}`;
+    return `${label}${NBSP}: ${text}`;
   });
 }
 
@@ -166,6 +169,18 @@ export function mapUrl(business: BusinessInfo | undefined): string | undefined {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+/** The business's address as a schema.org `PostalAddress`, when it has one. */
+export function postalAddress(b: BusinessInfo | undefined): Record<string, unknown> | undefined {
+  if (!b || !formatAddress(b)) return undefined;
+  return {
+    "@type": "PostalAddress",
+    ...(b.street ? { streetAddress: b.street } : {}),
+    ...(b.postalCode ? { postalCode: b.postalCode } : {}),
+    ...(b.city ? { addressLocality: b.city } : {}),
+    addressCountry: b.country ?? "FR",
+  };
+}
+
 /**
  * The business as schema.org JSON-LD (`LocalBusiness` or one of its types): name, contact, address,
  * weekly hours, upcoming closures (`specialOpeningHoursSpecification`), price range, links.
@@ -177,15 +192,7 @@ export function businessJsonLd(
   const b = site.business;
   if (!b) return undefined;
   const type = b.type ?? "LocalBusiness";
-  const address = formatAddress(b)
-    ? {
-        "@type": "PostalAddress",
-        ...(b.street ? { streetAddress: b.street } : {}),
-        ...(b.postalCode ? { postalCode: b.postalCode } : {}),
-        ...(b.city ? { addressLocality: b.city } : {}),
-        addressCountry: b.country ?? "FR",
-      }
-    : undefined;
+  const address = postalAddress(b);
   const hours = b.hours
     ? WEEKDAYS.flatMap((day) => (b.hours?.[day] ?? []).map((range) => ({ day, ...range }))).reduce<
         Array<{ days: string[]; opens: string; closes: string }>

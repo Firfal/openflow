@@ -1,0 +1,45 @@
+{
+  "slug": "evenements/portes-ouvertes",
+  "title": "Journée portes ouvertes au nouvel atelier",
+  "status": "published",
+  "collection": "evenements",
+  "seo": {},
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Event",
+        "props": {
+          "id": "evenement",
+          "title": "Journée portes ouvertes au nouvel atelier",
+          "date": "2026-10-04",
+          "endDate": "",
+          "time": "10 h",
+          "place": "Nouvel atelier, 12 rue de l’Exemple, Paris",
+          "price": "Gratuit",
+          "excerpt": "Visitez le nouvel atelier, rencontrez l’équipe et voyez les machines tourner, en continu de 10 h à 18 h.",
+          "cover": {
+            "src": "/images/actu-atelier.svg",
+            "alt": "Façade du nouvel atelier",
+            "width": 1200,
+            "height": 800
+          },
+          "body": "<p>Pour l’ouverture de notre second atelier, nous ouvrons grand les portes toute la journée.</p><h2>Au programme</h2><ul><li>Visite de l’atelier et démonstrations toutes les heures.</li><li>Échantillons de matières et de finitions à toucher.</li><li>Café et viennoiseries offerts.</li></ul><p>Entrée libre, sans inscription. Accès de plain-pied.</p>",
+          "whenLabel": "Date",
+          "untilLabel": "Jusqu’au",
+          "timeLabel": "Heure",
+          "placeLabel": "Lieu",
+          "priceLabel": "Tarif",
+          "ctaLabel": "Prévenir de votre venue",
+          "ctaLink": {
+            "kind": "page",
+            "pageId": "contact",
+            "href": "/contact/"
+          }
+        }
+      }
+    ]
+  }
+}

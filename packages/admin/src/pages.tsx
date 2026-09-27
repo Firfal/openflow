@@ -219,8 +219,12 @@ function PageDialogInner({
       </FormField>
       {isNew && collection?.dateField && (
         <FormField
-          label="Date de publication"
-          hint="Les éléments les plus récents sont affichés en premier."
+          label={collection.kind === "event" ? "Date de l'événement" : "Date de publication"}
+          hint={
+            collection.kind === "event"
+              ? "Les prochains événements sont affichés en premier."
+              : "Les éléments les plus récents sont affichés en premier."
+          }
         >
           <input
             className="of-input"

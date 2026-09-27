@@ -154,7 +154,19 @@ export function buildLlmsTxt(snapshot: Snapshot, config?: OpenFlowConfig): strin
       if (visible.length === 0) continue;
       lines.push("", `## ${line(config.collections?.[name]?.label ?? name)}`, "");
       for (const entry of visible) {
-        const date = entry.date ? ` (${formatDate(entry.date, site.lang)})` : "";
+        // Events: « (4 octobre 2026 à 10 h, Atelier, 15 €) », what assistants are asked.
+        const when = entry.date
+          ? [
+              entry.endDate
+                ? `${formatDate(entry.date, site.lang)} – ${formatDate(entry.endDate, site.lang)}`
+                : formatDate(entry.date, site.lang),
+              entry.time ? `à ${entry.time}` : "",
+            ]
+              .filter(Boolean)
+              .join(" ")
+          : "";
+        const facts = [when, entry.location, entry.price].filter(Boolean).join(", ");
+        const date = facts ? ` (${line(facts)})` : "";
         const description = entry.description ? `: ${line(entry.description)}` : "";
         lines.push(
           `- [${line(entry.title)}](${pageAddress(site, entry.slug)})${date}${description}`,
