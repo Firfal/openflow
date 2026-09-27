@@ -16,6 +16,11 @@ export interface Focus {
   link?: string;
   /** Set when an image or a video was tapped (not dragged): the media library opens. */
   open?: number;
+  /**
+   * A collection item linked from the clicked place (a card of a list section): its content is
+   * edited on its own page, which the panel offers to open.
+   */
+  item?: string;
 }
 
 export interface FocusStore {

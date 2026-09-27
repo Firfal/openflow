@@ -2951,6 +2951,23 @@ select.of-input {
   line-height: 1.45;
 }
 
+/* A collection item clicked in a list section: the way to its own page. */
+.of-panel__item {
+  --of-icon-color: var(--of-accent-text);
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--of-border);
+  background: var(--of-accent-soft);
+  color: var(--of-text);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.of-panel__item p {
+  margin: 0 0 8px;
+}
+
 .of-panel__more {
   --of-icon-color: var(--of-text-3);
   display: flex;

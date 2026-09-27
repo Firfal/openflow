@@ -1,4 +1,4 @@
-import { buildPageCss, buildThemeCss } from "@openflow/core";
+import { buildPageCss, buildThemeCss, slugToPath } from "@openflow/core";
 import { createUsePuck, type Fields } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -44,10 +44,30 @@ function markedAt(section: Element, target: Element, x: number, y: number): Elem
   return null;
 }
 
+/**
+ * The link under a click. Puck's layer covers the section and its content may not receive the
+ * pointer: hit-tested with boxes, a link counting for its whole card (`li`, `article`), as cards
+ * usually stretch their link over themselves.
+ */
+function linkAt(section: Element, target: Element, x: number, y: number): Element | null {
+  const direct = target.closest("a[href]");
+  if (direct && section.contains(direct)) return direct;
+  for (const anchor of section.querySelectorAll("a[href]")) {
+    const r = (anchor.closest("li, article") ?? anchor).getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return anchor;
+  }
+  return null;
+}
+
 function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
-  const { notify } = useAdmin();
+  const { notify, pages } = useAdmin();
   const { focus, setFocus } = useFocus();
   const lastNotice = useRef(0);
+  // Addresses of the collections' items: a click on a card of a list opens the way to its page.
+  const itemsRef = useRef(new Map<string, string>());
+  itemsRef.current = new Map(
+    pages.filter((page) => page.collection).map((page) => [slugToPath(page.slug), page.id]),
+  );
   // Styles for markers and the focused element.
   useEffect(() => {
     if (!doc?.head) return;
@@ -107,6 +127,11 @@ function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
               kind: "link",
             }
           : { componentId };
+      if (!marked) {
+        const href = linkAt(section, target, event.clientX, event.clientY)?.getAttribute("href");
+        const item = href ? itemsRef.current.get(href.replace(/^https?:\/\/[^/]+/, "")) : undefined;
+        if (item) focus.item = item;
+      }
       setFocus(focus);
       if (event.button === 0 && (focus.kind === "image" || focus.kind === "video"))
         down = { x: event.clientX, y: event.clientY, t: event.timeStamp, focus };

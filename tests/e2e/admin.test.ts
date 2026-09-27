@@ -312,6 +312,31 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("opens a news item from its card in a list section", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) return;
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    const home = page.locator("li", {
+      has: page.getByRole("button", { name: "Accueil", exact: true }),
+    });
+    await home.getByRole("button", { name: "Modifier" }).click();
+    const frame = page.frameLocator("#preview-frame");
+    const card = frame.getByRole("link", { name: "Nous ouvrons un second atelier" });
+    await card.waitFor({ timeout: 120_000 });
+    await card.scrollIntoViewIfNeeded();
+    // Puck's layer covers the section: click where the card is, as the owner does.
+    const box = (await card.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    const open = page
+      .locator(".of-panel:visible")
+      .getByRole("button", { name: "Modifier cet élément" });
+    await open.click();
+    await expect
+      .poll(() => frame.locator("h1").innerText(), { timeout: 60_000 })
+      .toContain("Nous ouvrons un second atelier");
+    await page.getByRole("button", { name: "Retour à « Actualités »" }).click();
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();

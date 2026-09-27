@@ -6,6 +6,7 @@ import {
 } from "@openflow/core";
 import { AutoField, createUsePuck, type Fields, setDeep } from "@puckeditor/core";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import { flushAllAutosaves } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { ImageInput, LinkInput, VideoInput } from "./fields.js";
 import {
@@ -18,7 +19,7 @@ import {
 } from "./focus.js";
 import { Icon, type IconName } from "./icons.js";
 import { StylePanel, useStyleSummary } from "./style-panel.js";
-import { IconButton } from "./ui.js";
+import { Button, IconButton } from "./ui.js";
 
 const usePuck = createUsePuck();
 
@@ -175,6 +176,38 @@ function NothingSelected() {
   );
 }
 
+/**
+ * A card of a list section was clicked (an article…): its content belongs to the item, edited on
+ * its own page, which this callout opens (Webflow's « Edit collection item »).
+ */
+function LinkedItem({ pageId }: { pageId: string }) {
+  const { pages, config, navigate } = useAdmin();
+  const page = pages.find((p) => p.id === pageId);
+  const collection = page?.collection ? config.collections?.[page.collection] : undefined;
+  if (!page || !collection) return null;
+  return (
+    <div className="of-panel__item">
+      <Icon name={collection.icon ?? "layers"} size={14} className="of-icon--first-line" />
+      <div>
+        <p>
+          <strong>{page.title}</strong> est un élément de « {collection.label} » : son contenu se
+          modifie sur sa propre page.
+        </p>
+        <Button
+          size="sm"
+          icon="pencil"
+          onClick={async () => {
+            await flushAllAutosaves();
+            navigate({ view: "editor", pageId: page.id });
+          }}
+        >
+          Modifier cet élément
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** A disclosure whose state the browser remembers (a convenience, never site data). */
 function useStoredToggle(key: string, initial: boolean): [boolean, () => void] {
   const [open, setOpen] = useState(() => {
@@ -273,8 +306,10 @@ export function FieldsPanel({ children }: { children: ReactNode }) {
   }
   const group = focus && focus.componentId === selectedId ? resolveGroup(fields, focus) : undefined;
   if (!group || !focus) {
+    const item = focus?.componentId === selectedId ? focus?.item : undefined;
     return (
       <div className="of-panel">
+        {item && <LinkedItem pageId={item} />}
         <p className="of-panel__hint">
           <Icon name="pointer" size={13} className="of-icon--first-line" />
           <span>

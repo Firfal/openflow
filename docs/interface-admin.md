@@ -122,7 +122,10 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
   l'onglet du navigateur. Le bouton de retour ramène à la collection (« Retour à « Actualités » »), et le
   sélecteur de page propose aussi les autres éléments de la collection.
 - **Sections qui listent une collection** (« Liste d'actualités ») : l'éditeur montre les éléments visibles
-  tels qu'ils étaient à l'ouverture de la page, comme ils apparaîtront sur le site.
+  tels qu'ils étaient à l'ouverture de la page, comme ils apparaîtront sur le site. Un clic sur la carte
+  d'un élément affiche en tête du panneau de droite « … est un élément de « Actualités » », avec le bouton
+  **Modifier cet élément**, qui enregistre la page et ouvre l'élément (comme « Edit collection item » dans
+  Webflow).
 
 ### Bloc Style
 
