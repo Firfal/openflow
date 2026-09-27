@@ -67,6 +67,7 @@ Functions n'ont pas besoin de npm pour les installer.
 | [Contrat d'intégration](docs/contrat-integration.md) | Kit Claude Code, boucle de retour |
 | [Norme OFS](docs/norme/README.md) | Les règles OF-xxx vérifiées par `openflow check` |
 | [Feuille de route](docs/roadmap.md) | Phases 2 à 5 |
+| [Les sites de demain](docs/sites-de-demain.md) | Recherche par IA, agents, droit européen : les enjeux et les priorités qui en découlent |
 
 ## Structure du dépôt
 

@@ -8,6 +8,20 @@
 | 4 : IA et outillage | **Serveur MCP OpenFlow** et **WebMCP** (18 outils : pages, sections, style, thème, médias, publication ; brouillons uniquement) : **réalisés**, voir [assistant-ia.md](assistant-ia.md). Connexion OAuth des connecteurs MCP à `https://<domaine>/mcp`, avec écran d'autorisation dans l'admin, et `llms.txt` : **réalisés**. Reste : assistant intégré à l'admin (API Claude dans une Cloud Function, affichage des différences), `openflow check --against-live` (OF-202) et migrations de schéma, demandes de modification transmises à Claude Code | En partie réalisée |
 | 5 : Multi-framework | Adaptateurs Vite SPA (prérendu), Astro, HTML pur (`data-of` et runtime DOM) | Spécifiée |
 
+## Priorités issues de la veille (septembre 2026)
+
+Détail et sources : [sites-de-demain.md](sites-de-demain.md).
+
+1. Fiche établissement (données `LocalBusiness`, horaires et fermetures, utilisées par le site, les IA et
+   Google).
+2. Fraîcheur : dates de modification réelles (sitemap, JSON-LD) et IndexNow à chaque publication.
+3. Robots des IA : refuser l'entraînement sans quitter la recherche IA.
+4. WebMCP à jour (`document.modelContext`) et formulaires déclarés pour les agents des visiteurs.
+5. Mesure d'audience sans cookie, avec les visites venant des assistants IA.
+6. Audit d'accessibilité « prêt pour les agents » dans la norme.
+7. Collections typées : événements et offres, avec leurs données structurées.
+8. Outils d'audit dans le MCP.
+
 ## Détails de conception des phases suivantes
 
 ### Collections (phase 2, réalisées)
