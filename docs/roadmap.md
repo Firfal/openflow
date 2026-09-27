@@ -23,7 +23,7 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
    `get_stats`) : **réalisée**.
 6. Audit d'accessibilité « prêt pour les agents » dans la norme.
 7. Collections typées : événements et offres, avec leurs données structurées.
-8. Outils d'audit dans le MCP.
+8. Outils d'audit dans le MCP (`audit_site`, conseils dans la fenêtre de publication) : **réalisés**.
 
 ## Détails de conception des phases suivantes
 

@@ -1,7 +1,7 @@
-import { FUNCTION_NAMES } from "@openflow/core";
+import { type AuditFinding, FUNCTION_NAMES, statsDay } from "@openflow/core";
 import { useCallback, useEffect, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
-import { useAdmin } from "./context.js";
+import { type Route, useAdmin } from "./context.js";
 import { getAllPages, type ReleaseEntry, subscribeRelease } from "./data.js";
 import { call, errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
@@ -13,6 +13,14 @@ interface Problem {
   message: string;
 }
 
+/** Where the owner fixes a piece of advice: the page, or the settings it concerns. */
+function adviceTarget(finding: AuditFinding): Route | undefined {
+  if (finding.page) return { view: "editor", pageId: finding.page.id };
+  if (finding.code.startsWith("business-")) return { view: "settings", tab: "business" };
+  if (finding.code.startsWith("site-")) return { view: "settings", tab: "site" };
+  return undefined;
+}
+
 /**
  * « Publier » button (dashboard and editor bars): validates drafts, lists what changed since the
  * last publication, calls `cmsPublish` and follows the release until it is live.
@@ -22,6 +30,8 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problems, setProblems] = useState<Problem[]>([]);
+  /** Non-blocking advice of the site audit (what helps Google and AI assistants). */
+  const [advice, setAdvice] = useState<AuditFinding[]>([]);
   const [activeId, setActiveId] = useState<string>();
   const [active, setActive] = useState<ReleaseEntry>();
   const [elapsed, setElapsed] = useState(0);
@@ -61,9 +71,8 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
     try {
       await flushAllAutosaves();
       // The checks (and their schemas) are only downloaded when the owner publishes.
-      const [{ validateItem, validatePageData, validateSettingsValues }, pages] = await Promise.all(
-        [import("./publish-checks.js"), getAllPages(services.db)],
-      );
+      const [{ auditSite, validateItem, validatePageData, validateSettingsValues }, pages] =
+        await Promise.all([import("./publish-checks.js"), getAllPages(services.db)]);
       const found: Problem[] = [];
       for (const page of pages) {
         if (page.status !== "published") continue;
@@ -80,13 +89,21 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
         if (issue.severity === "error") found.push({ where: "Réglages", message: issue.message });
       }
       setProblems(found);
+      setAdvice(
+        auditSite({
+          config,
+          pages,
+          site: settings?.site ?? { name: config.site.name, lang: config.site.lang ?? "fr" },
+          today: statsDay(new Date()),
+        }).findings.filter((finding) => finding.severity !== "low"),
+      );
       setConfirming(true);
     } catch (error) {
       notify("error", errorMessage(error));
     } finally {
       setBusy(false);
     }
-  }, [config, notify, services.db, settings?.values]);
+  }, [config, notify, services.db, settings?.values, settings?.site]);
 
   // « Publier le site » from the command palette.
   useEffect(() => {
@@ -238,6 +255,48 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                 <Icon name="circleCheck" className="of-icon--first-line" />
                 <span>Rien n'a changé depuis la dernière publication : le site est à jour.</span>
               </p>
+            )}
+            {advice.length > 0 && (
+              <details className="of-disclosure of-advice">
+                <summary>
+                  <Icon name="sparkles" />
+                  <span className="of-disclosure__title">
+                    {advice.length} conseil{advice.length > 1 ? "s" : ""} pour être mieux trouvé par
+                    Google et les assistants IA
+                  </span>
+                  <Icon name="chevronDown" className="of-disclosure__chevron" />
+                </summary>
+                <ul className="of-changes" aria-label="Conseils">
+                  {advice.slice(0, 8).map((finding, index) => {
+                    const target = adviceTarget(finding);
+                    return (
+                      <li key={`${finding.code}-${index}`}>
+                        <Icon name={finding.severity === "high" ? "circleAlert" : "info"} />
+                        <div className="of-list__main">
+                          <strong>{finding.page?.title ?? "Site"}</strong>
+                          <span className="of-subtle">{finding.message}</span>
+                        </div>
+                        {target && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setConfirming(false);
+                              navigate(target);
+                            }}
+                          >
+                            Voir
+                          </Button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="of-subtle of-advice__tip">
+                  Votre assistant IA peut s'en charger : demandez-lui « Fais l'audit du site et
+                  propose-moi des corrections ».
+                </p>
+              </details>
             )}
             <p className="of-subtle" style={{ fontSize: 13 }}>
               La mise en ligne prend généralement 2 à 4 minutes. Chaque version reste restaurable

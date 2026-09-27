@@ -30,6 +30,8 @@ export {
   runAgentTool,
   type ToolAnnotations,
 } from "./agent/tools.js";
+export type { AuditFinding, AuditPage, AuditSeverity, SiteAudit } from "./audit.js";
+export { auditSite } from "./audit.js";
 export {
   BUSINESS_TYPES,
   type BusinessInfo,

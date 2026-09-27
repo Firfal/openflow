@@ -399,6 +399,13 @@ describe("admin OpenFlow (émulateurs)", () => {
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
+    // The site audit gives advice, without blocking: here the site's address is missing.
+    const advice = page.locator("details.of-advice");
+    await advice.locator("summary").click();
+    await advice
+      .getByRole("list", { name: "Conseils" })
+      .getByText("L'adresse du site n'est pas renseignée.")
+      .waitFor();
     await page.getByRole("button", { name: "Mettre en ligne" }).click();
     const release = await waitFor(
       async () => {

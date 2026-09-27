@@ -490,3 +490,26 @@ describe("get_stats", () => {
     expect(result.devices[0]).toEqual({ device: "Mobile", visits: 3 });
   });
 });
+
+describe("audit_site", () => {
+  it("lists what keeps the site from being found, with the tool to fix it", async () => {
+    const audit = (await runAgentTool("audit_site", {}, ctx)) as {
+      score: number;
+      findings: Array<{ code: string; severity: string; fix: string }>;
+    };
+    const codes = audit.findings.map((f) => f.code);
+    expect(codes).toEqual(expect.arrayContaining(["site-url", "business-missing"]));
+    expect(audit.findings[0]?.severity).toBe("high");
+    expect(audit.findings.find((f) => f.code === "business-missing")?.fix).toContain(
+      "update_business",
+    );
+    expect(audit.score).toBeLessThan(100);
+    // One page only: the site-wide checks are left out.
+    const one = (await runAgentTool("audit_site", { pageId: "/" }, ctx)) as {
+      findings: Array<{ code: string }>;
+      pagesChecked: number;
+    };
+    expect(one.pagesChecked).toBe(1);
+    expect(one.findings.map((f) => f.code)).not.toContain("site-url");
+  });
+});

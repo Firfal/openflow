@@ -1,5 +1,6 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
 import { z } from "zod";
+import { auditSite } from "../audit.js";
 import { BUSINESS_TYPES, type BusinessInfo, businessLines, WEEKDAYS } from "../business.js";
 import { businessSchema, sanitizeBusiness } from "../business-schema.js";
 import {
@@ -1329,6 +1330,36 @@ tool({
       releaseId,
       message:
         "Publication lancée : le site sera en ligne dans quelques minutes (voir get_publication_status).",
+    };
+  },
+});
+
+tool({
+  name: "audit_site",
+  title: "Audit du site",
+  description:
+    "Repère ce qui empêche le site d'être trouvé, compris et cité par Google et les assistants IA : descriptions manquantes ou trop longues, images sans texte alternatif, liens vers des pages masquées ou supprimées, pages trop courtes ou anciennes, fiche établissement incomplète, titres en double. Chaque point dit comment le corriger (avec quel outil). Proposez ensuite au propriétaire des corrections rédigées (descriptions, textes alternatifs…) avant de les appliquer. « pageId » limite l'audit à une page (brouillon compris).",
+  input: z.object({ pageId: pageRef.optional() }),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async ({ pageId }, ctx) => {
+    const [pages, settings, page] = await Promise.all([
+      ctx.backend.listPages(),
+      ctx.backend.getSettings(),
+      pageId ? findPage(ctx, pageId) : undefined,
+    ]);
+    const audit = auditSite({
+      config: ctx.config,
+      pages,
+      site: settings.site,
+      today: statsDay(new Date()),
+      pageId: page?.id,
+    });
+    return {
+      ...audit,
+      note:
+        audit.findings.length === 0
+          ? "Rien à signaler."
+          : "Priorité : « high », puis « medium ». Le score est indicatif (100 sans remarque).",
     };
   },
 });

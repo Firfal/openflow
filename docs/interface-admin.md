@@ -173,7 +173,10 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 La fenêtre de publication :
 - liste ce qui a changé depuis la dernière mise en ligne (pages et réglages, avec la date et l'auteur) ;
 - bloque la publication tant qu'une page contient une erreur, et propose « Corriger », qui ouvre la page en
-  cause.
+  cause ;
+- donne, repliés et sans bloquer, les **conseils pour être mieux trouvé par Google et les assistants IA**
+  (audit du site : adresse du site, fiche établissement, descriptions, textes des images, liens vers une
+  page masquée…), chacun avec « Voir », qui ouvre la page ou le réglage concerné.
 
 Pendant la mise en ligne, le bouton affiche le temps écoulé.
 

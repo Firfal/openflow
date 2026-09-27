@@ -4179,3 +4179,24 @@ button.of-style-row__reset:hover {
     vertical-align: bottom;
   }
 }
+
+/* Advice of the site audit in the publication dialog (non-blocking). */
+.of-advice {
+  border: 1px solid var(--of-border);
+  border-radius: var(--of-radius-md);
+}
+
+.of-advice > summary {
+  --of-icon-color: var(--of-accent-text);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.of-advice > .of-changes {
+  margin: 0 12px;
+}
+
+.of-advice__tip {
+  margin: 10px 12px 12px;
+  font-size: 12.5px;
+}

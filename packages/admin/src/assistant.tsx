@@ -255,6 +255,9 @@ const IDEAS = [
   "Réécris le texte de présentation, plus court et plus chaleureux.",
   "Mets les titres en bleu sur mobile.",
   "Crée une page Tarifs avec trois formules.",
+  "Fais l'audit du site et propose-moi des corrections (descriptions, textes des images).",
+  "Combien de visiteurs m'ont envoyés ChatGPT et Perplexity ce mois-ci ? Sur quelles pages ?",
+  "Nous sommes fermés du 10 au 20 août : mets à jour la fiche établissement.",
   "Dis-moi ce qui a changé depuis la dernière publication, puis publie.",
 ];
 
