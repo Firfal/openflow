@@ -211,6 +211,14 @@ export function CommandPalette() {
         run: go(() => navigate({ view: "messages" })),
       },
       {
+        id: "go:stats",
+        group: "Aller à",
+        label: "Statistiques des visites",
+        icon: "chart",
+        keywords: "audience visites visiteurs trafic chatgpt perplexity sources analytics",
+        run: go(() => navigate({ view: "stats" })),
+      },
+      {
         id: "go:assistant",
         group: "Aller à",
         label: "Connecter une IA (Claude, ChatGPT…)",

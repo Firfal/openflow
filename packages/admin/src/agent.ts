@@ -16,6 +16,7 @@ import {
   type ReleaseDoc,
   runAgentTool,
   type SettingsDoc,
+  type StatsDoc,
   toolResult,
 } from "@openflow/core";
 import {
@@ -27,6 +28,7 @@ import {
   orderBy,
   query,
   setDoc,
+  where,
 } from "firebase/firestore";
 import { getEditorBridge } from "./bridge.js";
 import {
@@ -158,6 +160,12 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
       } catch (error) {
         throw new AgentError(errorMessage(error));
       }
+    },
+    listStats: async (from) => {
+      const snap = await getDocs(
+        query(collection(db, COLLECTIONS.stats), where("day", ">=", from)),
+      );
+      return snap.docs.map((d) => d.data() as StatsDoc);
     },
     listReleases: async (max) => {
       const snap = await getDocs(

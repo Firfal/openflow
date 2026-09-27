@@ -52,6 +52,10 @@ service cloud.firestore {
     match /cms_rate_limits/{visitorId} {
       allow read, write: if false;
     }
+    match /cms_stats/{dayId} {
+      allow read: if cmsIsOwner();
+      allow write: if false;
+    }
     // END cms
 
     // Ajoutez ici les règles propres à votre site.

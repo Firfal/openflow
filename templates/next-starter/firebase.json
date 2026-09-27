@@ -23,7 +23,8 @@
       {
         "source": "/forms/submit",
         "run": { "serviceId": "cmssubmitform", "region": "europe-west1" }
-      }
+      },
+      { "source": "/cms/view", "run": { "serviceId": "cmspageview", "region": "europe-west1" } }
     ],
     "headers": [
       {

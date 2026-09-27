@@ -169,6 +169,12 @@ export function Sidebar() {
           )}
         </NavItem>
         <NavItem
+          icon="chart"
+          label="Statistiques"
+          current={route.view === "stats"}
+          onClick={() => navigate({ view: "stats" })}
+        />
+        <NavItem
           icon="sparkles"
           label="Assistant IA"
           current={route.view === "assistant"}

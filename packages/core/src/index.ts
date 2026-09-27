@@ -200,6 +200,35 @@ export {
   siteSettingsSchema,
   snapshotSchema,
 } from "./snapshot.js";
+export type {
+  PageViewBeacon,
+  Ranked,
+  StatsDevice,
+  StatsDoc,
+  StatsGroup,
+  StatsSummary,
+} from "./stats.js";
+export {
+  addDays,
+  classifySource,
+  cleanHost,
+  deviceOf,
+  isBotAgent,
+  STATS_DEVICES,
+  STATS_GROUPS,
+  STATS_MAX_SITES,
+  STATS_OPT_OUT_KEY,
+  STATS_OTHER_PAGE,
+  STATS_PATH,
+  STATS_RETENTION_MONTHS,
+  STATS_SHARDS,
+  STATS_SOURCES,
+  STATS_TIME_ZONE,
+  statsDay,
+  statsExpiry,
+  statsPeriod,
+  summarizeStats,
+} from "./stats.js";
 export {
   BREAKPOINT_MAX_WIDTH,
   BREAKPOINTS,

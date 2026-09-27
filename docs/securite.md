@@ -35,6 +35,8 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
 - `cms_messages` (messages des formulaires) : lecture et suppression par le propriétaire, qui ne peut
   modifier que `read` et `spam` ; création uniquement par la fonction `cmsSubmitForm`.
 - `cms_rate_limits` (compteurs d'envois par visiteur) : aucun accès client.
+- `cms_stats` (compteurs d'audience) : lecture par le propriétaire ; écriture par la fonction
+  `cmsPageView` uniquement.
 - Storage `cms/media` : lecture publique (images du site). Écriture réservée au propriétaire, limitée
   en type et en taille (images 15 Mo, vidéos 100 Mo) ; les SVG sont refusés pour éviter l'injection de
   scripts. `cms/media/optimized` (copies optimisées) : lecture publique, écriture par les fonctions
@@ -88,6 +90,28 @@ formulaire **de la page publiée** : les champs inconnus sont refusés, les cham
 
 Le propriétaire est prévenu de chaque message par e-mail, via Resend, dont la clé est dans Secret Manager
 (`openflow mail`). Sans clé, c'est l'alerte Cloud Monitoring « Site : nouveau message » qui le prévient.
+
+## Mesure d'audience sans cookie
+
+Les statistiques suivent les conditions de la CNIL pour une mesure d'audience **exemptée de consentement**
+([CNIL](https://www.cnil.fr/fr/cookies-solutions-pour-les-outils-de-mesure-daudience)) :
+
+- **Rien n'est stocké chez le visiteur** : ni cookie, ni identifiant, ni empreinte. Le site envoie une
+  balise par page vue (adresse de la page, largeur de la fenêtre, et pour la première page d'une visite la
+  page d'origine et `utm_source`).
+- **Aucune donnée personnelle conservée** : la fonction `cmsPageView` n'enregistre que des totaux par jour
+  (pages, sources, type d'appareil). L'adresse IP ne sert qu'à une limite anti-abus en mémoire (60 vues
+  par minute), jamais écrite.
+- **Usage réservé au propriétaire**, sans croisement ni transmission à un tiers ; les compteurs sont effacés
+  après **25 mois** (politique TTL Firestore installée par `openflow setup`).
+- **Refus respecté** : rien n'est envoyé quand le navigateur demande de ne pas suivre (« Do Not Track »,
+  Global Privacy Control), ni par les navigateurs automatisés, ni sur les appareils où le propriétaire a
+  coché « Ne pas compter mes visites ». Les robots (Googlebot, GPTBot, aperçus de liens…) sont écartés par
+  leur agent.
+- **Robuste** : une adresse qui n'est pas une page publiée compte comme « autre », la liste des sites
+  d'origine est limitée à 100 par jour, une balise pèse au plus 2 Ko, et la fonction répond toujours 204.
+
+La politique de confidentialité du site doit mentionner cette mesure (finalité, durée de conservation).
 
 ## Sauvegardes et alertes
 

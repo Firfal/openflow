@@ -3865,3 +3865,317 @@ button.of-style-row__reset:hover {
     min-height: 40px;
   }
 }
+
+/* ───────────────────────── Statistiques ───────────────────────── */
+
+.of-stats__periods {
+  align-self: flex-start;
+}
+
+.of-stats__off {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.of-stats__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 12px;
+}
+
+.of-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  background: var(--of-surface);
+  border: 1px solid var(--of-border);
+  border-radius: var(--of-radius-lg);
+}
+
+.of-stat__label {
+  color: var(--of-text-2);
+  font-size: 13px;
+}
+
+/* Big figures keep proportional digits; columns of numbers use tabular ones. */
+.of-stat__value {
+  color: var(--of-text);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.of-stat__note {
+  color: var(--of-text-3);
+  font-size: 12.5px;
+}
+
+/* One series: the accent (validated ≥ 3:1 on both surfaces), hairline grid, 2 px between bars. */
+.of-chart__plot {
+  position: relative;
+  height: 180px;
+  margin: 8px 0 0 40px;
+  border-radius: var(--of-radius-sm);
+  outline-offset: 6px;
+}
+
+.of-chart__grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.of-chart__grid > span {
+  position: relative;
+  height: 0;
+  border-top: 1px solid var(--of-border);
+}
+
+.of-chart__tick {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: -8px;
+  color: var(--of-text-3);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.of-chart__columns {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+
+.of-chart__column {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  padding: 0 1px;
+  border-radius: var(--of-radius-sm);
+}
+
+.of-chart__column.is-active {
+  background: var(--of-accent-soft);
+}
+
+.of-chart__bar {
+  display: block;
+  width: 100%;
+  max-width: 24px;
+  min-height: 2px;
+  background: var(--of-accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.of-chart__axis {
+  position: relative;
+  height: 16px;
+  margin: 8px 0 0 40px;
+  color: var(--of-text-3);
+  font-size: 11.5px;
+}
+
+.of-chart__axis span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+
+.of-chart__tooltip {
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--of-surface);
+  border: 1px solid var(--of-border);
+  border-radius: var(--of-radius-md);
+  box-shadow: var(--of-shadow-md);
+  color: var(--of-text-2);
+  font-size: 12.5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.of-chart__tooltip strong {
+  color: var(--of-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.of-table-wrap {
+  max-height: 360px;
+  margin-top: 16px;
+  overflow: auto;
+}
+
+.of-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.of-table th,
+.of-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--of-border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.of-table th:first-child {
+  text-align: left;
+}
+
+.of-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--of-surface);
+  color: var(--of-text-3);
+  font-weight: 500;
+}
+
+.of-table tbody th {
+  color: var(--of-text);
+  font-weight: 400;
+}
+
+.of-stats__grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+.of-stats__grid .of-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.of-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-rank__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+
+.of-rank__label {
+  overflow: hidden;
+  color: var(--of-text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.of-rank__value {
+  display: inline-flex;
+  gap: 8px;
+  color: var(--of-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-rank__share {
+  min-width: 3.2em;
+  color: var(--of-text-3);
+  font-weight: 400;
+  text-align: right;
+}
+
+.of-rank__track {
+  grid-column: 1 / -1;
+  height: 6px;
+}
+
+/* Square at the baseline (left), rounded at the value's end. */
+.of-rank__bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--of-accent);
+  border-radius: 0 4px 4px 0;
+}
+
+.of-rank__children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 0 2px;
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--of-border);
+  color: var(--of-text-2);
+  font-size: 12.5px;
+  list-style: none;
+}
+
+.of-rank__children li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-rank__children li > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.of-rank__more {
+  align-self: flex-start;
+  margin: -6px 0 0 -10px;
+}
+
+.of-stats__privacy .of-choices {
+  margin-top: 14px;
+}
+
+/* Phones: the three figures stay on one row, the table fits the width. */
+@media (max-width: 600px) {
+  .of-stats__tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .of-stat {
+    padding: 12px;
+  }
+  .of-stat__label {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .of-stat__value {
+    font-size: 22px;
+  }
+  .of-stat__note {
+    font-size: 11.5px;
+  }
+  .of-table th,
+  .of-table td {
+    padding: 6px 4px;
+  }
+  .of-table thead th {
+    white-space: normal;
+    vertical-align: bottom;
+  }
+}

@@ -124,14 +124,31 @@ function SiteForm() {
       <div>
         <h2>Mesure d'audience</h2>
         <p className="of-card__lead">
-          Google Analytics compte les visites. Les visiteurs choisissent d'abord d'accepter ou de
-          refuser les cookies : rien n'est mesuré sans leur accord.
+          Les statistiques comptent les visites sans cookie ni bandeau (menu Statistiques). Google
+          Analytics est facultatif : il affiche un bandeau, et ne mesure qu'après l'accord du
+          visiteur.
         </p>
+      </div>
+      <div className="of-choices">
+        <label className="of-checkbox">
+          <input
+            type="checkbox"
+            checked={site.stats !== "off"}
+            onChange={(e) => setSite({ ...site, stats: e.target.checked ? undefined : "off" })}
+          />
+          <span>
+            Mesurer les visites sans cookie
+            <span className="of-field__hint">
+              Pages lues, sources des visites (moteurs, réseaux, assistants IA), appareils. Aucune
+              donnée personnelle.
+            </span>
+          </span>
+        </label>
       </div>
       <FormField
         label="Identifiant Google Analytics"
         error={gaError}
-        hint="Dans Google Analytics : Administration > Flux de données > votre site, « ID de mesure ». Laissez vide pour ne rien mesurer."
+        hint="Dans Google Analytics : Administration > Flux de données > votre site, « ID de mesure ». Laissez vide si les statistiques vous suffisent."
       >
         <input
           className="of-input of-mono"

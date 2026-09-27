@@ -14,6 +14,7 @@ import {
   type SiteSchema,
   type Snapshot,
   SnapshotError,
+  slugToPath,
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -71,6 +72,7 @@ import {
   startAuthorization,
   tokenRequestParams,
 } from "./oauth.js";
+import { parseBeacon, recordPageView } from "./stats.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -831,5 +833,65 @@ export const cmsSubmitForm = onRequest(
       logger.error("OpenFlow form failed", { error: String(error) });
       res.status(500).json({ ok: false, error: "Envoi impossible pour le moment : réessayez." });
     }
+  },
+);
+
+let pagesCache: { at: number; value: Awaited<ReturnType<typeof livePagesUncached>> } | undefined;
+
+async function livePagesUncached() {
+  const snapshot = await liveSnapshot();
+  if (!snapshot) return undefined;
+  let host: string | undefined;
+  try {
+    host = snapshot.site.url ? new URL(snapshot.site.url).hostname : undefined;
+  } catch {
+    host = undefined;
+  }
+  return {
+    paths: new Set(snapshot.pages.map((page) => slugToPath(page.slug))),
+    host,
+    off: snapshot.site.stats === "off",
+  };
+}
+
+/** Pages of the published site, looked up at most once a minute (one read per view otherwise). */
+async function livePages() {
+  if (pagesCache && Date.now() - pagesCache.at < 60_000) return pagesCache.value;
+  const value = await livePagesUncached();
+  pagesCache = { at: Date.now(), value };
+  return value;
+}
+
+/**
+ * Audience without cookies: `POST /cms/view` (Hosting rewrite), one beacon per page view of the
+ * published site, added to the day's counters (« Statistiques » in the admin). Always answers 204,
+ * so a beacon never shows an error in the visitor's console.
+ */
+export const cmsPageView = onRequest(
+  { region, memory: "256MiB", maxInstances: 5, invoker: "public", cors: false },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Cache-Control", "no-store");
+    if (req.method !== "POST") {
+      res
+        .set("Allow", "POST")
+        .status(req.method === "OPTIONS" ? 204 : 405)
+        .end();
+      return;
+    }
+    const ip =
+      String(req.headers["x-forwarded-for"] ?? req.ip ?? "")
+        .split(",")[0]
+        ?.trim() ?? "";
+    try {
+      await recordPageView(
+        parseBeacon(req.rawBody ?? req.body),
+        { userAgent: req.get("user-agent"), ip },
+        { db: getFirestore(), livePages, salt: projectId() },
+      );
+    } catch (error) {
+      logger.warn("OpenFlow page view not counted", { error: String(error) });
+    }
+    res.status(204).end();
   },
 );

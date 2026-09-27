@@ -20,9 +20,11 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
   - **Pages**, puis une entrée par collection du site (« Actualités », « Réalisations »…), puis **Médias** ;
   - **Messages**, avec le nombre de messages non lus ;
+  - **Statistiques** ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
   - **Réglages**, qui se déplie en quatre sous-pages : Contenu commun, Thème, Site et référencement
-    (identité, langue, **Mesure d'audience** : l'identifiant Google Analytics `G-…`, et **Robots des IA** :
+    (identité, langue, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
+    l'identifiant Google Analytics `G-…`, facultatif, et **Robots des IA** :
     autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
     **Établissement** (voir plus bas) ;
   - **Historique** ;
@@ -68,6 +70,18 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
     messagerie, adressée au visiteur), **Indésirable**, **Marquer comme non lu** et **Supprimer**.
   - Chaque nouveau message est aussi envoyé par e-mail au propriétaire (voir « Formulaires » dans
     [securite.md](securite.md)).
+- **Statistiques** : les visites du site publié, mesurées sans cookie ni bandeau (voir
+  [securite.md](securite.md#mesure-daudience-sans-cookie)).
+  - Période : **7 jours**, **30 jours** (par défaut) ou **90 jours**.
+  - Trois chiffres : **Visites**, **Pages vues** et **Depuis un assistant IA** (avec leur part des visites).
+  - Un graphique des visites par jour (par semaine sur 90 jours). Au survol, au doigt ou au clavier
+    (flèches, Début, Fin), il affiche les visites, celles venues d'une IA et les pages vues du jour ; « Voir
+    le tableau » donne toutes les valeurs.
+  - **Pages les plus vues** ; **D'où viennent les visites**, groupées : Assistants IA (ChatGPT, Perplexity,
+    Claude, Gemini, Copilot, Le Chat…), Moteurs de recherche, Réseaux sociaux, Autres sites (et campagnes
+    `utm_source`), Accès direct ; **Pages où arrivent les assistants IA** ; **Appareils**.
+  - En bas, « Ne pas compter mes visites sur cet appareil », pour que le propriétaire ne gonfle pas ses
+    chiffres.
 - **Établissement** (Réglages) : la fiche que lisent Google, les assistants IA et le site.
   - Activité (boulangerie, restaurant, artisan…), nom, téléphone, e-mail, adresse, zone desservie, gamme
     de prix.
@@ -91,7 +105,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   signalé. Deux boutons : « Autoriser » et « Refuser ».
 - **Recherche rapide** (<kbd>⌘</kbd> <kbd>K</kbd> ou <kbd>Ctrl</kbd> <kbd>K</kbd>, comme Quick Find dans Webflow
   et la palette de commandes de Framer) : ouvrir une page, un élément de collection ou un réglage, créer une
-  page ou un élément, publier, voir le site, connecter une IA, changer d'apparence.
+  page ou un élément, publier, voir le site, voir les statistiques, connecter une IA, changer d'apparence.
 
 ## Éditeur de page
 

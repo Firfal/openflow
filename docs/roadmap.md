@@ -19,7 +19,8 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
 3. Robots des IA : refuser l'entraînement sans quitter la recherche IA : **réalisé**.
 4. WebMCP à jour (`document.modelContext`) et formulaires déclarés pour les agents des visiteurs :
    **réalisé**.
-5. Mesure d'audience sans cookie, avec les visites venant des assistants IA.
+5. Mesure d'audience sans cookie, avec les visites venant des assistants IA (« Statistiques », outil
+   `get_stats`) : **réalisée**.
 6. Audit d'accessibilité « prêt pour les agents » dans la norme.
 7. Collections typées : événements et offres, avec leurs données structurées.
 8. Outils d'audit dans le MCP.

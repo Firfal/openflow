@@ -79,14 +79,14 @@ d'études privées sont donnés avec leur source et doivent être pris avec prud
 
 ## Ce qu'OpenFlow fait déjà
 
-Site statique rapide, `llms.txt` et `llms-full.txt`, sitemap, JSON-LD `WebSite`, `Article` et fil
-d'Ariane, flux RSS des collections, collections avec dates, MCP avec OAuth et WebMCP, formulaires avec
-anti-spam, Google Analytics avec consentement, images optimisées.
+Avant cette veille : site statique rapide, `llms.txt` et `llms-full.txt`, sitemap, JSON-LD `WebSite`,
+`Article` et fil d'Ariane, flux RSS des collections, collections avec dates, MCP avec OAuth et WebMCP,
+formulaires avec anti-spam, Google Analytics avec consentement, images optimisées.
 
 ## Priorités retenues
 
 Réalisés en septembre 2026 : la fiche établissement (1), la fraîcheur et IndexNow (2), les robots des IA
-(3), WebMCP à jour et les formulaires déclarés (4).
+(3), WebMCP à jour et les formulaires déclarés (4), la mesure d'audience sans cookie (5).
 
 
 | # | Chantier | Effort | Pourquoi |

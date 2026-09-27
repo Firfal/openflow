@@ -2,6 +2,7 @@ import { buildThemeCss, type OpenFlowConfig } from "@openflow/core";
 import type { ReactNode } from "react";
 import { OpenFlowAnalytics } from "./analytics.js";
 import { getSettings, getSite, getSnapshot, getTheme } from "./snapshot.js";
+import { OpenFlowStats } from "./stats.js";
 
 /**
  * Creates the layout of the public pages (`app/(site)/layout.tsx`) from `config.layout`, fed with
@@ -41,6 +42,8 @@ export function createOpenFlowLayout(config: OpenFlowConfig) {
           children
         )}
         {site.gaMeasurementId && <OpenFlowAnalytics measurementId={site.gaMeasurementId} />}
+        {/* Audience without cookies (Statistiques), unless the owner turned it off. */}
+        {site.stats !== "off" && <OpenFlowStats />}
       </>
     );
   };

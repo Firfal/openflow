@@ -520,14 +520,22 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
     });
   }
 
-  // Counters of the forms' flood limit: removed by Firestore once expired (TTL).
-  const ttlUrl = `${firestoreApi}/(default)/collectionGroups/${COLLECTIONS.rateLimits}/fields/expiresAt`;
-  const ttl = await get<{ ttlConfig?: { state?: string } }>(client, ttlUrl).catch(() => undefined);
-  if (ttl?.ttlConfig) log.ok("Nettoyage automatique des compteurs anti-spam");
-  else {
-    await act("Nettoyage automatique des compteurs anti-spam (TTL)", () =>
-      send(client, `${ttlUrl}?updateMask=ttlConfig`, "PATCH", { ttlConfig: {} }),
+  // Removed by Firestore once expired (TTL): the forms' flood counters (10 min) and the audience
+  // counters (25 months, CNIL).
+  for (const [group, label] of [
+    [COLLECTIONS.rateLimits, "des compteurs anti-spam"],
+    [COLLECTIONS.stats, "des statistiques après 25 mois"],
+  ] as const) {
+    const ttlUrl = `${firestoreApi}/(default)/collectionGroups/${group}/fields/expiresAt`;
+    const ttl = await get<{ ttlConfig?: { state?: string } }>(client, ttlUrl).catch(
+      () => undefined,
     );
+    if (ttl?.ttlConfig) log.ok(`Nettoyage automatique ${label}`);
+    else {
+      await act(`Nettoyage automatique ${label} (TTL)`, () =>
+        send(client, `${ttlUrl}?updateMask=ttlConfig`, "PATCH", { ttlConfig: {} }),
+      );
+    }
   }
 
   if (manual.length > 0) {

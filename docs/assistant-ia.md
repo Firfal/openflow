@@ -56,6 +56,7 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `update_business` | Fiche établissement : coordonnées, horaires, fermetures exceptionnelles (« nous sommes fermés du 10 au 20 août ») |
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |
+| `get_stats` | Statistiques des 7, 30 ou 90 derniers jours : visites, pages vues, pages les plus lues, sources (dont les assistants IA), pages où arrivent les visiteurs envoyés par une IA, appareils |
 | `publish`, `get_publication_status` | Mise en ligne et suivi |
 
 Chaque outil valide ce qu'il reçoit avec les mêmes règles que l'admin (`validatePageData`, liste blanche du

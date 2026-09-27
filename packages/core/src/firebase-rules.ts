@@ -54,6 +54,10 @@ match /cms_messages/{messageId} {
 }
 match /cms_rate_limits/{visitorId} {
   allow read, write: if false;
+}
+match /cms_stats/{dayId} {
+  allow read: if cmsIsOwner();
+  allow write: if false;
 }`;
 
 export const STORAGE_RULES_BLOCK = `function cmsIsOwner() {

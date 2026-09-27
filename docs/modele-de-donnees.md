@@ -23,6 +23,8 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 | `cms_agent_codes/{hash}` | Codes d'autorisation, à usage unique (5 min) | `cmsAgentConsent` | `cmsMcp` |
 | `cms_messages/{id}` | Messages des formulaires : `formId`, `page`, `formTitle`, `fields` (`[{ label, value }]` dans l'ordre du formulaire), `email` (pour répondre), `createdAt`, `read`, `spam`, `score` (reCAPTCHA) | `cmsSubmitForm` ; le propriétaire ne change que `read` et `spam` | Admin (Messages) |
 | `cms_rate_limits/{empreinte}` | Envois récents d'un visiteur (`start`, `count`, `expiresAt`, effacé par TTL) | `cmsSubmitForm` | `cmsSubmitForm` |
+| `cms_stats/{jour}-{0..3}` | Compteurs d'audience d'une journée (heure de Paris), répartis sur 4 documents : `day`, `views`, `visits`, `pages` (adresse → vues, `(autre)` pour une adresse inconnue), `sources` (clé de source → visites : `chatgpt`, `google`, `direct`, `site`…), `devices` (`mobile`, `tablet`, `desktop`), `aiPages` (page d'arrivée des visites venues d'une IA), `expiresAt` (25 mois, TTL) | `cmsPageView` | Admin (Statistiques), outil `get_stats` |
+| `cms_stats/{jour}-sites` | Sites qui ont envoyé des visites ce jour-là : `sites` (hôte → visites, 100 au plus, puis `autres`), `expiresAt` | `cmsPageView` | Admin (Statistiques), outil `get_stats` |
 
 Taille : une page Puck pèse généralement quelques dizaines de Ko. L'admin avertit au-delà de 800 Ko et
 refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore). Le contenu est séparé de la

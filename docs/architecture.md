@@ -9,7 +9,7 @@ Projet Firebase du client (plan Blaze)
 ├─ Firestore         → brouillons des pages, réglages, historique des publications, messages
 ├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
 ├─ Cloud Functions   → cmsClaimOwner, cmsPublish, cmsOnBuildStatus, cmsRestoreRelease,
-│                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm
+│                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm, cmsPageView
 ├─ Cloud Build       → reconstruit le site à chaque « Publier »
 └─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
                        reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
@@ -62,7 +62,13 @@ livraison, sans rien refaire de ce qui est déjà en place.
   `videoProps` des `<source>` (720p sur mobile). L'original reste la solution de repli.
 - **Formulaires** : `<OpenFlowForm>` envoie à `/forms/submit` (réécriture vers `cmsSubmitForm`), qui
   vérifie l'envoi contre la page publiée (voir [securite.md](securite.md#formulaires)).
-- **Mesure d'audience** : si le propriétaire a saisi un identifiant Google Analytics, `createOpenFlowLayout`
+- **Mesure d'audience sans cookie** : `createOpenFlowLayout` ajoute `<OpenFlowStats>` (sauf si le
+  propriétaire l'a désactivée). À chaque page affichée, il envoie avec `sendBeacon` quelques octets à
+  `/cms/view` (réécriture vers `cmsPageView`) : l'adresse de la page, la largeur de la fenêtre et, pour la
+  première page d'une visite, la page d'origine et `utm_source`. La fonction ajoute la vue aux compteurs du
+  jour (`cms_stats`) ; l'admin les lit dans « Statistiques » (voir
+  [securite.md](securite.md#mesure-daudience-sans-cookie)).
+- **Google Analytics** (facultatif) : si le propriétaire a saisi un identifiant, `createOpenFlowLayout`
   ajoute `<OpenFlowAnalytics>`, qui ne charge rien avant l'accord du visiteur.
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `CMS_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.

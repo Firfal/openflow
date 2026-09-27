@@ -30,6 +30,8 @@ export const COLLECTIONS = {
   messages: "cms_messages",
   /** Submissions per visitor (hashed address), against floods. Server only. */
   rateLimits: "cms_rate_limits",
+  /** Audience counters per day, without cookies (`cmsPageView`), read in « Statistiques ». */
+  stats: "cms_stats",
 } as const;
 
 /** Well-known document ids. */
@@ -62,6 +64,8 @@ export const FUNCTION_NAMES = {
   agentConsent: "cmsAgentConsent",
   /** Receives the forms of the published site (`/forms/submit`, Hosting rewrite). */
   submitForm: "cmsSubmitForm",
+  /** Counts the page views of the published site (`/cms/view`, Hosting rewrite). */
+  pageView: "cmsPageView",
   mcp: "cmsMcp",
 } as const;
 
@@ -174,6 +178,8 @@ export interface SiteSettings {
    * robots.txt. AI search crawlers stay allowed either way, so the site keeps being cited.
    */
   aiTraining?: "allow" | "block";
+  /** `off` stops the audience measurement without cookies (Statistiques). On by default. */
+  stats?: "on" | "off";
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */

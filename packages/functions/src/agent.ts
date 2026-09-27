@@ -21,6 +21,7 @@ import {
   type SettingsDoc,
   type SiteSchema,
   STORAGE_PATHS,
+  type StatsDoc,
 } from "@openflow/core";
 import { imageDimensions } from "@openflow/core/node";
 import type { Firestore } from "firebase-admin/firestore";
@@ -320,6 +321,10 @@ export function adminBackend({
       return { id: ref.id, ...doc };
     },
     publish,
+    async listStats(from) {
+      const snap = await db.collection(COLLECTIONS.stats).where("day", ">=", from).get();
+      return snap.docs.map((d) => d.data() as StatsDoc);
+    },
     async listReleases(max) {
       const snap = await db
         .collection(COLLECTIONS.releases)

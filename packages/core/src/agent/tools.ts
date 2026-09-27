@@ -19,6 +19,14 @@ import { collectEditablePaths } from "../marks.js";
 import type { MediaDoc, PageSeo, PageStatus, ReleaseStatus, SiteSettings } from "../model.js";
 import { isValidSlug, normalizeSlug, slugify, slugToPath } from "../slug.js";
 import {
+  addDays,
+  STATS_GROUPS,
+  type StatsDoc,
+  statsDay,
+  statsPeriod,
+  summarizeStats,
+} from "../stats.js";
+import {
   type ResponsiveStyle,
   type SectionStyle,
   STYLE_KEY,
@@ -115,6 +123,8 @@ export interface AgentBackend {
   importMedia(url: string, alt?: string): Promise<AgentMedia>;
   publish(): Promise<{ releaseId: string }>;
   listReleases(max: number): Promise<AgentRelease[]>;
+  /** Audience counters (`cms_stats`) from this day (`YYYY-MM-DD`) on. */
+  listStats(from: string): Promise<StatsDoc[]>;
 }
 
 export interface AgentContext {
@@ -1319,6 +1329,53 @@ tool({
       releaseId,
       message:
         "Publication lancée : le site sera en ligne dans quelques minutes (voir get_publication_status).",
+    };
+  },
+});
+
+tool({
+  name: "get_stats",
+  title: "Statistiques des visites",
+  description:
+    "Visites du site publié, mesurées sans cookie : visites, pages vues, pages les plus lues, sources (assistants IA comme ChatGPT ou Perplexity, moteurs de recherche, réseaux sociaux, autres sites, accès direct), pages où arrivent les visiteurs envoyés par une IA, appareils. « days » : 7, 30 (par défaut) ou 90 derniers jours, aujourd'hui compris.",
+  input: z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional() }),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async ({ days = 30 }, ctx) => {
+    const today = statsDay(new Date());
+    const period = statsPeriod(days, today);
+    const [docs, pages] = await Promise.all([
+      ctx.backend.listStats(addDays(today, -(days - 1))),
+      ctx.backend.listPages(),
+    ]);
+    const titles = new Map(pages.map((p) => [slugToPath(p.slug), p.title]));
+    const summary = summarizeStats(docs, period, (path) => titles.get(path) ?? path);
+    const top = <T extends { count: number }>(list: T[], max = 10) => list.slice(0, max);
+    return {
+      period: { from: summary.from, to: summary.to, days },
+      visits: summary.visits,
+      pageViews: summary.views,
+      aiVisits: summary.aiVisits,
+      pages: top(summary.pages).map((p) => ({ path: p.key, title: p.label, views: p.count })),
+      sources: summary.groups.map((group) => ({
+        group: STATS_GROUPS[group.key],
+        visits: group.count,
+        detail:
+          group.key === "site"
+            ? top(summary.sites).map((s) => ({ source: s.label, visits: s.count }))
+            : summary.sources
+                .filter((s) => s.group === group.key)
+                .map((s) => ({ source: s.label, visits: s.count })),
+      })),
+      aiLandingPages: top(summary.aiPages).map((p) => ({
+        path: p.key,
+        title: p.label,
+        visits: p.count,
+      })),
+      devices: summary.devices.map((d) => ({ device: d.label, visits: d.count })),
+      note:
+        summary.views === 0
+          ? "Aucune visite mesurée sur la période : le site n'est peut-être pas encore publié, ou la mesure est désactivée (Réglages > Site et référencement)."
+          : "Une visite commence quand un visiteur arrive d'ailleurs ; sans cookie, un même visiteur revenu deux fois compte deux visites.",
     };
   },
 });

@@ -46,6 +46,7 @@ export const siteSettingsSchema = z.object({
     .catch(undefined),
   business: businessSchema.optional().catch(undefined),
   aiTraining: z.enum(["allow", "block"]).optional().catch(undefined),
+  stats: z.enum(["on", "off"]).optional().catch(undefined),
 });
 
 export const snapshotPageSchema = z.object({
@@ -151,6 +152,7 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
   const recaptchaSiteKey = input.integrations?.recaptchaSiteKey;
   const indexNowKey = input.integrations?.indexNowKey;
   if (site.aiTraining !== "block") delete site.aiTraining;
+  if (site.stats !== "off") delete site.stats;
   return {
     version: SNAPSHOT_VERSION,
     releaseId: input.releaseId,

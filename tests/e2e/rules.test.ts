@@ -6,7 +6,17 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { getBytes, ref, uploadBytes } from "firebase/storage";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
@@ -62,6 +72,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "cms_agent_clients/cmscli_a"), { name: "Claude", redirectUris: [] });
     await setDoc(doc(db, "cms_agent_requests/r1"), { clientId: "cmscli_a" });
     await setDoc(doc(db, "cms_agent_codes/c1"), { clientId: "cmscli_a" });
+    await setDoc(doc(db, "cms_stats/2026-09-27-0"), { day: "2026-09-27", views: 3 });
     await uploadBytes(ref(context.storage(), "cms/media/photo.png"), new Uint8Array([1, 2, 3]), {
       contentType: "image/png",
     });
@@ -133,6 +144,16 @@ describe("Firestore rules", () => {
     }
   });
 
+  it("lets the owner read the audience counters, only the functions write them", async () => {
+    const db = owner().firestore();
+    await assertSucceeds(getDoc(doc(db, "cms_stats/2026-09-27-0")));
+    await assertSucceeds(
+      getDocs(query(collection(db, "cms_stats"), where("day", ">=", "2026-09-01"))),
+    );
+    await assertFails(setDoc(doc(db, "cms_stats/2026-09-27-0"), { views: 1000 }));
+    await assertFails(deleteDoc(doc(db, "cms_stats/2026-09-27-0")));
+  });
+
   for (const [who, context] of [
     ["an authenticated non-owner", intruder],
     ["an anonymous visitor", anonymous],
@@ -148,6 +169,8 @@ describe("Firestore rules", () => {
       await assertFails(getDoc(doc(db, "cms_releases/r1")));
       await assertFails(getDoc(doc(db, "cms_agent_tokens/k1")));
       await assertFails(deleteDoc(doc(db, "cms_agent_tokens/k1")));
+      await assertFails(getDoc(doc(db, "cms_stats/2026-09-27-0")));
+      await assertFails(setDoc(doc(db, "cms_stats/2026-09-27-9"), { views: 1 }));
     });
   }
 });

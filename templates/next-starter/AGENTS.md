@@ -20,6 +20,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 - `app/llms.txt/` et `app/llms-full.txt/` : le site tel que le lisent les IA. `app/indexnow.txt/` : la clé
   qui permet d'annoncer les pages modifiées à Bing et Copilot à chaque publication. Les réécritures `/mcp` de
   `firebase.json` : l'adresse où le propriétaire branche son IA (Claude, ChatGPT…).
+- Statistiques : `createOpenFlowLayout` ajoute la mesure d'audience sans cookie, envoyée à `/cms/view`
+  (réécriture de `firebase.json`). Rien à coder ; le propriétaire la lit dans « Statistiques ».
 - Formulaires : la section `ContactForm` (champs `formFieldsField()`, affichage `<OpenFlowForm>` de
   `@openflow/next/forms`). Les messages arrivent dans l'admin (« Messages ») via la réécriture
   `/forms/submit` de `firebase.json`. Pour un autre formulaire (devis, inscription), reprends ce modèle :

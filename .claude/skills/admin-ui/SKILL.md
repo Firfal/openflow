@@ -67,6 +67,10 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
 - AI entry points (sidebar « Assistant IA » with a green dot, Pages card, editor ✦ button, ⌘K entry) all lead
   to the same view. New button names must not contain « Assistant IA », « Réglages » or « Modifier »
   (substring selectors in the e2e tests).
+- Charts follow the `dataviz` method: one series in `--of-accent` (validated ≥ 3:1 on both surfaces),
+  columns ≤ 24 px with a 4 px rounded data end and 2 px between them, hairline grid, text in text tokens,
+  a tooltip on hover and keyboard (the plot is a `role="slider"` over the columns), and a table view.
+  Ranked lists (`.of-rank`) use the same hue for every bar; figures are `.of-stat` tiles.
 - Right panel: one column, no tabs. The clicked element's content first (only its fields), then « Style »
   closed by default with a summary in its header (« Mobile · 2 réglages »), then the section's other fields.
   Open/closed states the owner chooses are remembered in `localStorage` (inside `try`/`catch`).
@@ -90,7 +94,8 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   labels « Titre » (exact) / « Adresse » / « Date de publication », « Créer et modifier »,
   « Retour à « Actualités » », business profile: « Établissement », checkbox « Lundi », « Lundi,
   ouverture », « Ajouter une fermeture », list « Fermetures exceptionnelles », « Du » (exact),
-  « Enregistrer la fiche »,
+  « Enregistrer la fiche », statistics: « Statistiques » (sidebar, exact), lists « Sources des visites » /
+  « Pages où arrivent les assistants IA », slider « Visites par jour », class `.of-stat`,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

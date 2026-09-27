@@ -13,7 +13,9 @@ import {
   imageField,
   linkField,
   runAgentTool,
+  type StatsDoc,
   sanitizeRichText,
+  statsDay,
   validatePageData,
 } from "../src/index.js";
 
@@ -85,6 +87,20 @@ function memoryBackend() {
     theme: {},
   };
   const saves: string[] = [];
+  const today = statsDay(new Date());
+  const stats: StatsDoc[] = [
+    {
+      day: today,
+      views: 6,
+      visits: 4,
+      pages: { "/": 5, "/menu/": 1 },
+      sources: { chatgpt: 2, google: 1, direct: 1 },
+      devices: { mobile: 3, desktop: 1 },
+      aiPages: { "/": 2 },
+    },
+    { day: today, sites: {} },
+    { day: "2020-01-01", views: 100, visits: 100 },
+  ];
   const home: Data = {
     root: { props: {} },
     content: [
@@ -165,6 +181,7 @@ function memoryBackend() {
     }),
     publish: async () => ({ releaseId: "r1" }),
     listReleases: async () => [{ id: "r0", status: "live", createdAt: "2026-09-01T00:00:00Z" }],
+    listStats: async (from) => stats.filter((doc) => doc.day >= from),
   };
   return { backend, pages, settings, saves };
 }
@@ -444,5 +461,32 @@ describe("MCP protocol", () => {
       options(),
     )) as any[];
     expect(batch).toEqual([{ jsonrpc: "2.0", id: 6, result: {} }]);
+  });
+});
+
+describe("get_stats", () => {
+  it("sums the audience of the period, AI assistants named, pages by title", async () => {
+    const pages = await store.backend.listPages();
+    const result = (await runAgentTool("get_stats", { days: 7 }, ctx)) as {
+      visits: number;
+      pageViews: number;
+      aiVisits: number;
+      pages: Array<{ path: string; title: string; views: number }>;
+      sources: Array<{ group: string; visits: number; detail: Array<{ source: string }> }>;
+      aiLandingPages: Array<{ path: string; visits: number }>;
+      devices: Array<{ device: string; visits: number }>;
+    };
+    expect(result.visits).toBe(4);
+    expect(result.pageViews).toBe(6);
+    expect(result.aiVisits).toBe(2);
+    const home = pages.find((p) => p.slug === "");
+    expect(result.pages[0]).toEqual({ path: "/", title: home?.title ?? "/", views: 5 });
+    expect(result.sources[0]).toMatchObject({
+      group: "Assistants IA",
+      visits: 2,
+      detail: [{ source: "ChatGPT", visits: 2 }],
+    });
+    expect(result.aiLandingPages).toEqual([{ path: "/", title: home?.title ?? "/", visits: 2 }]);
+    expect(result.devices[0]).toEqual({ device: "Mobile", visits: 3 });
   });
 });

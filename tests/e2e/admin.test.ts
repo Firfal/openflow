@@ -49,6 +49,29 @@ async function waitFor<T>(
   throw new Error(`Délai dépassé : ${label}`);
 }
 
+/** Audience counters of every day and shard, added up. */
+async function statsTotal() {
+  const total = {
+    views: 0,
+    visits: 0,
+    pages: {} as Record<string, number>,
+    sources: {} as Record<string, number>,
+    devices: {} as Record<string, number>,
+    aiPages: {} as Record<string, number>,
+  };
+  for (const doc of (await db.collection("cms_stats").get()).docs) {
+    const data = doc.data();
+    total.views += data.views ?? 0;
+    total.visits += data.visits ?? 0;
+    for (const key of ["pages", "sources", "devices", "aiPages"] as const) {
+      for (const [name, count] of Object.entries((data[key] ?? {}) as Record<string, number>)) {
+        total[key][name] = (total[key][name] ?? 0) + count;
+      }
+    }
+  }
+  return total;
+}
+
 async function quickLogin(email: string) {
   await page.getByLabel("Votre adresse e-mail").fill(email);
   await page.getByRole("button", { name: "Connexion rapide (émulateur local)" }).click();
@@ -499,6 +522,66 @@ describe("admin OpenFlow (émulateurs)", () => {
     );
     expect((await db.collection("cms_messages").get()).size).toBe(1);
     await dialog.getByRole("button", { name: "Fermer" }).click();
+  });
+
+  it("counts visits without cookies, the AI assistant named, in « Statistiques »", async () => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+    });
+    // Automated browsers are not counted (navigator.webdriver): this one plays a visitor.
+    await context.addInitScript(() =>
+      Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }),
+    );
+    const visitor = await context.newPage();
+    try {
+      // A link from ChatGPT's answer (it adds utm_source).
+      await visitor.goto(`http://localhost:${PORT}/?utm_source=chatgpt.com`);
+      await waitFor(
+        async () => ((await statsTotal()).views >= 1 ? true : undefined),
+        30_000,
+        "première page vue comptée",
+      );
+      // A link followed on the site (the referrer is the site itself: same visit).
+      await visitor.evaluate(() => {
+        window.location.href = "/actualites/";
+      });
+      await visitor.waitForURL(/\/actualites\/$/);
+      await waitFor(
+        async () => ((await statsTotal()).views >= 2 ? true : undefined),
+        60_000,
+        "deuxième page vue comptée",
+      );
+      // Nothing is stored in the visitor's browser.
+      expect(await context.cookies()).toEqual([]);
+    } finally {
+      await context.close();
+    }
+    const total = await statsTotal();
+    expect(total).toMatchObject({ views: 2, visits: 1 });
+    expect(total.sources).toEqual({ chatgpt: 1 });
+    expect(total.devices).toEqual({ mobile: 1 });
+    expect(total.aiPages).toEqual({ "/": 1 });
+    expect(total.pages).toEqual({ "/": 1, "/actualites/": 1 });
+
+    await page.getByRole("button", { name: "Statistiques", exact: true }).click();
+    await page.getByRole("heading", { name: "Statistiques" }).waitFor();
+    const ai = page.locator(".of-stat", { hasText: "Depuis un assistant IA" });
+    await expect.poll(() => ai.textContent()).toContain("100 % des visites");
+    await page.getByRole("list", { name: "Sources des visites" }).getByText("ChatGPT").waitFor();
+    await page
+      .getByRole("list", { name: "Pages où arrivent les assistants IA" })
+      .getByText("Accueil")
+      .waitFor();
+    // The chart reads with the keyboard: today is the last column.
+    const chart = page.getByRole("slider", { name: "Visites par jour" });
+    await chart.focus();
+    await chart.press("End");
+    expect(await chart.getAttribute("aria-valuetext")).toMatch(
+      /1 visite, 1 depuis un assistant IA, 2 pages vues$/,
+    );
+    await page.screenshot({ path: path.join(SCREENSHOTS, "07-stats.png") });
   });
 
   it("edits global settings (site name)", async () => {

@@ -32,6 +32,7 @@ import { PagesView } from "./pages.js";
 import { withFirestore } from "./services.js";
 import { SettingsView } from "./settings.js";
 import { Sidebar } from "./shell.js";
+import { StatsView } from "./stats.js";
 import { IconButton, Spinner } from "./ui.js";
 import { useWebMcp } from "./webmcp.js";
 
@@ -87,6 +88,7 @@ function Shell() {
         {route.view === "media" && <MediaView />}
         {route.view === "assistant" && <AssistantView />}
         {route.view === "messages" && <MessagesView />}
+        {route.view === "stats" && <StatsView />}
         {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
         {route.view === "history" && <HistoryView />}
       </main>
