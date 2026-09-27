@@ -11,15 +11,15 @@ import {
   type Viewports,
 } from "@puckeditor/core";
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { type EditorBridge, getEditorBridge, setEditorBridge } from "./agent.js";
 import { flushAllAutosaves, type SaveState } from "./autosave.js";
+import { type EditorBridge, getEditorBridge, setEditorBridge } from "./bridge.js";
 import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
 import { FieldsPanel } from "./panel.js";
 import { PublishControl } from "./publish.js";
-import { openCommandPalette, SiteMark } from "./shell.js";
-import { Button, IconButton, Menu, MOD_KEY } from "./ui.js";
+import { openCommandPalette } from "./shell.js";
+import { Button, IconButton, Menu, MOD_KEY, SiteMark } from "./ui.js";
 
 /**
  * Editor chrome shared with Puck overrides. Overrides are module constants (Puck rebuilds its

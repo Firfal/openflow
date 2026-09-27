@@ -25,7 +25,7 @@ le site.
 Elles se trouvent dans des blocs `// BEGIN cms` … `// END cms`, dont le contenu de référence
 est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifie qu'ils ne sont pas modifiés.
 
-- `cms_site`, `cms_pages`, `cms_media` : lecture et écriture réservées au propriétaire. Les pages sont
+- `cms_site`, `cms_pages`, `cms_page_content`, `cms_media` : lecture et écriture réservées au propriétaire. Les pages sont
   validées (champs obligatoires, statut).
 - `cms_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
 - `cms_system` : aucun accès client.

@@ -10,7 +10,8 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
 | `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
-| `cms_pages/{pageId}` | `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
+| `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy` | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages, en direct), `cmsPublish` |
+| `cms_page_content/{pageId}` | Contenu de la page (même identifiant) : `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin (enregistrement automatique, écrit avec la date de la fiche), `openflow seed`, `cmsMcp` | Admin (à l'ouverture de la page), `cmsPublish`, `cmsMcp` |
 | `cms_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
 | `cms_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` ; `variants` (copies optimisées : `url`, `width`, `height`, `size`), `poster` (aperçu d'une vidéo), `optimization` (`status` : `pending`, `done`, `skipped` ou `failed`) | Admin, `openflow seed`, `cmsOptimizeMedia` (copies) | Admin (médiathèque), `cmsPublish` |
 | `cms_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `cmsPublish` |
@@ -24,7 +25,9 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 | `cms_rate_limits/{empreinte}` | Envois récents d'un visiteur (`start`, `count`, `expiresAt`, effacé par TTL) | `cmsSubmitForm` | `cmsSubmitForm` |
 
 Taille : une page Puck pèse généralement quelques dizaines de Ko. L'admin avertit au-delà de 800 Ko et
-refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore).
+refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore). Le contenu est séparé de la
+fiche pour que la liste des pages, suivie en direct par l'admin, reste légère quel que soit le nombre ou le
+poids des pages : elle ne lit que les fiches, et le contenu d'une page n'est lu qu'à son ouverture.
 
 ### Collections prévues
 

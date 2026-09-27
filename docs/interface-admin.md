@@ -167,5 +167,10 @@ Sur Windows et Linux, <kbd>Ctrl</kbd> remplace <kbd>⌘</kbd>.
 - `packages/admin/src/assistant.tsx` contient la page Assistant IA et la carte du tableau de bord, et
   `connect.tsx` l'écran d'autorisation d'une IA.
 - `packages/admin/src/messages.tsx` contient la boîte de réception des formulaires.
+- L'admin se charge par étapes : `app.tsx` (connexion, Firebase Auth seulement), `owner.tsx` (tableau de bord,
+  Firestore via `services.ts`), puis `editor.tsx` et `settings-editors.tsx` (Puck), importés à la demande. Un
+  module du tableau de bord n'importe jamais l'éditeur (Puck, `canvas`, `panel`, `style-*`, `fields`) ni
+  `agent.ts` (outils WebMCP) autrement que par `import()`. Mesure et budget :
+  `pnpm --filter @openflow/e2e weight ../../templates/next-starter/out --budget` (après un export).
 - Toute évolution de l'interface suit `.claude/skills/admin-ui/SKILL.md`. On la vérifie par des captures en
   clair et en sombre, puis par les tests de bout en bout (`pnpm --filter @openflow/e2e test`).

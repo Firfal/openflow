@@ -7,7 +7,10 @@ import type { ImageVariant, VideoVariant } from "./fields.js";
  */
 export const COLLECTIONS = {
   site: "cms_site",
+  /** Page metadata only (title, address, status, SEO): light, listed live by the admin. */
   pages: "cms_pages",
+  /** Content of each page (Puck data, same id as `cms_pages`), read when the page is opened. */
+  pageContent: "cms_page_content",
   releases: "cms_releases",
   media: "cms_media",
   system: "cms_system",
@@ -114,6 +117,11 @@ export interface PageSeo {
 }
 
 /** `cms_pages/{pageId}` — the working copy (draft) of a page. */
+/**
+ * A page as a whole. It is stored in two documents with the same id, so that the page list stays
+ * light whatever the size of the pages: `cms_pages/{id}` ({@link PageMetaDoc}) and
+ * `cms_page_content/{id}` ({@link PageContentDoc}).
+ */
 export interface PageDoc {
   slug: string;
   title: string;
@@ -122,6 +130,21 @@ export interface PageDoc {
   data: Data;
   updatedAt: string;
   updatedBy?: string;
+}
+
+/** `cms_pages/{id}`: the page without its content. `updatedAt` also moves when the content changes. */
+export type PageMetaDoc = Omit<PageDoc, "data">;
+
+/** `cms_page_content/{id}`: the draft content of a page (Puck data). */
+export interface PageContentDoc {
+  data: Data;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+/** Joins the two documents of a page (an absent content is an empty page). */
+export function joinPage(meta: PageMetaDoc, content: PageContentDoc | undefined): PageDoc {
+  return { ...meta, data: content?.data ?? { root: { props: {} }, content: [] } };
 }
 
 /** Site-level settings edited in "Site et SEO". */

@@ -66,6 +66,17 @@ livraison, sans rien refaire de ce qui est déjà en place.
 
 - `/admin` est une page client de l'export. Elle charge `@openflow/admin` après montage, ce qui n'alourdit pas
   les pages publiques.
+- L'admin se charge **par étapes**, pour rester léger :
+  1. l'écran de connexion : Firebase Auth et le formulaire (environ 160 Ko compressés, dont 110 Ko pour React et
+     Next.js, communs à toute page Next.js) ;
+  2. une fois le propriétaire connecté, le tableau de bord et Firestore ;
+  3. l'éditeur visuel (Puck, texte riche, glisser-déposer), téléchargé en arrière-plan pendant que le
+     propriétaire est sur le tableau de bord, puis à l'ouverture d'une page. Il vient avec les réglages « Thème »
+     et « Contenu commun », qui l'utilisent.
+
+  Les fonctions Firebase et Storage s'importent au premier usage ; la validation (zod) à la publication ; les
+  outils WebMCP seulement si le navigateur les prend en charge. Un budget vérifie l'écran de connexion à chaque
+  CI (`tests/e2e/admin-weight.mjs`).
 - La configuration Firebase est lue depuis `/__/firebase/init.json` (servi par Hosting). En local, l'admin se
   connecte aux émulateurs.
 - L'éditeur est Puck, configuré avec **les mêmes sections** que le site public : ce qu'on voit est
@@ -82,7 +93,8 @@ livraison, sans rien refaire de ce qui est déjà en place.
 
   Le site publié expose aussi `llms.txt` et `llms-full.txt` aux IA qui le lisent. Voir
   [assistant-ia.md](assistant-ia.md).
-- Chaque modification est sauvegardée automatiquement dans `cms_pages/{id}.data` (debounce de 800 ms). Toutes les
+- Chaque modification est sauvegardée automatiquement dans `cms_page_content/{id}` (debounce de 800 ms), avec la
+  date de la fiche `cms_pages/{id}` dans la même écriture. Toutes les
   sauvegardes en attente sont forcées avant une publication.
 
 ## Publication

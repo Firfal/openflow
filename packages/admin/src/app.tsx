@@ -1,40 +1,16 @@
-import { FUNCTION_NAMES, type OpenFlowConfig, OWNER_CLAIM, type SettingsDoc } from "@openflow/core";
+import { FUNCTION_NAMES, type OpenFlowConfig, OWNER_CLAIM } from "@openflow/core";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { browserAgentContext, useWebMcp } from "./agent.js";
-import { AssistantView } from "./assistant.js";
-import { CommandPalette } from "./command.js";
-import { ConnectView } from "./connect.js";
-import {
-  type AdminContextValue,
-  AdminProvider,
-  type Notice,
-  useAdmin,
-  useRouter,
-} from "./context.js";
-import {
-  type AgentEntry,
-  type MessageEntry,
-  type PageEntry,
-  type ReleaseEntry,
-  subscribeAgents,
-  subscribeMessages,
-  subscribePages,
-  subscribeReleases,
-  subscribeSettings,
-} from "./data.js";
-import { EditorView } from "./editor.js";
-import { call, errorMessage, type FirebaseSetup, initServices, type Services } from "./firebase.js";
-import { HistoryView } from "./history.js";
-import { Icon, type IconName } from "./icons.js";
+import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
+import { type AuthServices, call, errorMessage, type FirebaseSetup, initAuth } from "./firebase.js";
 import { Login } from "./login.js";
-import { MediaView } from "./media.js";
-import { MessagesView } from "./messages.js";
-import { PagesView } from "./pages.js";
-import { SettingsView } from "./settings.js";
-import { Sidebar } from "./shell.js";
-import { Button, IconButton, Spinner } from "./ui.js";
+import { Button, Spinner } from "./ui.js";
 import { UiThemeContext, useUiThemeState } from "./ui-theme.js";
+
+/**
+ * First stage of the admin: Firebase Auth and the login screen only. The dashboard (Firestore) is
+ * loaded once the owner is signed in, the visual editor when a page is opened (see `owner.tsx`).
+ */
+const OwnerApp = lazy(() => import("./owner.js").then((m) => ({ default: m.OwnerApp })));
 
 export interface OpenFlowAdminProps {
   /** The site's `openflow.config.tsx` default export. */
@@ -50,7 +26,7 @@ type OwnerState =
   | { status: "denied"; user: User; reason: string }
   | { status: "owner"; user: User };
 
-async function checkOwner(services: Services, user: User): Promise<string | undefined> {
+async function checkOwner(services: AuthServices, user: User): Promise<string | undefined> {
   if ((await user.getIdTokenResult()).claims[OWNER_CLAIM] === true) return undefined;
   try {
     await call(services, FUNCTION_NAMES.claimOwner, {});
@@ -61,129 +37,6 @@ async function checkOwner(services: Services, user: User): Promise<string | unde
   return refreshed.claims[OWNER_CLAIM] === true
     ? undefined
     : "Ce compte n'a pas accès à l'administration.";
-}
-
-const NOTICE_ICONS: Record<Notice["kind"], IconName> = {
-  success: "circleCheck",
-  error: "circleAlert",
-  info: "info",
-};
-
-function Notices({ notices, dismiss }: { notices: Notice[]; dismiss: (id: number) => void }) {
-  return (
-    <div className="of-notices" aria-live="polite">
-      {notices.map((notice) => (
-        <div
-          key={notice.id}
-          className={`of-notice of-notice--${notice.kind}`}
-          role={notice.kind === "error" ? "alert" : undefined}
-        >
-          <Icon name={NOTICE_ICONS[notice.kind]} className="of-icon--first-line" />
-          <span>{notice.text}</span>
-          <IconButton icon="x" label="Fermer" size="sm" onClick={() => dismiss(notice.id)} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Dashboard (sidebar + view) or, for a page, the full-screen editor. */
-function Shell() {
-  const { route } = useAdmin();
-  if (route.view === "editor") return <EditorView key={route.pageId} pageId={route.pageId} />;
-  if (route.view === "connect") return <ConnectView requestId={route.request} />;
-  return (
-    <div className="of-shell">
-      <Sidebar />
-      <main className="of-main">
-        {route.view === "pages" && <PagesView />}
-        {route.view === "media" && <MediaView />}
-        {route.view === "assistant" && <AssistantView />}
-        {route.view === "messages" && <MessagesView />}
-        {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
-        {route.view === "history" && <HistoryView />}
-      </main>
-    </div>
-  );
-}
-
-function OwnerApp({
-  config,
-  services,
-  user,
-}: {
-  config: OpenFlowConfig;
-  services: Services;
-  user: User;
-}) {
-  const [route, navigate] = useRouter();
-  const [pages, setPages] = useState<PageEntry[] | null>(null);
-  const [settings, setSettings] = useState<SettingsDoc | undefined>();
-  const [releases, setReleases] = useState<ReleaseEntry[]>([]);
-  const [agents, setAgents] = useState<AgentEntry[]>([]);
-  const [messages, setMessages] = useState<MessageEntry[]>([]);
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const nextId = useRef(1);
-
-  const dismiss = useCallback(
-    (id: number) => setNotices((all) => all.filter((n) => n.id !== id)),
-    [],
-  );
-  const notify = useCallback(
-    (kind: Notice["kind"], text: string) => {
-      const id = nextId.current++;
-      setNotices((all) => [...all.slice(-3), { id, kind, text }]);
-      setTimeout(() => dismiss(id), kind === "error" ? 9000 : 5000);
-    },
-    [dismiss],
-  );
-
-  useEffect(() => {
-    const onError = (error: Error) => notify("error", errorMessage(error));
-    const unsubscribers = [
-      subscribePages(services.db, setPages, onError),
-      subscribeSettings(services.db, setSettings, onError),
-      subscribeReleases(services.db, setReleases, onError),
-      subscribeAgents(services.db, setAgents, onError),
-      subscribeMessages(services.db, setMessages, onError),
-    ];
-    return () => {
-      for (const unsubscribe of unsubscribers) unsubscribe();
-    };
-  }, [services.db, notify]);
-
-  // WebMCP: the assistant of the browser edits the site with the owner's session.
-  const agentContext = useMemo(() => browserAgentContext(services, config), [services, config]);
-  const getAgentContext = useCallback(() => agentContext, [agentContext]);
-  useWebMcp(getAgentContext);
-
-  const value = useMemo<AdminContextValue | null>(
-    () =>
-      pages
-        ? {
-            config,
-            services,
-            user,
-            pages,
-            settings,
-            releases,
-            agents,
-            messages,
-            route,
-            navigate,
-            notify,
-          }
-        : null,
-    [config, services, user, pages, settings, releases, agents, messages, route, navigate, notify],
-  );
-  if (!value) return <Spinner label="Chargement du site…" />;
-  return (
-    <AdminProvider value={value}>
-      <Shell />
-      <CommandPalette />
-      <Notices notices={notices} dismiss={dismiss} />
-    </AdminProvider>
-  );
 }
 
 function Blocked({ title, children }: { title: string; children: ReactNode }) {
@@ -198,13 +51,13 @@ function Blocked({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
-  const [services, setServices] = useState<Services>();
+  const [services, setServices] = useState<AuthServices>();
   const [fatal, setFatal] = useState<string>();
   const [owner, setOwner] = useState<OwnerState>({ status: "loading" });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Firebase is initialized once per page load.
   useEffect(() => {
-    initServices(firebase).then(setServices, (error: Error) => setFatal(error.message));
+    initAuth(firebase).then(setServices, (error: Error) => setFatal(error.message));
   }, []);
 
   useEffect(() => {
@@ -243,7 +96,11 @@ function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
       </Blocked>
     );
   }
-  return <OwnerApp config={config} services={services} user={owner.user} />;
+  return (
+    <Suspense fallback={<Spinner label="Chargement du site…" />}>
+      <OwnerApp config={config} base={services} user={owner.user} />
+    </Suspense>
+  );
 }
 
 /** Full OpenFlow admin: owner authentication, pages, visual editor, settings, publication. */

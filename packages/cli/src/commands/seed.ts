@@ -5,7 +5,8 @@ import {
   COLLECTIONS,
   DOCS,
   ensureIds,
-  type PageDoc,
+  type PageContentDoc,
+  type PageMetaDoc,
   type SettingsDoc,
 } from "@openflow/core";
 import { listStaticMedia, loadSeed, writeSnapshotFile } from "@openflow/core/node";
@@ -63,16 +64,26 @@ export async function seed(
         kept++;
         continue;
       }
-      const doc: PageDoc = {
+      const meta: PageMetaDoc = {
         slug: page.slug,
         title: page.title,
         status: page.status,
         seo: page.seo,
+        updatedAt: now,
+        updatedBy: "openflow seed",
+      };
+      const content: PageContentDoc = {
         data: ensureIds(page.data),
         updatedAt: now,
         updatedBy: "openflow seed",
       };
-      await ref.set(JSON.parse(JSON.stringify(doc)));
+      const batch = db.batch();
+      batch.set(ref, JSON.parse(JSON.stringify(meta)));
+      batch.set(
+        db.collection(COLLECTIONS.pageContent).doc(page.id),
+        JSON.parse(JSON.stringify(content)),
+      );
+      await batch.commit();
       created++;
     }
     // Schema of the sections (code, not content: always replaced), read by the MCP server.

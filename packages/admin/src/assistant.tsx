@@ -1,13 +1,13 @@
-import { AGENT_TOOLS, COLLECTIONS, FUNCTION_NAMES, slugify } from "@openflow/core";
+import { COLLECTIONS, FUNCTION_NAMES, slugify } from "@openflow/core";
 import { deleteDoc, doc } from "firebase/firestore";
 import { type ReactNode, useState } from "react";
-import { useWebMcpState } from "./agent.js";
 import { useAdmin } from "./context.js";
 import type { AgentEntry } from "./data.js";
 import { call, errorMessage, type Services } from "./firebase.js";
 import { Icon, type IconName } from "./icons.js";
 import { PageHead } from "./shell.js";
 import { Button, FormField, IconButton, StatusChip, timeAgo } from "./ui.js";
+import { useWebMcpState } from "./webmcp.js";
 
 function formatDate(iso?: string) {
   return iso
@@ -525,7 +525,7 @@ export function AssistantSettings() {
           <p className="of-muted">
             Votre navigateur ne prend pas encore en charge WebMCP (navigator.modelContext). Avec un
             navigateur compatible, l'assistant intégré pourra modifier le site depuis cette page,
-            avec les mêmes {AGENT_TOOLS.length} outils que le serveur MCP.
+            avec les mêmes outils que le serveur MCP.
           </p>
         )}
       </section>

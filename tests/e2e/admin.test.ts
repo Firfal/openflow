@@ -122,7 +122,7 @@ describe("admin OpenFlow (émulateurs)", () => {
 
     const saved = await waitFor(
       async () => {
-        const data = (await db.doc("cms_pages/accueil").get()).data();
+        const data = (await db.doc("cms_page_content/accueil").get()).data();
         const title = data?.data?.content?.[0]?.props?.title;
         return title === NEW_TITLE ? title : undefined;
       },
@@ -207,7 +207,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await expect.poll(color, { timeout: 10_000 }).not.toBe("rgb(255, 0, 0)");
     const saved = await waitFor(
       async () => {
-        const data = (await db.doc("cms_pages/accueil").get()).data();
+        const data = (await db.doc("cms_page_content/accueil").get()).data();
         return data?.data?.content?.[0]?.props?._style?.fields?.title?.mobile?.color;
       },
       30_000,

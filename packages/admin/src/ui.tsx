@@ -354,3 +354,12 @@ export function formatDate(iso: string | undefined): string {
 /** `⌘` on Apple devices, `Ctrl` elsewhere (keyboard hints). */
 export const MOD_KEY =
   typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
+
+/** The site's initial, as its mark in the sidebar and on the login screen. */
+export function SiteMark({ name }: { name: string }) {
+  return (
+    <span className="of-site__mark" aria-hidden>
+      {(name.trim()[0] ?? "S").toUpperCase()}
+    </span>
+  );
+}

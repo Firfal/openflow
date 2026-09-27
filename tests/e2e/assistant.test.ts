@@ -344,7 +344,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
       )
       .toBe("rgb(0, 0, 255)");
     await page.getByText("L'assistant IA a modifié cette page.").first().waitFor();
-    const saved = (await db.doc("cms_pages/accueil").get()).data();
+    const saved = (await db.doc("cms_page_content/accueil").get()).data();
     expect(saved?.updatedBy).toBe("Assistant IA");
     expect(saved?.data.content[0].props._style.fields.title.base.color).toBe("#0000ff");
   });
@@ -372,7 +372,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
     await expect
       .poll(
         async () =>
-          (await db.doc("cms_pages/accueil").get()).data()?.data.content[0].props.subtitle,
+          (await db.doc("cms_page_content/accueil").get()).data()?.data.content[0].props.subtitle,
         {
           timeout: 30_000,
         },

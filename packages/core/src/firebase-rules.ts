@@ -14,10 +14,14 @@ match /cms_site/{docId} {
 match /cms_pages/{pageId} {
   allow read, delete: if cmsIsOwner();
   allow create, update: if cmsIsOwner()
-    && request.resource.data.keys().hasAll(['slug', 'title', 'status', 'data'])
+    && request.resource.data.keys().hasAll(['slug', 'title', 'status'])
     && request.resource.data.slug is string
     && request.resource.data.title is string
     && request.resource.data.status in ['draft', 'published'];
+}
+match /cms_page_content/{pageId} {
+  allow read, delete: if cmsIsOwner();
+  allow create, update: if cmsIsOwner() && request.resource.data.data is map;
 }
 match /cms_media/{mediaId} {
   allow read, write: if cmsIsOwner();

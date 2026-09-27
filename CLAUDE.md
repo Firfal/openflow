@@ -11,6 +11,8 @@ Spécification : `docs/`. Documentation en français, identifiants et commentair
 - `cd templates/next-starter && npx openflow check --level build --build` : le template doit rester conforme à 100 %
   (`--build` reconstruit `out/` ; sans lui, le contrôle relit le dernier export, parfois périmé).
 - `pnpm --filter @openflow/e2e test` : émulateurs Firebase (Java requis) et Playwright.
+- `pnpm --filter @openflow/e2e weight ../../templates/next-starter/out --budget` : poids de l'écran de connexion de
+  l'admin (après un export), avec le budget vérifié en CI.
 
 ## Conventions
 

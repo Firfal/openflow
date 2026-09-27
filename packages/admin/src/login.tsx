@@ -8,9 +8,8 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { errorMessage, type Services } from "./firebase.js";
-import { SiteMark } from "./shell.js";
-import { Button, FormField } from "./ui.js";
+import { type AuthServices, errorMessage } from "./firebase.js";
+import { Button, FormField, SiteMark } from "./ui.js";
 
 /** The Google « G » (brand colours, as required by Google's sign-in guidelines). */
 function GoogleLogo() {
@@ -51,7 +50,7 @@ function addressWithoutSignInParams(): string {
   return `${url.pathname}${url.search}`;
 }
 
-export function Login({ services, siteName }: { services: Services; siteName: string }) {
+export function Login({ services, siteName }: { services: AuthServices; siteName: string }) {
   const [email, setEmail] = useState(() => window.localStorage.getItem(EMAIL_KEY) ?? "");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);

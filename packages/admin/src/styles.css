@@ -252,6 +252,14 @@
   letter-spacing: inherit;
 }
 
+/* Sites give their headings their own fonts (`h1 { font-family: … }`): the admin's headings keep
+   the admin's, and the site's fonts are only downloaded where they show, in the page preview. */
+.of-root :where(h1, h2, h3, h4, h5, h6),
+.of-login :where(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
 .of-root :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
 .of-login :is(a, button, input, select, textarea):focus-visible {
   outline: 2px solid var(--of-accent);

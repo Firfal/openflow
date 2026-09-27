@@ -6,9 +6,11 @@ import {
   createSnapshot,
   DOCS,
   type IntegrationsDoc,
+  joinPage,
   type MediaDoc,
   OWNER_CLAIM,
-  type PageDoc,
+  type PageContentDoc,
+  type PageMetaDoc,
   type ReleaseDoc,
   type ReleaseStatus,
   type SettingsDoc,
@@ -129,10 +131,12 @@ const FALLBACK_SETTINGS: Pick<SettingsDoc, "site" | "values" | "theme"> = {
 
 /** Reads drafts and settings from Firestore and freezes them into a snapshot. */
 export async function snapshotFromFirestore(db: Firestore, releaseId: string): Promise<Snapshot> {
-  const [settingsSnap, pagesSnap] = await Promise.all([
+  const [settingsSnap, pagesSnap, contentsSnap] = await Promise.all([
     db.collection(COLLECTIONS.site).doc(DOCS.settings).get(),
     db.collection(COLLECTIONS.pages).get(),
+    db.collection(COLLECTIONS.pageContent).get(),
   ]);
+  const contents = new Map(contentsSnap.docs.map((d) => [d.id, d.data() as PageContentDoc]));
   const settings = (settingsSnap.data() as SettingsDoc | undefined) ?? FALLBACK_SETTINGS;
   const integrations = (
     await db.collection(COLLECTIONS.system).doc(DOCS.integrations).get()
@@ -145,7 +149,10 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
       values: settings.values ?? {},
       theme: settings.theme ?? {},
     },
-    pages: pagesSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as PageDoc) })),
+    pages: pagesSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...joinPage(doc.data() as PageMetaDoc, contents.get(doc.id)),
+    })),
   });
   // Optimized copies of the library's images and videos (srcset, <source>).
   const library = new Map<string, MediaDoc>();

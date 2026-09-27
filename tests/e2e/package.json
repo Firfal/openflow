@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node run.mjs"
+    "test": "node run.mjs",
+    "weight": "node admin-weight.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

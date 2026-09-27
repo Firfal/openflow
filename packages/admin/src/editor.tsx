@@ -1,18 +1,20 @@
+// `no-external.css`: Puck's styles without third-party font requests. Loaded with the editor.
+import "@puckeditor/core/no-external.css";
 import {
   AGENT_AUTHOR,
   applyDefaults,
   COLLECTIONS,
   PAGE_SIZE_WARNING_BYTES,
-  type PageDoc,
+  type PageContentDoc,
   slugToPath,
 } from "@openflow/core";
 import { type Data, Puck } from "@puckeditor/core";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getEditorBridge } from "./agent.js";
 import { useAutosave } from "./autosave.js";
+import { getEditorBridge } from "./bridge.js";
 import { useAdmin } from "./context.js";
-import { getPage, type PageEntry, savePageData } from "./data.js";
+import { type FullPage, getPage, savePageData } from "./data.js";
 import {
   EDITOR_IFRAME,
   EDITOR_VIEWPORTS,
@@ -30,7 +32,7 @@ import { Button, EmptyState, Spinner } from "./ui.js";
 
 export function EditorView({ pageId }: { pageId: string }) {
   const { config, services, user, notify, navigate } = useAdmin();
-  const [page, setPage] = useState<PageEntry | null | undefined>(undefined);
+  const [page, setPage] = useState<FullPage | null | undefined>(undefined);
   const lastSaved = useRef<string>("");
   const warned = useRef(false);
 
@@ -99,9 +101,9 @@ export function EditorView({ pageId }: { pageId: string }) {
   // Changes made by an AI assistant through the MCP server appear live in the editor.
   useEffect(() => {
     if (!page) return;
-    return onSnapshot(doc(services.db, COLLECTIONS.pages, pageId), (snap) => {
+    return onSnapshot(doc(services.db, COLLECTIONS.pageContent, pageId), (snap) => {
       if (snap.metadata.hasPendingWrites) return;
-      const remote = snap.data() as PageDoc | undefined;
+      const remote = snap.data() as PageContentDoc | undefined;
       if (!remote || remote.updatedBy !== AGENT_AUTHOR) return;
       const data = applyDefaults(remote.data, config);
       const json = JSON.stringify(data);

@@ -18,7 +18,6 @@ import {
   type SettingsDoc,
   toolResult,
 } from "@openflow/core";
-import type { Data } from "@puckeditor/core";
 import {
   collection,
   doc,
@@ -29,9 +28,10 @@ import {
   query,
   setDoc,
 } from "firebase/firestore";
-import { useEffect, useSyncExternalStore } from "react";
+import { getEditorBridge } from "./bridge.js";
 import {
   deletePage,
+  type FullPage,
   getAllPages,
   getPage,
   listMedia,
@@ -40,33 +40,16 @@ import {
   saveTheme,
   updatePageMeta,
   uploadMedia,
+  writePage,
 } from "./data.js";
 import { call, errorMessage, type Services } from "./firebase.js";
-
-// ---------------------------------------------------------------------------------------------
-// Bridge with the open editor: an assistant working in the browser edits the page being edited
-// through Puck (the owner sees the change, can undo it, and autosave stays consistent).
-
-export interface EditorBridge {
-  pageId: string;
-  getData: () => Data;
-  setData: (data: Data) => void;
-}
-
-let bridge: EditorBridge | null = null;
-
-export function setEditorBridge(next: EditorBridge | null) {
-  bridge = next;
-}
-
-export function getEditorBridge(): EditorBridge | null {
-  return bridge;
-}
+import { setWebMcpState, webMcp } from "./webmcp.js";
 
 // ---------------------------------------------------------------------------------------------
 // Backend on the owner's Firebase session
 
-function toAgentPage(page: PageDoc & { id: string }): AgentPage {
+function toAgentPage(page: FullPage): AgentPage {
+  const bridge = getEditorBridge();
   const data = bridge?.pageId === page.id ? bridge.getData() : page.data;
   return {
     id: page.id,
@@ -97,19 +80,21 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
       return page ? toAgentPage(page) : undefined;
     },
     savePageData: async (id, data) => {
+      const bridge = getEditorBridge();
       if (bridge?.pageId === id) bridge.setData(applyDefaults(data, config));
       else await savePageData(db, id, data, AGENT_AUTHOR);
     },
     savePageMeta: (id, meta) => updatePageMeta(db, id, meta, AGENT_AUTHOR),
     createPage: async (id, page) => {
-      const ref = doc(db, COLLECTIONS.pages, id);
-      if ((await getDoc(ref)).exists()) throw new AgentError(`La page « ${id} » existe déjà.`);
+      if ((await getDoc(doc(db, COLLECTIONS.pages, id))).exists()) {
+        throw new AgentError(`La page « ${id} » existe déjà.`);
+      }
       const created: PageDoc = {
         ...page,
         updatedAt: new Date().toISOString(),
         updatedBy: AGENT_AUTHOR,
       };
-      await setDoc(ref, JSON.parse(JSON.stringify(created)));
+      await writePage(db, id, JSON.parse(JSON.stringify(created)));
       return id;
     },
     deletePage: (id) => deletePage(db, id),
@@ -194,18 +179,8 @@ export function browserAgentContext(services: Services, config: OpenFlowConfig):
 }
 
 // ---------------------------------------------------------------------------------------------
-// WebMCP: the tools are exposed to the AI assistant of the browser (`navigator.modelContext`)
-
-interface ModelContext {
-  registerTool: (tool: Record<string, unknown>, options?: { signal?: AbortSignal }) => unknown;
-  unregisterTool?: (name: string) => unknown;
-}
-
-function modelContext(): ModelContext | undefined {
-  if (typeof navigator === "undefined") return undefined;
-  const context = (navigator as Navigator & { modelContext?: ModelContext }).modelContext;
-  return typeof context?.registerTool === "function" ? context : undefined;
-}
+// WebMCP: the tools are exposed to the AI assistant of the browser (`navigator.modelContext`).
+// This module is only loaded when the browser supports it (see `webmcp.ts`).
 
 /** Tools whose effect reaches visitors or cannot be undone: the owner confirms in the admin. */
 const CONFIRM: Record<string, string> = {
@@ -214,86 +189,65 @@ const CONFIRM: Record<string, string> = {
   remove_section: "L'assistant IA veut supprimer une section de la page.",
 };
 
-type WebMcpState = { status: "unsupported" | "idle" | "active"; tools: number };
-let state: WebMcpState = { status: modelContext() ? "idle" : "unsupported", tools: 0 };
-const listeners = new Set<() => void>();
-
-function setState(next: WebMcpState) {
-  state = next;
-  for (const listener of listeners) listener();
-}
-
-/** Whether the browser exposes WebMCP, and how many tools the admin registered. */
-export function useWebMcpState(): WebMcpState {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => state,
-    () => state,
-  );
-}
-
 /**
- * Registers the OpenFlow tools with WebMCP while the owner is signed in to the admin, so the AI
- * assistant of the browser can edit the site by chat, with the owner's own session.
+ * Registers the tools with WebMCP while the owner is signed in to the admin, so the AI assistant of
+ * the browser can edit the site by chat, with the owner's own session. Returns the cleanup.
  */
-export function useWebMcp(context: () => AgentContext) {
-  useEffect(() => {
-    const mc = modelContext();
-    if (!mc) return;
-    const controller = new AbortController();
-    let registered = 0;
-    for (const tool of AGENT_TOOLS) {
-      const confirmText = CONFIRM[tool.name];
-      const definition = {
-        name: tool.name,
-        title: tool.title,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        annotations: {
-          readOnlyHint: tool.annotations.readOnlyHint === true,
-          consequentialHint: Boolean(confirmText),
-          untrustedContentHint: false,
-        },
-        execute: async (input: unknown) => {
-          if (confirmText && !window.confirm(`${confirmText}\n\nConfirmer ?`)) {
-            return {
-              content: [{ type: "text", text: "Action refusée par le propriétaire du site." }],
-              isError: true,
-            };
-          }
-          try {
-            return toolResult(await runAgentTool(tool.name, input, context()));
-          } catch (error) {
-            const text =
-              error instanceof AgentError ? error.message : `Erreur : ${errorMessage(error)}`;
-            return { content: [{ type: "text", text }], isError: true };
-          }
-        },
-      };
-      try {
-        const result = mc.registerTool(definition, { signal: controller.signal });
-        if (result && typeof (result as Promise<unknown>).catch === "function") {
-          (result as Promise<unknown>).catch(() => undefined);
+export function registerWebMcp(services: Services, config: OpenFlowConfig): () => void {
+  const agentContext = browserAgentContext(services, config);
+  const context = () => agentContext;
+  const mc = webMcp();
+  if (!mc) return () => undefined;
+  const controller = new AbortController();
+  let registered = 0;
+  for (const tool of AGENT_TOOLS) {
+    const confirmText = CONFIRM[tool.name];
+    const definition = {
+      name: tool.name,
+      title: tool.title,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+      annotations: {
+        readOnlyHint: tool.annotations.readOnlyHint === true,
+        consequentialHint: Boolean(confirmText),
+        untrustedContentHint: false,
+      },
+      execute: async (input: unknown) => {
+        if (confirmText && !window.confirm(`${confirmText}\n\nConfirmer ?`)) {
+          return {
+            content: [{ type: "text", text: "Action refusée par le propriétaire du site." }],
+            isError: true,
+          };
         }
-        registered++;
+        try {
+          return toolResult(await runAgentTool(tool.name, input, context()));
+        } catch (error) {
+          const text =
+            error instanceof AgentError ? error.message : `Erreur : ${errorMessage(error)}`;
+          return { content: [{ type: "text", text }], isError: true };
+        }
+      },
+    };
+    try {
+      const result = mc.registerTool(definition, { signal: controller.signal });
+      if (result && typeof (result as Promise<unknown>).catch === "function") {
+        (result as Promise<unknown>).catch(() => undefined);
+      }
+      registered++;
+    } catch {
+      // A tool with the same name is already registered (another admin tab): ignore.
+    }
+  }
+  setWebMcpState({ status: "active", tools: registered });
+  return () => {
+    controller.abort();
+    for (const tool of AGENT_TOOLS) {
+      try {
+        mc.unregisterTool?.(tool.name);
       } catch {
-        // A tool with the same name is already registered (another admin tab): ignore.
+        // already gone
       }
     }
-    setState({ status: "active", tools: registered });
-    return () => {
-      controller.abort();
-      for (const tool of AGENT_TOOLS) {
-        try {
-          mc.unregisterTool?.(tool.name);
-        } catch {
-          // already gone
-        }
-      }
-      setState({ status: "idle", tools: 0 });
-    };
-  }, [context]);
+    setWebMcpState({ status: "idle", tools: 0 });
+  };
 }

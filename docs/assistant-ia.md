@@ -91,9 +91,11 @@ valeurs possibles.
   `openflow deploy`) écrit dans `cms_system/schema` une description sérialisable des sections, champs,
   réglages et du thème (`buildSiteSchema`) ; la fonction en reconstruit une config de validation
   (`configFromSchema`).
-- **Édition en direct** : l'éditeur écoute la page ouverte. Une modification signée `Assistant IA`
-  (`updatedBy`) est appliquée dans Puck, avec une notification. Avec WebMCP, l'outil modifie directement
-  l'état de Puck : la sauvegarde automatique reste le seul écrivain de la page ouverte.
+- **Édition en direct** : l'éditeur écoute le contenu de la page ouverte (`cms_page_content/{id}`). Une
+  modification signée `Assistant IA` (`updatedBy`) est appliquée dans Puck, avec une notification. Avec WebMCP,
+  l'outil modifie directement l'état de Puck : la sauvegarde automatique reste le seul écrivain de la page
+  ouverte. Les outils WebMCP (et leurs schémas) ne sont téléchargés que si le navigateur expose
+  `navigator.modelContext`.
 - **Site lisible par les IA** : chaque publication produit `llms.txt` (le site, sa description et ses pages,
   au format [llmstxt.org](https://llmstxt.org)) et `llms-full.txt` (le texte de toutes les pages en
   Markdown), à partir du snapshot publié. Les pages `noindex` en sont exclues, comme du sitemap.

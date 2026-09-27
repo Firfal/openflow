@@ -26,9 +26,9 @@ const page = {
   title: "Test",
   status: "published",
   seo: {},
-  data: { root: { props: {} }, content: [] },
   updatedAt: "2026-01-01",
 };
+const content = { data: { root: { props: {} }, content: [] }, updatedAt: "2026-01-01" };
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({
@@ -51,6 +51,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
     await setDoc(doc(db, "cms_pages/accueil"), page);
+    await setDoc(doc(db, "cms_page_content/accueil"), content);
     await setDoc(doc(db, "cms_releases/r1"), { status: "live" });
     await setDoc(doc(db, "cms_system/source"), { path: "cms/source/x.tgz" });
     await setDoc(doc(db, "cms_agent_tokens/k1"), {
@@ -90,6 +91,8 @@ describe("Firestore rules", () => {
     await assertSucceeds(getDoc(doc(db, "cms_pages/accueil")));
     await assertSucceeds(updateDoc(doc(db, "cms_pages/accueil"), { title: "Nouveau titre" }));
     await assertSucceeds(setDoc(doc(db, "cms_pages/nouvelle"), { ...page, slug: "nouvelle" }));
+    await assertSucceeds(getDoc(doc(db, "cms_page_content/accueil")));
+    await assertSucceeds(setDoc(doc(db, "cms_page_content/nouvelle"), content));
     await assertSucceeds(setDoc(doc(db, "cms_site/settings"), { site: { name: "X" }, values: {} }));
     await assertSucceeds(getDoc(doc(db, "cms_releases/r1")));
   });
@@ -98,6 +101,8 @@ describe("Firestore rules", () => {
     const db = owner().firestore();
     await assertFails(updateDoc(doc(db, "cms_pages/accueil"), { status: "publie" }));
     await assertFails(setDoc(doc(db, "cms_pages/incomplete"), { title: "Sans slug" }));
+    // The content of a page is a Puck data object.
+    await assertFails(setDoc(doc(db, "cms_page_content/accueil"), { data: "texte" }));
   });
 
   it("never lets the client write releases or system documents", async () => {
@@ -136,6 +141,8 @@ describe("Firestore rules", () => {
       const db = context().firestore();
       await assertFails(getDoc(doc(db, "cms_pages/accueil")));
       await assertFails(updateDoc(doc(db, "cms_pages/accueil"), { title: "Piraté" }));
+      await assertFails(getDoc(doc(db, "cms_page_content/accueil")));
+      await assertFails(setDoc(doc(db, "cms_page_content/accueil"), content));
       await assertFails(getDoc(doc(db, "cms_site/settings")));
       await assertFails(setDoc(doc(db, "cms_site/settings"), { values: {} }));
       await assertFails(getDoc(doc(db, "cms_releases/r1")));

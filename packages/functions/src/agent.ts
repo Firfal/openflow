@@ -12,8 +12,11 @@ import {
   COLLECTIONS,
   configFromSchema,
   DOCS,
+  joinPage,
   type MediaDoc,
+  type PageContentDoc,
   type PageDoc,
+  type PageMetaDoc,
   type ReleaseDoc,
   type SettingsDoc,
   type SiteSchema,
@@ -181,6 +184,7 @@ export function adminBackend({
   publish,
 }: AdminBackendOptions): AgentBackend {
   const pages = db.collection(COLLECTIONS.pages);
+  const contents = db.collection(COLLECTIONS.pageContent);
   const settingsRef = db.collection(COLLECTIONS.site).doc(DOCS.settings);
   const stamp = () => ({ updatedAt: new Date().toISOString(), updatedBy: AGENT_AUTHOR });
   const toPage = (id: string, doc: PageDoc): AgentPage => ({
@@ -194,26 +198,43 @@ export function adminBackend({
   });
   return {
     async listPages() {
-      const snap = await pages.get();
-      return snap.docs.map((d) => toPage(d.id, d.data() as PageDoc));
+      const [metas, datas] = await Promise.all([pages.get(), contents.get()]);
+      const byId = new Map(datas.docs.map((d) => [d.id, d.data() as PageContentDoc]));
+      return metas.docs.map((d) => toPage(d.id, joinPage(d.data() as PageMetaDoc, byId.get(d.id))));
     },
     async getPage(id) {
       if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return undefined;
-      const snap = await pages.doc(id).get();
-      return snap.exists ? toPage(snap.id, snap.data() as PageDoc) : undefined;
+      const [meta, content] = await Promise.all([pages.doc(id).get(), contents.doc(id).get()]);
+      if (!meta.exists) return undefined;
+      return toPage(
+        id,
+        joinPage(meta.data() as PageMetaDoc, content.data() as PageContentDoc | undefined),
+      );
     },
     async savePageData(id, data) {
-      await pages.doc(id).update({ data: JSON.parse(JSON.stringify(data)), ...stamp() });
+      const at = stamp();
+      const batch = db.batch();
+      batch.set(contents.doc(id), { data: JSON.parse(JSON.stringify(data)), ...at });
+      batch.update(pages.doc(id), at);
+      await batch.commit();
     },
     async savePageMeta(id, meta) {
       await pages.doc(id).update({ ...JSON.parse(JSON.stringify(meta)), ...stamp() });
     },
     async createPage(id, page) {
-      await pages.doc(id).create({ ...JSON.parse(JSON.stringify(page)), ...stamp() });
+      const { data, ...meta } = JSON.parse(JSON.stringify(page)) as Omit<PageDoc, "updatedAt">;
+      const at = stamp();
+      const batch = db.batch();
+      batch.create(pages.doc(id), { ...meta, ...at });
+      batch.set(contents.doc(id), { data, ...at });
+      await batch.commit();
       return id;
     },
     async deletePage(id) {
-      await pages.doc(id).delete();
+      const batch = db.batch();
+      batch.delete(pages.doc(id));
+      batch.delete(contents.doc(id));
+      await batch.commit();
     },
     async getSettings() {
       const doc = ((await settingsRef.get()).data() ?? {}) as Partial<SettingsDoc>;

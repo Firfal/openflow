@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { useAdmin } from "./context.js";
 import { call, errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
-import { SiteMark } from "./shell.js";
-import { Button, Spinner } from "./ui.js";
+import { Button, SiteMark, Spinner } from "./ui.js";
 
 interface RequestInfo {
   clientName: string;

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { type SettingsTab, useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
 import { PublishControl } from "./publish.js";
-import { Menu, MOD_KEY } from "./ui.js";
+import { Menu, MOD_KEY, SiteMark } from "./ui.js";
 import { type UiTheme, useUiTheme } from "./ui-theme.js";
 
 /** Opens the command palette (listened to by `CommandPalette`). */
@@ -14,14 +14,6 @@ export function openCommandPalette() {
 /** Address of the live site: the admin is served by the site itself, at `/admin`. */
 export function useSiteUrl(): string {
   return typeof window !== "undefined" ? window.location.origin : "/";
-}
-
-export function SiteMark({ name }: { name: string }) {
-  return (
-    <span className="of-site__mark" aria-hidden>
-      {(name.trim()[0] ?? "S").toUpperCase()}
-    </span>
-  );
 }
 
 const THEMES: Array<[UiTheme, string, IconName]> = [

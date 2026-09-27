@@ -51,6 +51,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm --filter @openflow/e2e exec playwright install --with-deps chromium
+      - name: Admin weight budget (login screen, starter and landing exports)
+        run: |
+          (cd templates/next-starter && npx openflow check --level build --build)
+          (cd sites/landing && npx openflow check --level build --build)
+          pnpm --filter @openflow/e2e weight ../../templates/next-starter/out --budget
+          pnpm --filter @openflow/e2e weight ../../sites/landing/out --budget
       - name: Security rules + admin scenario on the Firebase emulators
         run: pnpm --filter @openflow/e2e test
       - name: Landing (editor ergonomics, AI assistant and OAuth, security rules)

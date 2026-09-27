@@ -25,6 +25,15 @@ contributors: `docs/interface-admin.md`.
 | `packages/admin/src/assistant.tsx` | « Assistant IA » view (MCP address, per-assistant steps, connected AIs, keys), Pages card |
 | `packages/admin/src/connect.tsx` | OAuth consent screen of an AI assistant (`?view=connect&request=…`, full screen) |
 
+## Loading stages (keep the admin light)
+
+The admin loads in three stages: `app.tsx` (login: Firebase Auth only), `owner.tsx` (dashboard: Firestore via
+`services.ts`), then `editor.tsx` / `settings-editors.tsx` (Puck, rich text, drag and drop) through `import()`.
+A dashboard module never imports the editor (`canvas`, `panel`, `style-*`, `fields`, `editor-ui`), zod-based
+checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Storage are imported on first use
+(`call`, `storageOf`). The login screen has a budget checked in CI:
+`pnpm --filter @openflow/e2e weight <site>/out --budget`.
+
 ## Tokens, never raw values
 
 - Colours only through tokens: `--of-bg`, `--of-surface`, `--of-surface-2/3`, `--of-canvas`, `--of-border`,

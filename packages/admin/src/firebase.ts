@@ -1,14 +1,14 @@
 import { DEMO_PROJECT_ID } from "@openflow/core";
 import { type FirebaseApp, type FirebaseOptions, getApps, initializeApp } from "firebase/app";
 import { type Auth, connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFirestoreEmulator, type Firestore, initializeFirestore } from "firebase/firestore";
-import {
-  connectFunctionsEmulator,
-  type Functions,
-  getFunctions,
-  httpsCallable,
-} from "firebase/functions";
-import { connectStorageEmulator, type FirebaseStorage, getStorage } from "firebase/storage";
+import type { Firestore } from "firebase/firestore";
+import type { Functions } from "firebase/functions";
+
+/**
+ * Firebase, loaded in stages like the rest of the admin: the login screen only needs Firebase Auth
+ * (this module); Firestore comes with the dashboard (`services.ts`), and Cloud Functions and Storage
+ * are imported the first time they are used.
+ */
 
 export interface FirebaseSetup {
   /** Web config. Defaults to `/__/firebase/init.json`, served automatically by Firebase Hosting. */
@@ -17,26 +17,29 @@ export interface FirebaseSetup {
   emulators?: boolean;
   /** Host of the emulators (defaults to the current hostname). */
   emulatorHost?: string;
-  /** Region of the OpenFlow Cloud Functions (default `europe-west1`). */
+  /** Region of the Cloud Functions (default `europe-west1`). */
   region?: string;
 }
 
-export interface Services {
+/** What the login screen needs: the Firebase app and its authentication. */
+export interface AuthServices {
   app: FirebaseApp;
   auth: Auth;
-  db: Firestore;
-  storage: FirebaseStorage;
-  functions: Functions;
   emulators: boolean;
   projectId: string;
-  /** Region of the OpenFlow Cloud Functions. */
+  /** Region of the Cloud Functions. */
   region: string;
   /** Host of the emulators, when used. */
   emulatorHost?: string;
 }
 
+/** Everything the signed-in owner uses (the dashboard adds Firestore, see `services.ts`). */
+export interface Services extends AuthServices {
+  db: Firestore;
+}
+
 const APP_NAME = "openflow-admin";
-let pending: Promise<Services> | undefined;
+let pending: Promise<AuthServices> | undefined;
 
 async function resolveOptions(setup: FirebaseSetup): Promise<FirebaseOptions> {
   if (setup.options) return setup.options;
@@ -58,46 +61,60 @@ async function resolveOptions(setup: FirebaseSetup): Promise<FirebaseOptions> {
   return (await response.json()) as FirebaseOptions;
 }
 
-/** Initializes Firebase once (safe with React strict mode double effects). */
-export function initServices(setup: FirebaseSetup = {}): Promise<Services> {
+/** Initializes the Firebase app and its authentication, once (safe with React strict mode). */
+export function initAuth(setup: FirebaseSetup = {}): Promise<AuthServices> {
   pending ??= (async () => {
     const options = await resolveOptions(setup);
     const app = getApps().find((a) => a.name === APP_NAME) ?? initializeApp(options, APP_NAME);
     const auth = getAuth(app);
-    const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
-    const storage = getStorage(app);
-    const region = setup.region ?? "europe-west1";
-    const functions = getFunctions(app, region);
     const emulators = Boolean(setup.emulators);
     let emulatorHost: string | undefined;
     if (emulators) {
-      const host =
+      emulatorHost =
         setup.emulatorHost ??
         (typeof window !== "undefined" ? window.location.hostname : "127.0.0.1");
-      connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
-      connectFirestoreEmulator(db, host, 8080);
-      connectStorageEmulator(storage, host, 9199);
-      connectFunctionsEmulator(functions, host, 5001);
-      emulatorHost = host;
+      connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
     }
     return {
       app,
       auth,
-      db,
-      storage,
-      functions,
       emulators,
       projectId: options.projectId ?? "",
-      region,
+      region: setup.region ?? "europe-west1",
       emulatorHost,
     };
   })();
   return pending;
 }
 
-/** Calls an OpenFlow callable function and returns its data. */
-export async function call<Req, Res>(services: Services, name: string, data: Req): Promise<Res> {
-  const fn = httpsCallable<Req, Res>(services.functions, name, { timeout: 120_000 });
+const functionsByApp = new WeakMap<FirebaseApp, Promise<Functions>>();
+
+/** Cloud Functions, imported the first time a function is called. */
+function functionsOf(services: AuthServices): Promise<Functions> {
+  let functions = functionsByApp.get(services.app);
+  if (!functions) {
+    functions = import("firebase/functions").then((sdk) => {
+      const instance = sdk.getFunctions(services.app, services.region);
+      if (services.emulatorHost)
+        sdk.connectFunctionsEmulator(instance, services.emulatorHost, 5001);
+      return instance;
+    });
+    functionsByApp.set(services.app, functions);
+  }
+  return functions;
+}
+
+/** Calls a callable Cloud Function and returns its data. */
+export async function call<Req, Res>(
+  services: AuthServices,
+  name: string,
+  data: Req,
+): Promise<Res> {
+  const [functions, { httpsCallable }] = await Promise.all([
+    functionsOf(services),
+    import("firebase/functions"),
+  ]);
+  const fn = httpsCallable<Req, Res>(functions, name, { timeout: 120_000 });
   return (await fn(data)).data;
 }
 

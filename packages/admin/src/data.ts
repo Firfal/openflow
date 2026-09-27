@@ -3,10 +3,13 @@ import {
   COLLECTIONS,
   DOCS,
   estimateSize,
+  joinPage,
   type MediaDoc,
   type MessageDoc,
   PAGE_SIZE_WARNING_BYTES,
+  type PageContentDoc,
   type PageDoc,
+  type PageMetaDoc,
   type ReleaseDoc,
   type SettingsDoc,
   STORAGE_PATHS,
@@ -16,7 +19,6 @@ import type { Data } from "@puckeditor/core";
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   type Firestore,
   getDoc,
@@ -27,11 +29,15 @@ import {
   query,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import type { Services } from "./firebase.js";
+import { storageOf } from "./services.js";
 
-export type PageEntry = PageDoc & { id: string };
+/** A page of the list: its metadata only (the content is loaded when the page is opened). */
+export type PageEntry = PageMetaDoc & { id: string };
+/** A page with its content (editor, duplication, publication checks, AI assistant). */
+export type FullPage = PageDoc & { id: string };
 export type ReleaseEntry = ReleaseDoc & { id: string };
 export type MediaEntry = MediaDoc & { id: string };
 export type AgentEntry = AgentTokenDoc & { id: string };
@@ -40,6 +46,7 @@ export type MessageEntry = MessageDoc & { id: string };
 const now = () => new Date().toISOString();
 export const EMPTY_PAGE_DATA: Data = { root: { props: {} }, content: [] };
 
+/** The page list, live: metadata only, so it stays light whatever the size of the pages. */
 export function subscribePages(
   db: Firestore,
   onData: (pages: PageEntry[]) => void,
@@ -48,7 +55,7 @@ export function subscribePages(
   return onSnapshot(
     collection(db, COLLECTIONS.pages),
     (snap) => {
-      const pages = snap.docs.map((d) => ({ id: d.id, ...(d.data() as PageDoc) }));
+      const pages = snap.docs.map((d) => ({ id: d.id, ...(d.data() as PageMetaDoc) }));
       pages.sort((a, b) => (a.slug === "" ? -1 : b.slug === "" ? 1 : a.slug.localeCompare(b.slug)));
       onData(pages);
     },
@@ -56,14 +63,29 @@ export function subscribePages(
   );
 }
 
-export async function getPage(db: Firestore, id: string): Promise<PageEntry | undefined> {
-  const snap = await getDoc(doc(db, COLLECTIONS.pages, id));
-  return snap.exists() ? { id: snap.id, ...(snap.data() as PageDoc) } : undefined;
+/** A page and its content (two documents with the same id). */
+export async function getPage(db: Firestore, id: string): Promise<FullPage | undefined> {
+  const [meta, content] = await Promise.all([
+    getDoc(doc(db, COLLECTIONS.pages, id)),
+    getDoc(doc(db, COLLECTIONS.pageContent, id)),
+  ]);
+  if (!meta.exists()) return undefined;
+  return {
+    id,
+    ...joinPage(meta.data() as PageMetaDoc, content.data() as PageContentDoc | undefined),
+  };
 }
 
-export async function getAllPages(db: Firestore): Promise<PageEntry[]> {
-  const snap = await getDocs(collection(db, COLLECTIONS.pages));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as PageDoc) }));
+export async function getAllPages(db: Firestore): Promise<FullPage[]> {
+  const [metas, contents] = await Promise.all([
+    getDocs(collection(db, COLLECTIONS.pages)),
+    getDocs(collection(db, COLLECTIONS.pageContent)),
+  ]);
+  const byId = new Map(contents.docs.map((d) => [d.id, d.data() as PageContentDoc]));
+  return metas.docs.map((d) => ({
+    id: d.id,
+    ...joinPage(d.data() as PageMetaDoc, byId.get(d.id)),
+  }));
 }
 
 export async function createPage(
@@ -75,9 +97,21 @@ export async function createPage(
   const base = slugify(input.title) || "page";
   let id = base;
   for (let n = 2; (await getDoc(doc(db, COLLECTIONS.pages, id))).exists(); n++) id = `${base}-${n}`;
-  const page: PageDoc = { ...input, data, updatedAt: now(), updatedBy: by };
-  await setDoc(doc(db, COLLECTIONS.pages, id), page);
+  await writePage(db, id, { ...input, data, updatedAt: now(), updatedBy: by });
   return id;
+}
+
+/** Writes both documents of a new page at once. */
+export async function writePage(db: Firestore, id: string, page: PageDoc) {
+  const { data, ...meta } = page;
+  const batch = writeBatch(db);
+  batch.set(doc(db, COLLECTIONS.pages, id), meta satisfies PageMetaDoc);
+  batch.set(doc(db, COLLECTIONS.pageContent, id), {
+    data,
+    updatedAt: meta.updatedAt,
+    updatedBy: meta.updatedBy,
+  } satisfies PageContentDoc);
+  await batch.commit();
 }
 
 export async function updatePageMeta(
@@ -91,6 +125,10 @@ export async function updatePageMeta(
 
 export class PageTooLargeError extends Error {}
 
+/**
+ * Saves the content of a page and, in the same write, the date of its metadata (the list shows
+ * « Modifications non publiées » from it).
+ */
 export async function savePageData(db: Firestore, id: string, data: Data, by?: string) {
   const size = estimateSize(data);
   if (size > PAGE_SIZE_WARNING_BYTES * 1.25) {
@@ -98,12 +136,19 @@ export async function savePageData(db: Firestore, id: string, data: Data, by?: s
       "Cette page est trop volumineuse pour être enregistrée : répartissez son contenu sur plusieurs pages.",
     );
   }
-  await updateDoc(doc(db, COLLECTIONS.pages, id), { data, updatedAt: now(), updatedBy: by });
+  const stamp = { updatedAt: now(), updatedBy: by };
+  const batch = writeBatch(db);
+  batch.set(doc(db, COLLECTIONS.pageContent, id), { data, ...stamp } satisfies PageContentDoc);
+  batch.update(doc(db, COLLECTIONS.pages, id), stamp);
+  await batch.commit();
   return size;
 }
 
 export async function deletePage(db: Firestore, id: string) {
-  await deleteDoc(doc(db, COLLECTIONS.pages, id));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, COLLECTIONS.pages, id));
+  batch.delete(doc(db, COLLECTIONS.pageContent, id));
+  await batch.commit();
 }
 
 export function subscribeSettings(
@@ -248,7 +293,11 @@ export async function uploadMedia(
   const name = slugify(dot > 0 ? file.name.slice(0, dot) : file.name) || "image";
   const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase() : "bin";
   const path = `${STORAGE_PATHS.media}/${Date.now().toString(36)}-${name}.${ext}`;
-  const storageRef = ref(services.storage, path);
+  const [storage, { getDownloadURL, ref, uploadBytes }] = await Promise.all([
+    storageOf(services),
+    import("firebase/storage"),
+  ]);
+  const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file, {
     contentType: file.type,
     cacheControl: "public, max-age=31536000, immutable",

@@ -1,4 +1,4 @@
-import { FUNCTION_NAMES, validatePageData, validateSettingsValues } from "@openflow/core";
+import { FUNCTION_NAMES } from "@openflow/core";
 import { useCallback, useEffect, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { useAdmin } from "./context.js";
@@ -60,8 +60,13 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
     setBusy(true);
     try {
       await flushAllAutosaves();
+      // The checks (and their schemas) are only downloaded when the owner publishes.
+      const [{ validatePageData, validateSettingsValues }, pages] = await Promise.all([
+        import("./publish-checks.js"),
+        getAllPages(services.db),
+      ]);
       const found: Problem[] = [];
-      for (const page of await getAllPages(services.db)) {
+      for (const page of pages) {
         if (page.status !== "published") continue;
         for (const issue of validatePageData(page.data, config)) {
           if (issue.severity === "error") {
