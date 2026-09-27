@@ -168,9 +168,13 @@ export {
 export type { Seed, SeedPage, SeedSettings } from "./seed.js";
 export { PAGE_ID, resolveSeedSettings, seedPageSchema, seedSettingsSchema } from "./seed.js";
 export {
+  AI_SEARCH_BOTS,
+  AI_TRAINING_BOTS,
   absoluteUrl,
   buildRssFeed,
+  changedUrls,
   FEED_PATH,
+  INDEXNOW_PATH,
   itemEntry,
   jsonLdScript,
   pageJsonLd,

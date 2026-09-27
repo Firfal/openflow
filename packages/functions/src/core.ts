@@ -1,10 +1,14 @@
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  absoluteUrl,
   COLLECTIONS,
+  changedUrls,
   createSnapshot,
   DOCS,
+  INDEXNOW_PATH,
   type IntegrationsDoc,
   joinPage,
   type MediaDoc,
@@ -400,6 +404,51 @@ export async function ensureWebApp(
   }
   await client.request({ url: `${siteUrl}?updateMask=appId`, method: "PATCH", data: { appId } });
   return { appId, created };
+}
+
+// ---------------------------------------------------------------------------------------------
+// IndexNow (Bing, Copilot, Yandex, Seznam…): changed pages are announced at each publication.
+
+const INDEXNOW_KEY = /^[a-f0-9]{32}$/;
+
+/** The site's IndexNow key, made once (it is public: the site serves it at `/indexnow.txt`). */
+export async function ensureIndexNowKey(db: Firestore): Promise<string> {
+  const ref = db.collection(COLLECTIONS.system).doc(DOCS.integrations);
+  const current = ((await ref.get()).data() as IntegrationsDoc | undefined)?.indexNowKey;
+  if (current && INDEXNOW_KEY.test(current)) return current;
+  const key = randomBytes(16).toString("hex");
+  await ref.set({ indexNowKey: key } satisfies IntegrationsDoc, { merge: true });
+  return key;
+}
+
+export type IndexNowResult = { sent: number } | { skipped: string };
+
+/**
+ * Sends the pages changed since the previous publication (`since`) to IndexNow. Skipped without the
+ * site's address, without changes, or when the site does not serve its key yet (sites made before
+ * `app/indexnow.txt/route.ts`).
+ */
+export async function notifyIndexNow(
+  snapshot: Snapshot,
+  since: string | undefined,
+  fetchImpl: typeof fetch = fetch,
+): Promise<IndexNowResult> {
+  const key = snapshot.integrations?.indexNowKey;
+  const { site } = snapshot;
+  if (!key || !site.url) return { skipped: key ? "adresse du site inconnue" : "pas de clé" };
+  const urls = changedUrls(snapshot, since).slice(0, 1000);
+  if (urls.length === 0) return { skipped: "aucune page modifiée" };
+  const keyLocation = absoluteUrl(site, INDEXNOW_PATH) as string;
+  const served = await fetchImpl(keyLocation)
+    .then((response) => (response.ok ? response.text() : ""))
+    .catch(() => "");
+  if (served.trim() !== key) return { skipped: "clé non servie par le site" };
+  const response = await fetchImpl("https://api.indexnow.org/indexnow", {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ host: new URL(site.url).host, key, keyLocation, urlList: urls }),
+  });
+  return response.ok ? { sent: urls.length } : { skipped: `HTTP ${response.status}` };
 }
 
 /** Marks every other live release as superseded and `releaseId` as live. */

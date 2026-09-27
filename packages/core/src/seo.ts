@@ -89,6 +89,7 @@ export function pageJsonLd(
       }),
       ...(image ? { image: [image] } : {}),
       ...(entry.date ? { datePublished: entry.date } : {}),
+      ...(page.updatedAt ? { dateModified: page.updatedAt } : {}),
       ...(url ? { mainEntityOfPage: url, url } : {}),
       inLanguage: site.lang,
       author: publisher,
@@ -201,4 +202,45 @@ export function buildRssFeed(snapshot: Snapshot, config: OpenFlowConfig, limit =
     "</rss>",
     "",
   ].join("\n");
+}
+
+/**
+ * Crawlers that collect content to train AI models: refused in robots.txt when the owner chooses so
+ * (`site.aiTraining: "block"`, Réglages > Site et référencement). Names from each operator's docs.
+ */
+export const AI_TRAINING_BOTS = [
+  "GPTBot",
+  "ClaudeBot",
+  "Google-Extended",
+  "Applebot-Extended",
+  "CCBot",
+  "meta-externalagent",
+  "Bytespider",
+];
+
+/** Crawlers of AI search and assistants (they cite and link the site): always allowed. */
+export const AI_SEARCH_BOTS = [
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "Claude-SearchBot",
+  "Claude-User",
+  "PerplexityBot",
+  "Perplexity-User",
+];
+
+/** Where the site serves its IndexNow key (`app/indexnow.txt/route.ts`). */
+export const INDEXNOW_PATH = "/indexnow.txt";
+
+/**
+ * Absolute addresses of the pages changed since `since` (every page without it), indexable only,
+ * for IndexNow. Empty without `site.url`.
+ */
+export function changedUrls(snapshot: Snapshot, since?: string): string[] {
+  const { site } = snapshot;
+  if (!site.url) return [];
+  return snapshot.pages
+    .filter((page) => !page.seo.noindex)
+    .filter((page) => !since || !page.updatedAt || page.updatedAt > since)
+    .map((page) => absoluteUrl(site, slugToPath(page.slug)))
+    .filter((url): url is string => Boolean(url));
 }

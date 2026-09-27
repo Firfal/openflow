@@ -399,6 +399,8 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(html).toContain('@media (max-width:767.98px){[data-of-s="');
     expect(html).toContain("color:#ff0000");
     expect(html).toContain(":root{--color-brand:#123456}");
+    // IndexNow key made at the first publication, served for Bing, Copilot…
+    expect(readFileSync(path.join(site, "out", "indexnow.txt"), "utf8")).toMatch(/^[a-f0-9]{32}$/);
     // The business profile: structured data for Google and AI assistants.
     expect(html).toContain('"openingHoursSpecification"');
     expect(html).toContain('"validFrom":"2099-08-10"');

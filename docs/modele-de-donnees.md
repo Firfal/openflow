@@ -9,13 +9,13 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
-| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`, `business` : fiche établissement, voir plus bas), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
+| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`, `business` : fiche établissement, voir plus bas, `aiTraining` : `block` pour refuser les robots d'entraînement des IA dans robots.txt), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
 | `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy`. Pour un élément de collection : `collection` (son nom) et `summary` (valeurs affichées dans les listes, voir plus bas) | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages et des collections, en direct), `cmsPublish` |
 | `cms_page_content/{pageId}` | Contenu de la page (même identifiant) : `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin (enregistrement automatique, écrit avec la date de la fiche), `openflow seed`, `cmsMcp` | Admin (à l'ouverture de la page), `cmsPublish`, `cmsMcp` |
 | `cms_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
 | `cms_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` ; `variants` (copies optimisées : `url`, `width`, `height`, `size`), `poster` (aperçu d'une vidéo), `optimization` (`status` : `pending`, `done`, `skipped` ou `failed`) | Admin, `openflow seed`, `cmsOptimizeMedia` (copies) | Admin (médiathèque), `cmsPublish` |
 | `cms_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `cmsPublish` |
-| `cms_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires, publiée dans le snapshot | `openflow setup` | `cmsPublish` |
+| `cms_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires ; `indexNowKey` : clé IndexNow (publique, servie à `/indexnow.txt`), créée à la première publication. Toutes deux sont publiées dans le snapshot | `openflow setup`, `cmsPublish` (clé IndexNow) | `cmsPublish` |
 | `cms_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème, collections (`buildSiteSchema`) | `openflow seed` / `deploy` | `cmsMcp` |
 | `cms_agent_tokens/{id}` | IA connectées et clés d'accès : `kind` (`key` ou `oauth`), `label`, `hash` (SHA-256 de la clé ou du jeton d'accès), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` ; en OAuth, `clientId`, `expiresAt`, `refreshHash`, `refreshExpiresAt`, `redirect` | `cmsCreateAgentToken`, `cmsMcp` | Admin (liste, déconnexion) |
 | `cms_agent_clients/{clientId}` | Clients OAuth enregistrés par les IA : `name`, `redirectUris`, `authMethod`, `secretHash`, `createdAt`, `lastUsedAt` | `cmsMcp` | `cmsMcp` |
@@ -82,6 +82,8 @@ Aucune nouvelle collection Firestore ni règle de sécurité : les fiches resten
 - Seules les pages `published` y figurent.
 - Les liens internes (`{ kind: "page", pageId }`) ont leur `href` recalculé à partir des slugs du moment.
 - Chaque section a un `props.id` unique.
+- Chaque page garde sa date de modification (`updatedAt`) : `lastmod` du sitemap, `dateModified` et
+  `article:modified_time` des éléments de collection, et pages à annoncer à IndexNow.
 - Les styles (`_style`) et le thème sont revalidés : les valeurs hors liste blanche sont retirées.
 - La publication est refusée si deux pages ont la même adresse ou si un slug est invalide.
 - Les éléments de collection gardent leur `collection`. Au rendu, `buildCollections` en tire, pour chaque

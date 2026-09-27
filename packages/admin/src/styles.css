@@ -746,6 +746,22 @@ select.of-input {
   min-width: 0;
 }
 
+/* A group of radio choices, one per line. */
+.of-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.of-choices .of-field__hint {
+  display: block;
+  margin-top: 2px;
+}
+
 /* Two fields side by side (one column on phones). */
 .of-grid-2 {
   display: grid;

@@ -169,12 +169,22 @@ export interface SiteSettings {
   gaMeasurementId?: string;
   /** The business behind the site (Réglages > Établissement): contact, address, hours. */
   business?: BusinessInfo;
+  /**
+   * AI crawlers that train models (GPTBot, ClaudeBot, Google-Extended…): `block` refuses them in
+   * robots.txt. AI search crawlers stay allowed either way, so the site keeps being cited.
+   */
+  aiTraining?: "allow" | "block";
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */
 export interface IntegrationsDoc {
   /** reCAPTCHA Enterprise site key (score, invisible) protecting the forms. */
   recaptchaSiteKey?: string;
+  /**
+   * IndexNow key (public by design: served at `/indexnow.txt`), made at the first publication.
+   * Bing, Copilot, Yandex, Seznam… are told about the changed pages at each publication.
+   */
+  indexNowKey?: string;
 }
 
 /** `cms_site/settings`. */

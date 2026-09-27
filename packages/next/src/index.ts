@@ -1,6 +1,7 @@
 export { createOpenFlowLayout } from "./layout.js";
 export { buildMetadata, createOpenFlowPage } from "./page.js";
 export {
+  createIndexNowKey,
   createLlmsFullTxt,
   createLlmsTxt,
   createRobots,

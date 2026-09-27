@@ -115,7 +115,9 @@ livraison, sans rien refaire de ce qui est déjà en place.
    - `next build` avec `CMS_SNAPSHOT` ;
    - `firebase deploy --only hosting`.
 4. Cloud Build publie son statut sur le sujet Pub/Sub `cloud-builds`. `cmsOnBuildStatus` met à jour la
-   publication (`building`, puis `live` ou `failed`) et mémorise la version Hosting.
+   publication (`building`, puis `live` ou `failed`) et mémorise la version Hosting. Une fois en ligne,
+   les pages modifiées depuis la publication précédente sont annoncées à **IndexNow** (Bing, Copilot,
+   Yandex, Seznam…), si le site sert sa clé à `/indexnow.txt` et connaît son adresse.
 5. **Restaurer** appelle `releases.create` de l'API REST Hosting sur la version précédente. C'est instantané.
 
 En local, avec les émulateurs, le builder `local` lance `openflow build --report` en tâche de fond : même

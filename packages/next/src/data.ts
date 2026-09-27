@@ -3,6 +3,7 @@
  * `next/navigation`, which Next.js does not allow outside of pages.
  */
 export {
+  createIndexNowKey,
   createLlmsFullTxt,
   createLlmsTxt,
   createRobots,

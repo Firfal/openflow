@@ -1,8 +1,10 @@
+import { createSnapshot } from "@openflow/core";
 import { describe, expect, it } from "vitest";
 import {
   buildRequest,
   formerOwners,
   isOwnerToken,
+  notifyIndexNow,
   ownerDecision,
   parseOwners,
   releaseStatusFromBuild,
@@ -100,5 +102,76 @@ describe("cloud build", () => {
     expect(releaseStatusFromBuild({ status: "SUCCESS" })).toBe("live");
     expect(releaseStatusFromBuild({ status: "TIMEOUT" })).toBe("failed");
     expect(releaseStatusFromBuild({ status: "STATUS_UNKNOWN" })).toBeUndefined();
+  });
+});
+
+describe("IndexNow", () => {
+  const snapshot = (url?: string, key = "0123456789abcdef0123456789abcdef") =>
+    createSnapshot({
+      releaseId: "r2",
+      integrations: { indexNowKey: key },
+      settings: { site: { name: "Pain", lang: "fr", ...(url ? { url } : {}) }, values: {} },
+      pages: [
+        {
+          id: "a",
+          slug: "",
+          title: "Accueil",
+          status: "published",
+          seo: {},
+          data: { root: { props: {} }, content: [] },
+          updatedAt: "2026-09-01T10:00:00.000Z",
+        },
+        {
+          id: "b",
+          slug: "tarifs",
+          title: "Tarifs",
+          status: "published",
+          seo: {},
+          data: { root: { props: {} }, content: [] },
+          updatedAt: "2026-09-20T10:00:00.000Z",
+        },
+        {
+          id: "c",
+          slug: "cache",
+          title: "Cachée",
+          status: "published",
+          seo: { noindex: true },
+          data: { root: { props: {} }, content: [] },
+          updatedAt: "2026-09-20T10:00:00.000Z",
+        },
+      ],
+    });
+
+  it("sends the pages changed since the last publication, once the site serves its key", async () => {
+    const calls: Array<{ url: string; body?: string }> = [];
+    const fake = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, body: init?.body as string | undefined });
+      if (url.endsWith("/indexnow.txt")) return new Response("0123456789abcdef0123456789abcdef");
+      return new Response(null, { status: 202 });
+    }) as typeof fetch;
+    const result = await notifyIndexNow(
+      snapshot("https://pain.fr"),
+      "2026-09-10T00:00:00.000Z",
+      fake,
+    );
+    expect(result).toEqual({ sent: 1 });
+    const body = JSON.parse(calls[1]!.body!);
+    expect(calls[1]!.url).toBe("https://api.indexnow.org/indexnow");
+    expect(body).toEqual({
+      host: "pain.fr",
+      key: "0123456789abcdef0123456789abcdef",
+      keyLocation: "https://pain.fr/indexnow.txt",
+      urlList: ["https://pain.fr/tarifs/"],
+    });
+  });
+
+  it("skips without an address, or when the key is not served", async () => {
+    const notServed = (async () => new Response("not found", { status: 404 })) as typeof fetch;
+    expect(await notifyIndexNow(snapshot(), undefined, notServed)).toEqual({
+      skipped: "adresse du site inconnue",
+    });
+    expect(await notifyIndexNow(snapshot("https://pain.fr"), undefined, notServed)).toEqual({
+      skipped: "clé non servie par le site",
+    });
   });
 });

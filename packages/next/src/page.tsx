@@ -59,7 +59,11 @@ export function buildMetadata(
       siteName: site.name,
       locale: site.lang,
       ...(entry
-        ? { type: "article", ...(entry.date ? { publishedTime: entry.date } : {}) }
+        ? {
+            type: "article",
+            ...(entry.date ? { publishedTime: entry.date } : {}),
+            ...(page.updatedAt ? { modifiedTime: page.updatedAt } : {}),
+          }
         : { type: "website" }),
       images: image ? [{ url: image }] : undefined,
     },

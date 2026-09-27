@@ -37,9 +37,11 @@ import {
   type Builder,
   type CloudBuildEvent,
   currentHostingVersion,
+  ensureIndexNowKey,
   getSource,
   isOwnerToken,
   markLive,
+  notifyIndexNow,
   ownerDecision,
   parseOwners,
   releaseHostingVersion,
@@ -167,6 +169,8 @@ async function publishSite(by: string): Promise<{ releaseId: string }> {
   }
 
   const releaseRef = db.collection(COLLECTIONS.releases).doc();
+  // IndexNow key, published with the site (announces the changed pages to Bing, Copilot…).
+  await ensureIndexNowKey(db).catch((error) => logger.warn("IndexNow key not created", error));
   let snapshot: Awaited<ReturnType<typeof snapshotFromFirestore>>;
   try {
     snapshot = await snapshotFromFirestore(db, releaseRef.id);
@@ -547,6 +551,17 @@ export const cmsMcp = onRequest(
   },
 );
 
+/** Best effort, once a publication is live: the changed pages are sent to IndexNow. */
+async function announceChanges(release: ReleaseDoc, since: string | undefined) {
+  try {
+    const [content] = await getStorage().bucket().file(release.snapshotPath).download();
+    const result = await notifyIndexNow(parseSnapshot(JSON.parse(content.toString("utf8"))), since);
+    logger.info("IndexNow", result);
+  } catch (error) {
+    logger.warn("IndexNow failed", error);
+  }
+}
+
 /** Follows Cloud Build (topic `cloud-builds`) and updates the matching release. */
 export const cmsOnBuildStatus = onMessagePublished(
   { topic: "cloud-builds", region },
@@ -574,11 +589,20 @@ export const cmsOnBuildStatus = onMessagePublished(
       } catch (error) {
         logger.warn("Could not read the Hosting release", error);
       }
+      const previous = await db
+        .collection(COLLECTIONS.releases)
+        .where("status", "==", "live")
+        .limit(1)
+        .get();
       await markLive(db, releaseId, {
         finishedAt,
         hostingVersion,
         logUrl: build.logUrl ?? current.logUrl,
       });
+      await announceChanges(
+        current,
+        (previous.docs[0]?.data() as ReleaseDoc | undefined)?.createdAt,
+      );
     } else if (status === "failed") {
       logger.error(PUBLICATION_FAILED_LOG, {
         releaseId,

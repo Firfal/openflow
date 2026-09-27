@@ -17,7 +17,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 - `openflow/seed/` : le contenu de départ (`settings.json`, `pages/<id>.json`), importé dans Firestore
   à la livraison. Il n'écrase jamais le contenu du propriétaire.
 - `app/(site)/[[...slug]]/page.tsx` : toutes les pages viennent du snapshot publié. `app/admin/` : l'admin.
-- `app/llms.txt/` et `app/llms-full.txt/` : le site tel que le lisent les IA. Les réécritures `/mcp` de
+- `app/llms.txt/` et `app/llms-full.txt/` : le site tel que le lisent les IA. `app/indexnow.txt/` : la clé
+  qui permet d'annoncer les pages modifiées à Bing et Copilot à chaque publication. Les réécritures `/mcp` de
   `firebase.json` : l'adresse où le propriétaire branche son IA (Claude, ChatGPT…).
 - Formulaires : la section `ContactForm` (champs `formFieldsField()`, affichage `<OpenFlowForm>` de
   `@openflow/next/forms`). Les messages arrivent dans l'admin (« Messages ») via la réécriture

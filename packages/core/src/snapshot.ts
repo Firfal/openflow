@@ -45,6 +45,7 @@ export const siteSettingsSchema = z.object({
     .optional()
     .catch(undefined),
   business: businessSchema.optional().catch(undefined),
+  aiTraining: z.enum(["allow", "block"]).optional().catch(undefined),
 });
 
 export const snapshotPageSchema = z.object({
@@ -54,6 +55,8 @@ export const snapshotPageSchema = z.object({
   seo: seoSchema.default({}),
   /** Items of a collection (`config.collections`): the collection's name. */
   collection: z.string().optional(),
+  /** Last change of the page (sitemap `lastmod`, `dateModified`). */
+  updatedAt: z.string().optional(),
   data: pageDataSchema,
 });
 
@@ -66,7 +69,9 @@ export const snapshotSchema = z.object({
   /** Theme tokens (`:root` variables), e.g. `{ "color-ink": "#101820" }`. */
   theme: z.record(z.string(), z.string()).default({}),
   /** Public keys of the site's integrations (reCAPTCHA), from `cms_system/integrations`. */
-  integrations: z.object({ recaptchaSiteKey: z.string().optional() }).default({}),
+  integrations: z
+    .object({ recaptchaSiteKey: z.string().optional(), indexNowKey: z.string().optional() })
+    .default({}),
   pages: z.array(snapshotPageSchema),
 });
 
@@ -77,10 +82,13 @@ export interface SnapshotInput {
   releaseId: string;
   createdAt?: string;
   /** Public keys of the integrations (`cms_system/integrations`). */
-  integrations?: { recaptchaSiteKey?: string };
+  integrations?: { recaptchaSiteKey?: string; indexNowKey?: string };
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<
-    Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & { id: string }
+    Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & {
+      id: string;
+      updatedAt?: string;
+    }
   >;
 }
 
@@ -123,6 +131,7 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
       title: page.title,
       seo: page.seo ?? {},
       ...(page.collection ? { collection: page.collection } : {}),
+      ...(page.updatedAt ? { updatedAt: page.updatedAt } : {}),
       // Styles are re-validated here: only whitelisted values reach the published CSS.
       data: sanitizePageStyles(resolvePageLinks(ensureIds(page.data), hrefByPageId)),
     }))
@@ -140,6 +149,8 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
   if (business) site.business = business;
   else delete site.business;
   const recaptchaSiteKey = input.integrations?.recaptchaSiteKey;
+  const indexNowKey = input.integrations?.indexNowKey;
+  if (site.aiTraining !== "block") delete site.aiTraining;
   return {
     version: SNAPSHOT_VERSION,
     releaseId: input.releaseId,
@@ -147,8 +158,10 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     site,
     settings: resolvePageLinks(input.settings.values ?? {}, hrefByPageId),
     theme: sanitizeTheme(input.settings.theme),
-    integrations:
-      recaptchaSiteKey && /^[\w-]{20,60}$/.test(recaptchaSiteKey) ? { recaptchaSiteKey } : {},
+    integrations: {
+      ...(recaptchaSiteKey && /^[\w-]{20,60}$/.test(recaptchaSiteKey) ? { recaptchaSiteKey } : {}),
+      ...(indexNowKey && /^[a-f0-9]{32}$/.test(indexNowKey) ? { indexNowKey } : {}),
+    },
     pages,
   };
 }

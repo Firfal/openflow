@@ -142,6 +142,41 @@ function SiteForm() {
           onChange={(e) => setSite({ ...site, gaMeasurementId: e.target.value })}
         />
       </FormField>
+      <div>
+        <h2>Robots des IA</h2>
+        <p className="of-card__lead">
+          Les assistants IA (ChatGPT, Claude, Perplexity, Copilot…) lisent votre site pour répondre
+          et vous citer : ils restent toujours autorisés. Vous pouvez en revanche refuser que vos
+          textes servent à entraîner des modèles d'IA.
+        </p>
+      </div>
+      <fieldset className="of-choices">
+        <legend className="of-sr-only">Entraînement des IA</legend>
+        <label className="of-checkbox">
+          <input
+            type="radio"
+            name="ai-training"
+            checked={site.aiTraining !== "block"}
+            onChange={() => setSite({ ...site, aiTraining: undefined })}
+          />
+          Autoriser l'entraînement des IA sur mes textes
+        </label>
+        <label className="of-checkbox">
+          <input
+            type="radio"
+            name="ai-training"
+            checked={site.aiTraining === "block"}
+            onChange={() => setSite({ ...site, aiTraining: "block" })}
+          />
+          <span>
+            Refuser l'entraînement des IA
+            <span className="of-field__hint">
+              GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot… sont refusés dans
+              robots.txt ; le site reste visible dans les recherches IA.
+            </span>
+          </span>
+        </label>
+      </fieldset>
       <div className="of-row">
         <Button variant="primary" type="submit" busy={busy} disabled={Boolean(urlError || gaError)}>
           Enregistrer

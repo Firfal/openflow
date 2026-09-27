@@ -30,6 +30,7 @@ frontière entre les deux est constituée des **champs** déclarés par chaque s
 | `app/admin/*` | Admin OpenFlow | Ne pas modifier |
 | `app/llms.txt/route.ts`, `app/llms-full.txt/route.ts` | Le site lu par les IA (`createLlmsTxt`, `createLlmsFullTxt`) | Ne pas modifier |
 | `app/rss.xml/route.ts` | Flux RSS des collections (`createRssFeed`), si le site en a | Ne pas modifier |
+| `app/indexnow.txt/route.ts` | Clé IndexNow du site (`createIndexNowKey`) : à chaque publication, les pages modifiées sont annoncées à Bing, Copilot… | Ne pas modifier |
 | `firebase.json`, `*.rules`, `functions/` | Infrastructure et sécurité ; réécritures `/mcp` vers le serveur MCP (connexion des IA) et `/forms/submit` vers la fonction des formulaires | Seulement hors des blocs `openflow` |
 
 ## Anatomie d'une section

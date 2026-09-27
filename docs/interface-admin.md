@@ -22,7 +22,8 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Messages**, avec le nombre de messages non lus ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
   - **Réglages**, qui se déplie en quatre sous-pages : Contenu commun, Thème, Site et référencement
-    (identité, langue, et **Mesure d'audience** : l'identifiant Google Analytics `G-…`), et
+    (identité, langue, **Mesure d'audience** : l'identifiant Google Analytics `G-…`, et **Robots des IA** :
+    autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
     **Établissement** (voir plus bas) ;
   - **Historique** ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
