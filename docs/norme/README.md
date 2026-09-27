@@ -42,6 +42,10 @@ hooks renvoient automatiquement les erreurs à l'agent, qui les corrige avant de
 | [OF-403](OF-403.md) | Titre ou description de page manquant | erreur | build | appliquée |
 | [OF-404](OF-404.md) | Lien interne cassé | erreur | build | appliquée |
 | [OF-405](OF-405.md) | Langue de la page non déclarée | erreur | build | appliquée |
+| [OF-406](OF-406.md) | Élément interactif sans nom accessible | erreur | build | appliquée |
+| [OF-407](OF-407.md) | Élément cliquable non natif | avertissement | build | appliquée |
+| [OF-408](OF-408.md) | Formulaire non déclaré aux assistants IA | avertissement | build | appliquée |
+| [OF-409](OF-409.md) | Image sans dimensions | avertissement | build | appliquée |
 
 ## Format des retours
 

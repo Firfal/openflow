@@ -456,15 +456,72 @@ describe("html checks (build)", () => {
     await writeFile(
       path.join(out, "index.html"),
       `<!doctype html><html lang="fr"><head><title>Accueil</title><meta name="description" content="x"></head>
-<body><h1>A</h1><h2>B</h2><img src="/a.jpg" alt=""><a href="/a-propos/">ok</a></body></html>`,
+<body><h1>A</h1><h2>B</h2><img src="/a.jpg" alt="" width="1" height="1"><a href="/a-propos/">ok</a></body></html>`,
     );
     await writeFile(
       path.join(out, "a-propos/index.html"),
-      `<!doctype html><html><head></head><body><h1>A</h1><h1>B</h1><h4>C</h4><img src="/b.jpg"><a href="/nulle-part/">x</a><a href="/admin/">admin</a></body></html>`,
+      `<!doctype html><html><head></head><body><h1>A</h1><h1>B</h1><h4>C</h4><img src="/b.jpg" width="1" height="1"><a href="/nulle-part/">x</a><a href="/admin/">admin</a></body></html>`,
     );
     await writeFile(path.join(out, "admin/index.html"), "<html><body>admin</body></html>");
     const rules = rulesOf(await checkHtml(dir));
     expect(rules).toEqual(["OF-401", "OF-402", "OF-402", "OF-403", "OF-403", "OF-404", "OF-405"]);
+  });
+});
+
+describe("agent readiness (build)", () => {
+  it("wants named controls, native buttons, declared forms and sized images", async () => {
+    const dir = await makeSite("agents");
+    const out = path.join(dir, "out");
+    await mkdir(out, { recursive: true });
+    const head = `<!doctype html><html lang="fr"><head><title>T</title><meta name="description" content="x"></head>`;
+    await writeFile(
+      path.join(out, "index.html"),
+      `${head}<body><h1>A</h1>
+<a href="/">Accueil</a>
+<a href="/"><img src="/logo.svg" alt="Accueil" width="40" height="40"></a>
+<button aria-label="Ouvrir le menu"><svg aria-hidden="true"></svg></button>
+<button><svg aria-hidden="true"></svg></button>
+<a href="https://instagram.com/x"><svg><title>Instagram</title></svg></a>
+<a href="https://facebook.com/x"><svg></svg></a>
+<form toolname="send_contact" tooldescription="Écrire">
+  <label for="e">E-mail</label><input id="e" type="email">
+  <label>Nom <input type="text" name="nom"></label>
+  <input type="email" placeholder="Autre e-mail">
+  <div aria-hidden="true"><input type="text" name="website"></div>
+  <input type="hidden" name="t" value="1">
+  <input type="submit">
+</form>
+<form action="/devis"><input aria-label="Budget" type="number"></form>
+<div role="button" tabindex="0">Voir la carte</div>
+<span tabindex="0">Plus</span>
+<div tabindex="-1">Zone</div>
+<iframe src="https://maps"></iframe>
+<iframe src="https://video" title="Visite de l'atelier"></iframe>
+<img src="/a.jpg" alt="">
+<img src="/b.jpg" alt="" class="aspect-[4/3] w-full">
+<img src="/c.jpg" alt="" width="10" height="10">
+</body></html>`,
+    );
+    const issues = await checkHtml(dir);
+    expect(rulesOf(issues)).toEqual([
+      "OF-406",
+      "OF-406",
+      "OF-406",
+      "OF-406",
+      "OF-406",
+      "OF-407",
+      "OF-407",
+      "OF-408",
+      "OF-409",
+    ]);
+    const messages = issues.map((i) => i.message).join("\n");
+    expect(messages).toContain("<button> sans nom accessible");
+    expect(messages).toContain("https://facebook.com/x");
+    expect(messages).toContain("champ <input> sans libellé");
+    expect(messages).toContain("bouton <input> sans texte");
+    expect(messages).toContain("<iframe> sans title");
+    expect(messages).toContain("/devis");
+    expect(messages).toContain("/a.jpg");
   });
 });
 

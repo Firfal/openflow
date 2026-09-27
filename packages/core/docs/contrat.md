@@ -115,6 +115,8 @@ Puis, dans `openflow.config.tsx` : `components: { …, Offre }` et `categories.c
 - **OF-305** : les IA peuvent se connecter (`/mcp` dans `firebase.json`) et lire le site (`llms.txt`, et
   `rss.xml` avec des collections).
 - **OF-401 à OF-405** : HTML accessible et référençable (`alt`, un seul `h1`, `<title>` et description, liens valides, `lang`).
+- **OF-406 à OF-409** : prêt pour les agents IA qui naviguent pour le visiteur (liens, boutons et champs
+  nommés, éléments cliquables natifs, formulaires déclarés avec WebMCP, images dimensionnées).
 
 Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
 

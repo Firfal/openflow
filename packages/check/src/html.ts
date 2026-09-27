@@ -72,7 +72,151 @@ function issue(
   return { rule: rule.id, severity, message, file, hint: rule.fix };
 }
 
-/** Level `build`: OF-401 … OF-405 on every exported page (admin and Next internals excluded). */
+/** Parent of each element, to look up labels and hidden ancestors. */
+function parents(root: Node): Map<Element, Element | undefined> {
+  const out = new Map<Element, Element | undefined>();
+  const visit = (node: Node, parent: Element | undefined) => {
+    const element = "tagName" in node ? (node as Element) : undefined;
+    if (element) out.set(element, parent);
+    if ("childNodes" in node) {
+      for (const child of node.childNodes) visit(child as Node, element ?? parent);
+    }
+  };
+  visit(root, undefined);
+  return out;
+}
+
+const ancestors = (element: Element, parentOf: Map<Element, Element | undefined>) => {
+  const out: Element[] = [];
+  for (let current = parentOf.get(element); current; current = parentOf.get(current)) {
+    out.push(current);
+  }
+  return out;
+};
+
+/** Hidden from people and assistive technologies (honeypots, closed dialogs, `hidden`). */
+const hiddenFromAll = (element: Element, parentOf: Map<Element, Element | undefined>) =>
+  [element, ...ancestors(element, parentOf)].some(
+    (el) => attr(el, "aria-hidden") === "true" || attr(el, "hidden") !== undefined,
+  );
+
+/** The accessible name of a link or a button: text, `aria-label`, `title`, image `alt`, SVG title. */
+function hasName(element: Element): boolean {
+  if (attr(element, "aria-label")?.trim() || attr(element, "aria-labelledby")?.trim()) return true;
+  if (attr(element, "title")?.trim()) return true;
+  if (textOf(element).trim()) return true;
+  return elements(element).some(
+    (child) =>
+      (child.tagName === "img" && Boolean(attr(child, "alt")?.trim())) ||
+      (child.tagName === "svg" && Boolean(attr(child, "aria-label")?.trim())) ||
+      (child.tagName === "title" && Boolean(textOf(child).trim())),
+  );
+}
+
+const FIELD_TYPES_WITHOUT_LABEL = new Set(["hidden", "submit", "reset", "button", "image"]);
+
+/**
+ * Level `build`, agent readiness (OF-406 … OF-409): interactive elements with a name, native
+ * controls, forms declared to AI assistants (WebMCP), images that keep their room.
+ */
+function checkAgentReadiness(all: Element[], doc: Node, rel: string, page: string): Issue[] {
+  const issues: Issue[] = [];
+  const parentOf = parents(doc);
+  const labelled = new Set(
+    all.filter((el) => el.tagName === "label").flatMap((el) => attr(el, "for") ?? []),
+  );
+  const describe = (element: Element) => {
+    const text = textOf(element).replace(/\s+/g, " ").trim().slice(0, 40);
+    const id = attr(element, "id") ?? attr(element, "name") ?? attr(element, "href") ?? "";
+    return `<${element.tagName}${id ? ` ${id}` : ""}>${text ? ` « ${text} »` : ""}`;
+  };
+  for (const element of all) {
+    if (hiddenFromAll(element, parentOf)) continue;
+    const tag = element.tagName;
+    const role = attr(element, "role");
+    if ((tag === "a" && attr(element, "href") !== undefined) || tag === "button") {
+      if (!hasName(element)) {
+        issues.push(
+          issue("OF-406", rel, `Page ${page} : ${describe(element)} sans nom accessible.`),
+        );
+      }
+    } else if (tag === "input" || tag === "select" || tag === "textarea") {
+      const type = (attr(element, "type") ?? "text").toLowerCase();
+      if (tag === "input" && FIELD_TYPES_WITHOUT_LABEL.has(type)) {
+        if (type !== "hidden" && !attr(element, "value")?.trim() && !hasName(element)) {
+          issues.push(
+            issue("OF-406", rel, `Page ${page} : bouton ${describe(element)} sans texte.`),
+          );
+        }
+        continue;
+      }
+      const id = attr(element, "id");
+      const named =
+        Boolean(attr(element, "aria-label")?.trim() || attr(element, "aria-labelledby")?.trim()) ||
+        Boolean(attr(element, "title")?.trim()) ||
+        (id !== undefined && labelled.has(id)) ||
+        ancestors(element, parentOf).some((el) => el.tagName === "label");
+      if (!named) {
+        issues.push(
+          issue("OF-406", rel, `Page ${page} : champ ${describe(element)} sans libellé.`),
+        );
+      }
+    } else if (tag === "iframe" && !attr(element, "title")?.trim()) {
+      issues.push(
+        issue("OF-406", rel, `Page ${page} : <iframe> sans title (${attr(element, "src") ?? ""}).`),
+      );
+    }
+    const native =
+      tag === "a" ||
+      tag === "button" ||
+      tag === "input" ||
+      tag === "select" ||
+      tag === "textarea" ||
+      tag === "summary";
+    const tabindex = Number(attr(element, "tabindex"));
+    if (
+      !native &&
+      (role === "button" ||
+        role === "link" ||
+        attr(element, "onclick") !== undefined ||
+        (tabindex >= 0 && (tag === "div" || tag === "span") && !role))
+    ) {
+      issues.push(
+        issue(
+          "OF-407",
+          rel,
+          `Page ${page} : ${describe(element)} cliquable sans être un lien ou un bouton.`,
+        ),
+      );
+    }
+    if (tag === "form" && !attr(element, "toolname")) {
+      issues.push(
+        issue(
+          "OF-408",
+          rel,
+          `Page ${page} : formulaire ${attr(element, "id") ?? attr(element, "action") ?? ""} sans toolname (WebMCP).`,
+        ),
+      );
+    }
+    if (
+      tag === "img" &&
+      (!attr(element, "width") || !attr(element, "height")) &&
+      !/\baspect-|\b(h|size)-\d/.test(attr(element, "class") ?? "") &&
+      !/aspect-ratio|height/.test(attr(element, "style") ?? "")
+    ) {
+      issues.push(
+        issue(
+          "OF-409",
+          rel,
+          `Page ${page} : image sans dimensions (${attr(element, "src") ?? ""}).`,
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+/** Level `build`: OF-401 … OF-409 on every exported page (admin and Next internals excluded). */
 export async function checkHtml(
   siteDir: string,
   outDir = path.join(siteDir, "out"),
@@ -143,6 +287,8 @@ export async function checkHtml(
       if (!linkExists(outDir, href))
         issues.push(issue("OF-404", rel, `Page ${page} : lien interne cassé ${href}.`));
     }
+
+    issues.push(...checkAgentReadiness(all, doc, rel, page));
   }
   return issues;
 }

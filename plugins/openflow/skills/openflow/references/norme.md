@@ -23,3 +23,7 @@
 - **OF-403 Titre ou description de page manquant** (erreur) — Utilisez `generateMetadata` de `createOpenFlowPage()` et remplissez `seo.title` et `seo.description` dans le contenu de départ de chaque page.
 - **OF-404 Lien interne cassé** (erreur) — Utilisez un champ lien de type page (`{ "kind": "page", "pageId": "…" }`), qui est recalculé à chaque publication.
 - **OF-405 Langue de la page non déclarée** (erreur) — Dans `app/layout.tsx`, utilisez `<html lang={getSite().lang}>`.
+- **OF-406 Élément interactif sans nom accessible** (erreur) — Donnez un texte visible au lien ou au bouton ; pour une icône seule, ajoutez `aria-label` (« Ouvrir le menu »). Associez chaque champ à un `<label>` (`htmlFor` et `id`, ou le champ dans le label). Une `<iframe>` prend un `title`.
+- **OF-407 Élément cliquable non natif** (avertissement) — Utilisez `<a href>` pour aller vers une page et `<button type="button">` pour une action, stylés comme vous le souhaitez.
+- **OF-408 Formulaire non déclaré aux assistants IA** (avertissement) — Affichez le formulaire avec `<OpenFlowForm>` de `@openflow/next/forms` (déclaration automatique), ou ajoutez `toolname` et `tooldescription` au `<form>` et `toolparamdescription` à chaque champ.
+- **OF-409 Image sans dimensions** (avertissement) — Affichez les images avec `imageProps(image)`, qui fournit `width` et `height`. Pour une image codée en dur, donnez `width` et `height`, ou une classe de ratio (`aspect-[4/3]`).

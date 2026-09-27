@@ -21,7 +21,7 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
    **réalisé**.
 5. Mesure d'audience sans cookie, avec les visites venant des assistants IA (« Statistiques », outil
    `get_stats`) : **réalisée**.
-6. Audit d'accessibilité « prêt pour les agents » dans la norme.
+6. Audit d'accessibilité « prêt pour les agents » dans la norme (OF-406 à OF-409) : **réalisé**.
 7. Collections typées : événements et offres, avec leurs données structurées.
 8. Outils d'audit dans le MCP (`audit_site`, conseils dans la fenêtre de publication) : **réalisés**.
 

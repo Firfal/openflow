@@ -86,8 +86,8 @@ formulaires avec anti-spam, Google Analytics avec consentement, images optimisé
 ## Priorités retenues
 
 Réalisés en septembre 2026 : la fiche établissement (1), la fraîcheur et IndexNow (2), les robots des IA
-(3), WebMCP à jour et les formulaires déclarés (4), la mesure d'audience sans cookie (5), l'audit du site
-par l'IA (8).
+(3), WebMCP à jour et les formulaires déclarés (4), la mesure d'audience sans cookie (5), la norme « prêt
+pour les agents » (6), l'audit du site par l'IA (8).
 
 
 | # | Chantier | Effort | Pourquoi |
