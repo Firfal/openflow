@@ -16,7 +16,7 @@ champs propres à OpenFlow (image, vidéo, lien, date et formulaire), branchés 
 | Vidéo muette en boucle | `videoField({ label })` | `const v = videoProps(video); v && <video {...v} muted loop playsInline />` |
 | Lien | `linkField({ label })` | `<a {...linkProps(link)}>{label}</a>` |
 | Date (publication, événement) | `dateField({ label })` | `<time dateTime={date}>{formatDate(date)}</time>` |
-| Formulaire (contact, devis…) | `formFields: formFieldsField()` | `<OpenFlowForm formId={id} fields={formFields} … />` (`@openflow/next/forms`) |
+| Formulaire (contact, devis…) | `formFields: formFieldsField()` | `<OpenFlowForm formId={id} fields={formFields} toolDescription="Demander un devis…" … />` (`@openflow/next/forms`) ; `toolDescription` dit à l'assistant IA du visiteur à quoi sert le formulaire (WebMCP) |
 | Zone de sections imbriquées | `{ type: "slot" }` | `<Content />` (voir la doc Puck) |
 
 ## Valeurs stockées

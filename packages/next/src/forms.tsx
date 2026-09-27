@@ -45,6 +45,11 @@ export interface OpenFlowFormProps {
   classNames?: OpenFlowFormClassNames;
   /** Defaults to `/forms/submit` (the emulator's function with `NEXT_PUBLIC_CMS_EMULATORS`). */
   endpoint?: string;
+  /**
+   * What the form is for, told to the AI assistant of the visitor's browser (WebMCP declarative
+   * API): « Demander un devis pour des travaux de menuiserie ». A generic sentence by default.
+   */
+  toolDescription?: string;
 }
 
 const TEXTS = {
@@ -56,6 +61,8 @@ const TEXTS = {
     recaptcha: "Ce formulaire est protégé par reCAPTCHA :",
     privacy: "confidentialité",
     terms: "conditions",
+    tool: "Envoie un message au propriétaire du site avec ce formulaire. Le visiteur relit et confirme l'envoi.",
+    sentToAgent: "Message envoyé au propriétaire du site.",
   },
   en: {
     required: "required",
@@ -63,6 +70,8 @@ const TEXTS = {
     failed: "The message could not be sent. Check your connection and try again.",
     invalid: "Please check the highlighted fields.",
     recaptcha: "This form is protected by reCAPTCHA:",
+    tool: "Sends a message to the site's owner with this form. The visitor reviews and confirms it.",
+    sentToAgent: "Message sent to the site's owner.",
     privacy: "privacy",
     terms: "terms",
   },
@@ -134,6 +143,7 @@ export function OpenFlowForm({
   editing,
   classNames = {},
   endpoint,
+  toolDescription,
 }: OpenFlowFormProps) {
   const id = useId();
   const shownAt = useRef(0);
@@ -163,10 +173,21 @@ export function OpenFlowForm({
     if (key && !editing) void loadRecaptcha(key).catch(() => undefined);
   };
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (editing || status.kind === "sending") return;
-    const form = event.currentTarget;
+    // Sent by the AI assistant of the visitor's browser (WebMCP): it gets the result back.
+    const native = event.nativeEvent as SubmitEvent & {
+      agentInvoked?: boolean;
+      respondWith?: (result: Promise<unknown>) => void;
+    };
+    const agent = native.agentInvoked === true;
+    const result = send(event.currentTarget, agent);
+    if (agent && typeof native.respondWith === "function") native.respondWith(result);
+  };
+
+  /** Validates and sends the form; resolves with what the visitor's assistant is told. */
+  const send = async (form: HTMLFormElement, agent: boolean): Promise<string> => {
     const data = new FormData(form);
     const values: Record<string, string | boolean> = {};
     fields.forEach((field, index) => {
@@ -178,7 +199,7 @@ export function OpenFlowForm({
     if (!local.ok) {
       setErrors(local.errors);
       setStatus({ kind: "error", message: t.invalid });
-      return;
+      return `${t.invalid} ${Object.values(local.errors).join(" ")}`;
     }
     setErrors({});
     setStatus({ kind: "sending" });
@@ -202,6 +223,7 @@ export function OpenFlowForm({
           website: String(data.get("website") ?? ""),
           elapsed: Date.now() - shownAt.current,
           token,
+          ...(agent ? { agent: true } : {}),
         }),
       });
       const result = (await response.json().catch(() => ({}))) as {
@@ -212,19 +234,29 @@ export function OpenFlowForm({
       if (response.ok && result.ok) {
         form.reset();
         setStatus({ kind: "sent" });
-      } else {
-        setErrors(result.errors ?? {});
-        setStatus({ kind: "error", message: result.error || t.failed });
+        return t.sentToAgent;
       }
+      setErrors(result.errors ?? {});
+      setStatus({ kind: "error", message: result.error || t.failed });
+      return result.error || t.failed;
     } catch {
       setStatus({ kind: "error", message: t.failed });
+      return t.failed;
     }
   };
+
+  // WebMCP declarative API: the form is a tool the visitor's assistant can fill in (the visitor
+  // still confirms the sending). Browsers without it ignore these attributes.
+  const tool = {
+    toolname: `send_${formId.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "message"}`,
+    tooldescription: toolDescription || t.tool,
+  } as Record<string, string>;
 
   return (
     <form
       ref={formRef}
       className={classNames.form}
+      {...tool}
       noValidate
       onSubmit={submit}
       onFocus={warmUp}
@@ -240,6 +272,11 @@ export function OpenFlowForm({
           required: field.required === "yes",
           "aria-invalid": error ? true : undefined,
           "aria-describedby": error ? `${inputId}-error` : undefined,
+          // The parameter as the visitor's assistant sees it (WebMCP).
+          toolparamdescription:
+            field.type === "select"
+              ? `${field.label} (${formFieldOptions(field).join(", ")})`
+              : field.label,
         };
         const label = (
           <>

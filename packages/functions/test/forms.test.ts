@@ -114,6 +114,17 @@ describe("form submissions", () => {
     expect(mailed).toHaveLength(1);
   });
 
+  it("records that the visitor's AI assistant sent the form (WebMCP)", async () => {
+    const { value, db } = deps();
+    await handleSubmission({ ...good, agent: true }, "1.2.3.9", value);
+    const saved = [...db.store.entries()].find(([k]) => k.startsWith("cms_messages/"))?.[1];
+    expect(saved).toMatchObject({ agent: true });
+    const other = deps();
+    await handleSubmission({ ...good, agent: "yes" }, "1.2.3.10", other.value);
+    const plain = [...other.db.store.entries()].find(([k]) => k.startsWith("cms_messages/"))?.[1];
+    expect(plain?.agent).toBeUndefined();
+  });
+
   it("drops bots silently: honeypot or instant sending", async () => {
     for (const body of [
       { ...good, website: "http://spam" },

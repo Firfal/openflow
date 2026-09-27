@@ -85,6 +85,10 @@ anti-spam, Google Analytics avec consentement, images optimisées.
 
 ## Priorités retenues
 
+Réalisés en septembre 2026 : la fiche établissement (1), la fraîcheur et IndexNow (2), les robots des IA
+(3), WebMCP à jour et les formulaires déclarés (4).
+
+
 | # | Chantier | Effort | Pourquoi |
 |---|---|---|---|
 | 1 | **Fiche établissement** : une seule source (type d'activité, adresse, téléphone, horaires, fermetures exceptionnelles, liens vers la fiche Google et les réseaux) qui alimente le JSON-LD `LocalBusiness`, le pied de page, `llms.txt` et l'IA (« nous sommes fermés du 10 au 20 août ») | M | Les IA et Google répondent « est-ce ouvert dimanche ? » à partir de ces données |

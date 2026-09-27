@@ -35,6 +35,8 @@ export interface SubmitBody {
   /** Milliseconds between the display of the form and its sending. */
   elapsed?: unknown;
   token?: unknown;
+  /** The form was sent by the visitor's AI assistant (WebMCP `SubmitEvent.agentInvoked`). */
+  agent?: unknown;
 }
 
 export interface SubmitDeps {
@@ -157,6 +159,7 @@ export async function handleSubmission(
     read: false,
     ...(spam ? { spam: true } : {}),
     ...(score !== undefined ? { score } : {}),
+    ...(body.agent === true ? { agent: true } : {}),
   };
   await deps.db.collection(COLLECTIONS.messages).add(message);
   if (!spam) {

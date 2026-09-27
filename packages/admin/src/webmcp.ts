@@ -3,9 +3,10 @@ import { useEffect, useSyncExternalStore } from "react";
 import type { Services } from "./firebase.js";
 
 /**
- * WebMCP (`navigator.modelContext`): the AI assistant of the browser edits the site with the
- * owner's session. The tools and their schemas (`agent.ts`) are only downloaded when the browser
- * supports it: most browsers do not yet, and the admin stays light for them.
+ * WebMCP (`document.modelContext`, https://webmachinelearning.github.io/webmcp/): the AI assistant
+ * of the browser edits the site with the owner's session. The tools and their schemas (`agent.ts`)
+ * are only downloaded when the browser supports it: most browsers do not yet, and the admin stays
+ * light for them. Earlier drafts and Chrome builds exposed it as `navigator.modelContext`.
  */
 
 export interface ModelContext {
@@ -14,9 +15,15 @@ export interface ModelContext {
 }
 
 export function webMcp(): ModelContext | undefined {
-  if (typeof navigator === "undefined") return undefined;
-  const context = (navigator as Navigator & { modelContext?: ModelContext }).modelContext;
-  return typeof context?.registerTool === "function" ? context : undefined;
+  const candidates = [
+    typeof document === "undefined"
+      ? undefined
+      : (document as Document & { modelContext?: ModelContext }).modelContext,
+    typeof navigator === "undefined"
+      ? undefined
+      : (navigator as Navigator & { modelContext?: ModelContext }).modelContext,
+  ];
+  return candidates.find((context) => typeof context?.registerTool === "function");
 }
 
 type WebMcpState = { status: "unsupported" | "idle" | "active"; tools: number };

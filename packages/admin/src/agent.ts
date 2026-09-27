@@ -183,7 +183,7 @@ export function browserAgentContext(services: Services, config: OpenFlowConfig):
 }
 
 // ---------------------------------------------------------------------------------------------
-// WebMCP: the tools are exposed to the AI assistant of the browser (`navigator.modelContext`).
+// WebMCP: the tools are exposed to the AI assistant of the browser (`document.modelContext`).
 // This module is only loaded when the browser supports it (see `webmcp.ts`).
 
 /** Tools whose effect reaches visitors or cannot be undone: the owner confirms in the admin. */
@@ -244,12 +244,15 @@ export function registerWebMcp(services: Services, config: OpenFlowConfig): () =
   }
   setWebMcpState({ status: "active", tools: registered });
   return () => {
+    // The spec unregisters through the signal; earlier drafts had `unregisterTool`.
     controller.abort();
-    for (const tool of AGENT_TOOLS) {
-      try {
-        mc.unregisterTool?.(tool.name);
-      } catch {
-        // already gone
+    if (typeof mc.unregisterTool === "function") {
+      for (const tool of AGENT_TOOLS) {
+        try {
+          mc.unregisterTool(tool.name);
+        } catch {
+          // already gone
+        }
       }
     }
     setWebMcpState({ status: "idle", tools: 0 });

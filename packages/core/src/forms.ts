@@ -153,4 +153,6 @@ export interface MessageDoc {
   /** Likely spam (reCAPTCHA score): kept apart, no notification. */
   spam?: boolean;
   score?: number;
+  /** Sent by the AI assistant of the visitor's browser (WebMCP), as the browser reported it. */
+  agent?: boolean;
 }

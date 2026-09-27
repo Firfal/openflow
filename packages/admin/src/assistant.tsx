@@ -523,7 +523,7 @@ export function AssistantSettings() {
           </p>
         ) : (
           <p className="of-muted">
-            Votre navigateur ne prend pas encore en charge WebMCP (navigator.modelContext). Avec un
+            Votre navigateur ne prend pas encore en charge WebMCP (document.modelContext). Avec un
             navigateur compatible, l'assistant intégré pourra modifier le site depuis cette page,
             avec les mêmes outils que le serveur MCP.
           </p>

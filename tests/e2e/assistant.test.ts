@@ -91,11 +91,11 @@ beforeAll(async () => {
   await waitForHttp(ADMIN, 180_000);
   browser = await chromium.launch();
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  // WebMCP as a browser would expose it: the admin registers its tools here.
+  // WebMCP as the spec exposes it (`document.modelContext`): the admin registers its tools here.
   await page.addInitScript(() => {
     const tools: Record<string, any> = {};
     (window as any).__webmcpTools = tools;
-    (navigator as any).modelContext = {
+    (document as any).modelContext = {
       registerTool: (tool: any, options?: { signal?: AbortSignal }) => {
         tools[tool.name] = tool;
         options?.signal?.addEventListener("abort", () => delete tools[tool.name]);

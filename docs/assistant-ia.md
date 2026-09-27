@@ -97,7 +97,14 @@ valeurs possibles.
   modification signée `Assistant IA` (`updatedBy`) est appliquée dans Puck, avec une notification. Avec WebMCP,
   l'outil modifie directement l'état de Puck : la sauvegarde automatique reste le seul écrivain de la page
   ouverte. Les outils WebMCP (et leurs schémas) ne sont téléchargés que si le navigateur expose
-  `navigator.modelContext`.
+  `document.modelContext` (spécification du groupe communautaire W3C, septembre 2026) ou, dans les
+  versions plus anciennes de Chrome, `navigator.modelContext`.
+- **Formulaires du site pour les agents des visiteurs** : `<OpenFlowForm>` déclare chaque formulaire à
+  l'assistant IA du navigateur du visiteur (API déclarative de WebMCP : `toolname`, `tooldescription`
+  sur le formulaire, `toolparamdescription` sur chaque champ). L'assistant remplit le formulaire, le
+  visiteur relit et confirme l'envoi ; si l'envoi vient de l'assistant (`SubmitEvent.agentInvoked`), il
+  reçoit le résultat (`respondWith`) et le message porte la mention « Rempli par l'assistant IA du
+  visiteur » dans « Messages ». Les règles anti-spam restent les mêmes.
 - **Site lisible par les IA** : chaque publication produit `llms.txt` (le site, sa description et ses pages,
   au format [llmstxt.org](https://llmstxt.org)) et `llms-full.txt` (le texte de toutes les pages en
   Markdown), à partir du snapshot publié. Les pages `noindex` en sont exclues, comme du sitemap.

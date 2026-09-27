@@ -13,10 +13,12 @@
 Détail et sources : [sites-de-demain.md](sites-de-demain.md).
 
 1. Fiche établissement (données `LocalBusiness`, horaires et fermetures, utilisées par le site, les IA et
-   Google).
-2. Fraîcheur : dates de modification réelles (sitemap, JSON-LD) et IndexNow à chaque publication.
-3. Robots des IA : refuser l'entraînement sans quitter la recherche IA.
-4. WebMCP à jour (`document.modelContext`) et formulaires déclarés pour les agents des visiteurs.
+   Google) : **réalisée**.
+2. Fraîcheur : dates de modification réelles (sitemap, JSON-LD) et IndexNow à chaque publication :
+   **réalisée**.
+3. Robots des IA : refuser l'entraînement sans quitter la recherche IA : **réalisé**.
+4. WebMCP à jour (`document.modelContext`) et formulaires déclarés pour les agents des visiteurs :
+   **réalisé**.
 5. Mesure d'audience sans cookie, avec les visites venant des assistants IA.
 6. Audit d'accessibilité « prêt pour les agents » dans la norme.
 7. Collections typées : événements et offres, avec leurs données structurées.

@@ -62,7 +62,8 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 - **Messages** : ce que les visiteurs envoient avec les formulaires du site, le plus récent en premier.
   - Deux dossiers : **Reçus** et **Indésirables** (messages que le filtre anti-spam juge suspects, sans
     notification).
-  - Un message non lu porte « Nouveau ». L'ouvrir le marque comme lu.
+  - Un message non lu porte « Nouveau ». L'ouvrir le marque comme lu. Un message rempli par l'assistant IA
+    du navigateur du visiteur le signale.
   - La fenêtre d'un message affiche chaque champ, la page d'origine et la date, avec **Répondre** (ouvre la
     messagerie, adressée au visiteur), **Indésirable**, **Marquer comme non lu** et **Supprimer**.
   - Chaque nouveau message est aussi envoyé par e-mail au propriétaire (voir « Formulaires » dans

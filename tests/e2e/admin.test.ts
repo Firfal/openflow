@@ -431,6 +431,10 @@ describe("admin OpenFlow (émulateurs)", () => {
     const visitor = await browser.newPage({ viewport: { width: 390, height: 844 } });
     try {
       await visitor.goto(`http://localhost:${PORT}/contact/`);
+      // Declared to the visitor's AI assistant (WebMCP declarative API).
+      const form = visitor.locator("form[toolname]");
+      expect(await form.getAttribute("toolname")).toMatch(/^send_\w+$/);
+      expect(await form.getByLabel(/^E-mail/).getAttribute("toolparamdescription")).toBe("E-mail");
       // Sent empty: the errors are shown next to the fields, and the first one gets the focus.
       await visitor.getByRole("button", { name: "Envoyer le message" }).click();
       await expect
