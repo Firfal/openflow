@@ -3650,6 +3650,13 @@ button.of-style-row__reset:hover {
   .of-pagehead__actions {
     flex-wrap: wrap;
   }
+  /* A title with a description takes the whole width; the actions go below it. */
+  .of-pagehead__title:has(.of-subtle) {
+    flex-basis: 100%;
+  }
+  .of-toolbar__search {
+    flex: 1 1 100%;
+  }
   .of-hide-sm {
     display: none;
   }
