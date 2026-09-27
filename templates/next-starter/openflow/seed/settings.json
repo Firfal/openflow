@@ -2,7 +2,25 @@
   "site": {
     "name": "Mon entreprise",
     "lang": "fr",
-    "description": "Présentation de l'entreprise en une phrase."
+    "description": "Présentation de l'entreprise en une phrase.",
+    "business": {
+      "type": "LocalBusiness",
+      "phone": "01 23 45 67 89",
+      "email": "contact@exemple.fr",
+      "street": "12 rue de l'Exemple",
+      "postalCode": "75000",
+      "city": "Paris",
+      "country": "FR",
+      "hours": {
+        "mo": [],
+        "tu": [{ "opens": "09:00", "closes": "12:30" }, { "opens": "14:00", "closes": "19:00" }],
+        "we": [{ "opens": "09:00", "closes": "12:30" }, { "opens": "14:00", "closes": "19:00" }],
+        "th": [{ "opens": "09:00", "closes": "12:30" }, { "opens": "14:00", "closes": "19:00" }],
+        "fr": [{ "opens": "09:00", "closes": "12:30" }, { "opens": "14:00", "closes": "19:00" }],
+        "sa": [{ "opens": "09:00", "closes": "13:00" }],
+        "su": []
+      }
+    }
   },
   "values": {
     "theme": "amber",
@@ -22,9 +40,8 @@
     "headerCtaLabel": "Nous contacter",
     "headerCtaLink": { "kind": "page", "pageId": "contact", "href": "/contact/" },
     "footerText": "Un savoir-faire local au service de vos projets.",
-    "contactEmail": "contact@exemple.fr",
-    "contactPhone": "01 23 45 67 89",
-    "address": "12 rue de l'Exemple\n75000 Paris",
+    "hoursLabel": "Horaires",
+    "mapLabel": "Voir le plan",
     "socialLinks": [
       {
         "label": "Instagram",

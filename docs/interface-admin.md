@@ -21,8 +21,9 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Pages**, puis une entrée par collection du site (« Actualités », « Réalisations »…), puis **Médias** ;
   - **Messages**, avec le nombre de messages non lus ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
-  - **Réglages**, qui se déplie en trois sous-pages : Contenu commun, Thème, Site et référencement
-    (identité, langue, et **Mesure d'audience** : l'identifiant Google Analytics `G-…`) ;
+  - **Réglages**, qui se déplie en quatre sous-pages : Contenu commun, Thème, Site et référencement
+    (identité, langue, et **Mesure d'audience** : l'identifiant Google Analytics `G-…`), et
+    **Établissement** (voir plus bas) ;
   - **Historique** ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
@@ -65,6 +66,15 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
     messagerie, adressée au visiteur), **Indésirable**, **Marquer comme non lu** et **Supprimer**.
   - Chaque nouveau message est aussi envoyé par e-mail au propriétaire (voir « Formulaires » dans
     [securite.md](securite.md)).
+- **Établissement** (Réglages) : la fiche que lisent Google, les assistants IA et le site.
+  - Activité (boulangerie, restaurant, artisan…), nom, téléphone, e-mail, adresse, zone desservie, gamme
+    de prix.
+  - Horaires : une ligne par jour (case « Ouvert », une à trois plages, bouton pour recopier une journée
+    sur les autres jours ouverts), et une précision libre (« Sur rendez-vous le lundi »).
+  - Fermetures exceptionnelles (du, au, motif) : elles disparaissent d'elles-mêmes une fois passées.
+  - Présence en ligne : la fiche Google et les réseaux sociaux, un lien par ligne.
+  - En bas, « Ce que liront Google et les assistants IA » montre le résultat, et **Enregistrer la fiche**
+    l'enregistre (en ligne à la prochaine publication).
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic.
 - **Assistant IA** : brancher une IA qui modifie le site par la discussion
   ([assistant-ia.md](assistant-ia.md)). La page contient :

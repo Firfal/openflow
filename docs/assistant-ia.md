@@ -52,7 +52,8 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `set_style` | Style libre d'une section ou d'un élément, pour tous les écrans, la tablette ou le mobile |
 | `create_page`, `update_page`, `delete_page` | Pages : titre, adresse, statut, référencement. Un élément de collection se modifie ou se supprime avec ces outils ; son titre et son adresse restent liés à sa collection |
 | `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut) |
-| `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) |
+| `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) et fiche établissement (lecture) |
+| `update_business` | Fiche établissement : coordonnées, horaires, fermetures exceptionnelles (« nous sommes fermés du 10 au 20 août ») |
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |
 | `publish`, `get_publication_status` | Mise en ligne et suivi |

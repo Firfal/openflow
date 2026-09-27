@@ -1,4 +1,5 @@
 import type { Data, Field, Fields } from "@puckeditor/core";
+import { businessLines } from "./business.js";
 import { buildCollections } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
 import {
@@ -134,6 +135,8 @@ export function buildLlmsTxt(snapshot: Snapshot, config?: OpenFlowConfig): strin
   const { site } = snapshot;
   const lines = [`# ${line(site.name)}`, ""];
   if (site.description) lines.push(`> ${line(site.description)}`, "");
+  const practical = businessLines(site, snapshot.createdAt.slice(0, 10));
+  if (practical.length > 0) lines.push("## Informations pratiques", "", ...practical, "");
   const known = new Set(Object.keys(config?.collections ?? {}));
   const pages = indexed(snapshot).filter((page) => !page.collection || !known.has(page.collection));
   lines.push("## Pages", "");
@@ -174,6 +177,8 @@ export function buildLlmsFullTxt(snapshot: Snapshot, config: OpenFlowConfig): st
   const { site } = snapshot;
   const header = [`# ${line(site.name)}`];
   if (site.description) header.push(`> ${line(site.description)}`);
+  const practical = businessLines(site, snapshot.createdAt.slice(0, 10));
+  if (practical.length > 0) header.push(`## Informations pratiques\n\n${practical.join("\n")}`);
   const parts = [header.join("\n\n")];
   for (const page of indexed(snapshot)) {
     const head = [

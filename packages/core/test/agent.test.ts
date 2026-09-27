@@ -142,6 +142,10 @@ function memoryBackend() {
     saveTheme: async (theme) => {
       settings.theme = theme;
     },
+    saveBusiness: async (business) => {
+      if (business) settings.site.business = business;
+      else delete settings.site.business;
+    },
     listMedia: async () => [
       {
         id: "m1",

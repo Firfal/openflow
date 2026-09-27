@@ -195,6 +195,14 @@ export function CommandPalette() {
         run: go(() => navigate({ view: "settings", tab: "site" })),
       },
       {
+        id: "go:business",
+        group: "Aller à",
+        label: "Réglages : établissement (horaires, adresse)",
+        icon: "home",
+        keywords: "horaires ouverture fermeture adresse téléphone congés google",
+        run: go(() => navigate({ view: "settings", tab: "business" })),
+      },
+      {
         id: "go:messages",
         group: "Aller à",
         label: "Messages reçus",

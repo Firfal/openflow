@@ -12,7 +12,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 - `openflow/components/*.tsx` : les **sections**, c'est-à-dire des composants Puck (`ComponentConfig`)
   avec `fields`, `defaultProps` et `render`.
 - `openflow/layout/*` : `SiteLayout` (en-tête, pied de page, thème), déclaré dans `layout` de la config et
-  alimenté par les réglages globaux (`settings`). L'admin l'affiche autour de la page éditée.
+  alimenté par les réglages globaux (`settings`) et la fiche établissement (`site.business` : téléphone,
+  e-mail, adresse, horaires, saisis dans Réglages > Établissement). L'admin l'affiche autour de la page éditée.
 - `openflow/seed/` : le contenu de départ (`settings.json`, `pages/<id>.json`), importé dans Firestore
   à la livraison. Il n'écrase jamais le contenu du propriétaire.
 - `app/(site)/[[...slug]]/page.tsx` : toutes les pages viennent du snapshot publié. `app/admin/` : l'admin.

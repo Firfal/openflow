@@ -130,6 +130,11 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
   dans son vrai cadre, avec la couleur du thème. Pas de `useState` ni d'accès au navigateur dans `SiteLayout`.
 - **Réglages globaux.** Ils arrivent dans `SiteLayout` par la prop `settings`. Ailleurs côté serveur :
   `getSettings(config)` de `@openflow/next`.
+- **Coordonnées et horaires : `site.business`.** Le propriétaire les renseigne dans Réglages > Établissement
+  (Google et les IA les lisent aussi). Ne crée pas de champs « téléphone », « adresse » ou « horaires » dans
+  `settings` : affiche `site.business` dans `SiteLayout` avec `formatAddress`, `mapUrl`,
+  `formatOpeningHours` et `formatClosure` de `@openflow/core` (les libellés autour, comme « Horaires »,
+  restent des champs de `settings`).
 - **États cachés.** Un texte visible seulement pendant une animation, au survol ou sur très grand écran doit aussi
   s'afficher quand `puck?.isEditing` est vrai (OF-109). Les `<details>` sont ouverts automatiquement dans l'éditeur.
 - **Images du contenu de départ.** Elles peuvent pointer vers `public/` (`"/images/x.jpg"`). `openflow seed` les

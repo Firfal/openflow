@@ -12,7 +12,7 @@ export function SiteLayout({ settings, site, children }: LayoutProps<SiteSetting
     <div data-theme={settings.theme} className="flex min-h-dvh flex-col">
       <SiteHeader settings={settings} siteName={site.name} />
       <main className="flex-1">{children}</main>
-      <SiteFooter settings={settings} siteName={site.name} />
+      <SiteFooter settings={settings} site={site} />
     </div>
   );
 }

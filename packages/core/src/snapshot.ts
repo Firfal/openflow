@@ -1,5 +1,6 @@
 import type { Data } from "@puckeditor/core";
 import { z } from "zod";
+import { businessSchema, sanitizeBusiness } from "./business-schema.js";
 import type { PageDoc, SettingsDoc, SiteSettings } from "./model.js";
 import { isValidSlug, slugToPath } from "./slug.js";
 import { sanitizePageStyles, sanitizeTheme } from "./style.js";
@@ -43,6 +44,7 @@ export const siteSettingsSchema = z.object({
     .regex(/^G-[A-Z0-9]{4,20}$/, "Identifiant Google Analytics : G-XXXXXXX")
     .optional()
     .catch(undefined),
+  business: businessSchema.optional().catch(undefined),
 });
 
 export const snapshotPageSchema = z.object({
@@ -133,6 +135,10 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     gaMeasurementId: ga && /^G-[A-Z0-9]{4,20}$/.test(ga) ? ga : undefined,
   };
   if (!site.gaMeasurementId) delete site.gaMeasurementId;
+  // Only the valid parts of the business profile are published.
+  const business = sanitizeBusiness(input.settings.site.business);
+  if (business) site.business = business;
+  else delete site.business;
   const recaptchaSiteKey = input.integrations?.recaptchaSiteKey;
   return {
     version: SNAPSHOT_VERSION,

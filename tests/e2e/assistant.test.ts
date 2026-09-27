@@ -162,6 +162,17 @@ describe("assistant IA (MCP et WebMCP)", () => {
     expect(list.body.result.tools.map((t: any) => t.name)).toContain("update_section");
     const overview = await tool("get_site_overview", {});
     expect(overview.pages.map((p: any) => p.path)).toContain("/");
+    // The business profile: the AI adds an exceptional closure.
+    const updated = await tool("update_business", {
+      addClosure: { from: "2099-12-24", to: "2099-12-26", label: "Noël" },
+    });
+    expect(updated.ok).toBe(true);
+    const stored = (await db.doc("cms_site/settings").get()).data()?.site?.business;
+    expect(stored?.closures).toContainEqual({
+      from: "2099-12-24",
+      to: "2099-12-26",
+      label: "Noël",
+    });
     // Collections: the AI lists and adds items (their title and list values are stored too).
     for (const collection of overview.collections ?? []) {
       const { items } = await tool("list_items", { collection: collection.name });

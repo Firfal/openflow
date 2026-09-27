@@ -1,3 +1,4 @@
+import { businessJsonLd } from "./business.js";
 import { buildCollections, type CollectionEntry, getCollectionConfig } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
 import type { ImageValue } from "./fields.js";
@@ -53,6 +54,12 @@ export function pageJsonLd(
   const out: JsonLd[] = [];
   const url = absoluteUrl(site, slugToPath(page.slug));
   if (page.slug === "") {
+    // The business behind the site (Réglages > Établissement): contact, address, hours, closures.
+    const business = businessJsonLd(site, {
+      today: snapshot.createdAt.slice(0, 10),
+      url,
+      image: absoluteUrl(site, page.seo.ogImage || site.ogImage || "") ?? undefined,
+    });
     out.push({
       "@context": "https://schema.org",
       "@type": "WebSite",
@@ -60,7 +67,9 @@ export function pageJsonLd(
       ...(url ? { url } : {}),
       ...(site.description ? { description: site.description } : {}),
       inLanguage: site.lang,
+      ...(business?.["@id"] ? { publisher: { "@id": business["@id"] } } : {}),
     });
+    if (business) out.push(business);
     return out;
   }
   const entry = itemEntry(snapshot, page, config, collections);

@@ -35,6 +35,7 @@ import {
   getAllPages,
   getPage,
   listMedia,
+  saveBusiness,
   savePageData,
   saveSettings,
   saveTheme,
@@ -111,6 +112,7 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
     },
     saveSettingsValues: (values) => saveSettings(db, { values }, AGENT_AUTHOR),
     saveTheme: (theme) => saveTheme(db, theme, AGENT_AUTHOR),
+    saveBusiness: (business) => saveBusiness(db, business, AGENT_AUTHOR),
     listMedia: async () =>
       (await listMedia(db)).map((m) => ({
         id: m.id,

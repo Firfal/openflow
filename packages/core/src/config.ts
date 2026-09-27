@@ -1,5 +1,6 @@
 import type { Config, Fields } from "@puckeditor/core";
 import type { ComponentType, ReactElement, ReactNode } from "react";
+import type { BusinessInfo } from "./business.js";
 
 /**
  * Global, non-page content edited in the admin under "Réglages" (navigation, footer, contact…).
@@ -34,7 +35,8 @@ export interface SiteDefaults {
 export interface LayoutProps<Values extends object = Record<string, any>> {
   /** Global settings values (defaults merged with the owner's values). */
   settings: Values;
-  site: { name: string; lang?: string };
+  /** The site's identity, and its business profile (Réglages > Établissement) when filled. */
+  site: { name: string; lang?: string; url?: string; business?: BusinessInfo };
   /** The page sections. */
   children: ReactNode;
   /** True inside the admin editor. */

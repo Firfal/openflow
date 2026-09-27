@@ -88,7 +88,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   « Identifiant Google Analytics », « Historique », « Modifier », « Retour aux pages », « Publier… »,
   collections (template): sidebar « Actualités » (exact), list « Actualités », « Nouvel article », dialog
   labels « Titre » (exact) / « Adresse » / « Date de publication », « Créer et modifier »,
-  « Retour à « Actualités » »,
+  « Retour à « Actualités » », business profile: « Établissement », checkbox « Lundi », « Lundi,
+  ouverture », « Ajouter une fermeture », list « Fermetures exceptionnelles », « Du » (exact),
+  « Enregistrer la fiche »,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

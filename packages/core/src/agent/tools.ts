@@ -1,5 +1,7 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
 import { z } from "zod";
+import { BUSINESS_TYPES, type BusinessInfo, businessLines, WEEKDAYS } from "../business.js";
+import { businessSchema, sanitizeBusiness } from "../business-schema.js";
 import {
   buildCollections,
   getCollectionConfig,
@@ -106,6 +108,8 @@ export interface AgentBackend {
   getSettings(): Promise<AgentSettings>;
   saveSettingsValues(values: Record<string, unknown>): Promise<void>;
   saveTheme(theme: Record<string, string>): Promise<void>;
+  /** Replaces the business profile (`site.business`); `null` removes it. */
+  saveBusiness(business: BusinessInfo | null): Promise<void>;
   listMedia(): Promise<AgentMedia[]>;
   /** Copies a public image or video into the media library. */
   importMedia(url: string, alt?: string): Promise<AgentMedia>;
@@ -577,12 +581,16 @@ tool({
             fontOptions: theme.fontOptions ?? [],
           }
         : null,
+      business: settings.site.business
+        ? businessLines(settings.site, today()).map((l) => l.replace(/^\s*- /, ""))
+        : null,
       freeStyle: ctx.schema.styles === "free",
       lastPublication: releases[0] ?? null,
       notes: [
         "Toutes les modifications sont enregistrées en brouillon : rien n'est en ligne avant publish.",
         "Pour modifier un texte : get_page, puis update_section avec le chemin du champ (ex. « title » ou « items[1].answer »).",
         "Collections (articles, réalisations…) : list_items, create_item ; un élément est une page (get_page, update_section, update_page, delete_page), dont la section « itemSection » porte les champs.",
+        "Coordonnées, horaires et fermetures exceptionnelles de l'établissement : get_settings (« business »), puis update_business.",
         "Demandez confirmation au propriétaire avant publish, delete_page et remove_section.",
       ],
     };
@@ -1082,6 +1090,93 @@ tool({
     return {
       fields: describeFields(ctx.schema.settings?.fields),
       values: { ...(ctx.schema.settings?.defaults ?? {}), ...settings.values },
+      business: settings.site.business ?? null,
+    };
+  },
+});
+
+const timeRangeInput = z.object({
+  opens: z.string().describe("« 09:00 »"),
+  closes: z.string().describe("« 12:30 »"),
+});
+
+tool({
+  name: "update_business",
+  title: "Modifier la fiche établissement",
+  description:
+    "Coordonnées, adresse, horaires et fermetures exceptionnelles de l'établissement, lus par Google, les IA et le site. Seuls les champs donnés changent ; null en efface un. « hours » : jour (mo, tu, we, th, fr, sa, su) → plages horaires, [] pour un jour fermé. « closures » remplace toute la liste des fermetures exceptionnelles (lisez-la d'abord avec get_settings) ; « addClosure » en ajoute une.",
+  input: z.object({
+    type: z
+      .enum(BUSINESS_TYPES.map((t) => t.value) as [string, ...string[]])
+      .nullable()
+      .optional()
+      .describe("Activité (type schema.org)."),
+    name: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    street: z.string().nullable().optional(),
+    postalCode: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    country: z.string().nullable().optional().describe("Code pays ISO, « FR » par défaut."),
+    hours: z
+      .partialRecord(z.enum(WEEKDAYS), z.array(timeRangeInput))
+      .nullable()
+      .optional()
+      .describe("Horaires de la semaine ; les jours absents ne changent pas."),
+    hoursNote: z.string().nullable().optional().describe("« Sur rendez-vous le lundi »."),
+    closures: z
+      .array(
+        z.object({ from: z.string(), to: z.string().optional(), label: z.string().optional() }),
+      )
+      .nullable()
+      .optional(),
+    addClosure: z
+      .object({
+        from: z.string().describe("AAAA-MM-JJ"),
+        to: z.string().optional().describe("AAAA-MM-JJ, inclus"),
+        label: z.string().optional().describe("« Congés d'été »"),
+      })
+      .optional(),
+    priceRange: z.enum(["€", "€€", "€€€", "€€€€"]).nullable().optional(),
+    areaServed: z.string().nullable().optional(),
+    links: z
+      .array(z.string())
+      .nullable()
+      .optional()
+      .describe("Fiche Google, réseaux sociaux (https://…)."),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+  run: async ({ addClosure, hours, ...changes }, ctx) => {
+    const settings = await ctx.backend.getSettings();
+    const next: Record<string, unknown> = { ...(settings.site.business ?? {}) };
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) continue;
+      if (value === null || value === "") delete next[key];
+      else next[key] = value;
+    }
+    if (hours === null) delete next.hours;
+    else if (hours) next.hours = { ...(next.hours as object), ...hours };
+    if (addClosure) {
+      next.closures = [...((next.closures as unknown[]) ?? []), addClosure];
+    }
+    const parsed = businessSchema.safeParse(next);
+    if (!parsed.success) {
+      throw new AgentError(
+        `Fiche refusée : ${parsed.error.issues.map((i) => `${i.path.join(".")} : ${i.message}`).join(" ; ")}`,
+      );
+    }
+    const business = sanitizeBusiness(parsed.data) ?? null;
+    await ctx.backend.saveBusiness(business);
+    return {
+      ok: true,
+      business,
+      summary: business ? businessLines({ ...settings.site, business }, today()) : [],
+      note: "Enregistré en brouillon : en ligne à la prochaine publication.",
     };
   },
 });

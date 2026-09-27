@@ -746,6 +746,155 @@ select.of-input {
   min-width: 0;
 }
 
+/* Two fields side by side (one column on phones). */
+.of-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.of-grid-address {
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) minmax(160px, 2fr) minmax(130px, 1.2fr);
+  gap: 18px;
+}
+
+.of-form__actions {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0;
+  background: linear-gradient(transparent, var(--of-bg) 35%);
+}
+
+/* Réglages > Établissement: one row per day, then the exceptional closures. */
+.of-hours {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.of-hours__row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--of-border);
+}
+
+.of-hours__row:first-child {
+  border-top: 0;
+}
+
+.of-hours__day {
+  align-items: center;
+  min-height: var(--of-control-height, 32px);
+  font-weight: 500;
+}
+
+.of-hours__ranges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.of-hours__range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--of-text-3);
+}
+
+.of-root .of-hours__range .of-input {
+  width: 116px;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-root .of-hours__range .of-input[aria-invalid="true"] {
+  border-color: var(--of-danger);
+}
+
+.of-hours__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.of-hours__closed {
+  display: flex;
+  align-items: center;
+  min-height: var(--of-control-height, 32px);
+  color: var(--of-text-3);
+  font-size: 13px;
+}
+
+.of-closures {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-closures__row {
+  display: grid;
+  grid-template-columns: 150px 150px 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--of-border);
+}
+
+.of-closures__end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--of-control-height, 32px);
+}
+
+.of-business-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--of-text-2);
+  font-size: 13px;
+}
+
+.of-business-preview .is-nested {
+  padding-left: 16px;
+}
+
+@media (max-width: 640px) {
+  .of-grid-address,
+  .of-closures__row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .of-grid-address > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .of-closures__row > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  .of-hours__row {
+    grid-template-columns: 1fr auto;
+  }
+  .of-hours__ranges {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
 /* ───────────────────────── Surfaces ───────────────────────── */
 
 .of-card {

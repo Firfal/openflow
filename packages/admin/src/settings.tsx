@@ -1,5 +1,6 @@
 import type { SiteSettings } from "@openflow/core";
 import { lazy, Suspense, useState } from "react";
+import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
 import { saveSettings } from "./data.js";
 import { errorMessage } from "./firebase.js";
@@ -154,11 +155,25 @@ const TAB_TITLES: Record<SettingsTab, string> = {
   global: "Contenu commun",
   theme: "Thème",
   site: "Site et référencement",
+  business: "Établissement",
 };
 
 /** Réglages: one view per tab of the sidebar (the tab lives in the address). */
 export function SettingsView({ tab }: { tab: SettingsTab }) {
   const { config } = useAdmin();
+  if (tab === "business") {
+    return (
+      <>
+        <PageHead
+          title={TAB_TITLES[tab]}
+          description="Coordonnées, adresse et horaires, lus par Google et les assistants IA."
+        />
+        <div className="of-view of-view--narrow">
+          <BusinessForm />
+        </div>
+      </>
+    );
+  }
   if (tab === "site") {
     return (
       <>

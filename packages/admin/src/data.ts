@@ -1,5 +1,6 @@
 import {
   type AgentTokenDoc,
+  type BusinessInfo,
   COLLECTIONS,
   type CollectionConfig,
   DOCS,
@@ -272,6 +273,19 @@ export async function saveSettings(
     doc(db, COLLECTIONS.site, DOCS.settings),
     { ...patch, updatedAt: now(), updatedBy: by ?? null },
     { mergeFields: [...Object.keys(patch), "updatedAt", "updatedBy"] },
+  );
+}
+
+/** Replaces the business profile (`site.business`), keeping the rest of `site`. */
+export async function saveBusiness(db: Firestore, business: BusinessInfo | null, by?: string) {
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    {
+      site: { business: business ? JSON.parse(JSON.stringify(business)) : null },
+      updatedAt: now(),
+      updatedBy: by ?? null,
+    },
+    { mergeFields: ["site.business", "updatedAt", "updatedBy"] },
   );
 }
 

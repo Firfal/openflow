@@ -1,4 +1,5 @@
 import type { Data } from "@puckeditor/core";
+import type { BusinessInfo } from "./business.js";
 import type { ImageVariant, VideoVariant } from "./fields.js";
 
 /**
@@ -166,6 +167,8 @@ export interface SiteSettings {
   ogImage?: string;
   /** Google Analytics 4 (`G-XXXXXXX`): loaded only after the visitor's consent. */
   gaMeasurementId?: string;
+  /** The business behind the site (Réglages > Établissement): contact, address, hours. */
+  business?: BusinessInfo;
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */

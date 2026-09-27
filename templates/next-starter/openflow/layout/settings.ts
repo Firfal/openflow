@@ -15,9 +15,8 @@ export interface SiteSettingsValues {
   headerCtaLabel: string;
   headerCtaLink: LinkValue | null;
   footerText: string;
-  contactEmail: string;
-  contactPhone: string;
-  address: string;
+  hoursLabel: string;
+  mapLabel: string;
   socialLinks: Array<{ label: string; link: LinkValue | null }>;
   legalText: string;
 }
@@ -50,9 +49,9 @@ export const settingsFields: Fields<SiteSettingsValues> = {
   headerCtaLabel: { type: "text", label: "Bouton de l'en-tête (texte)" },
   headerCtaLink: linkField({ label: "Bouton de l'en-tête (lien)" }),
   footerText: { type: "textarea", label: "Présentation (pied de page)" },
-  contactEmail: { type: "text", label: "E-mail de contact" },
-  contactPhone: { type: "text", label: "Téléphone" },
-  address: { type: "textarea", label: "Adresse" },
+  // Phone, e-mail, address and hours come from Réglages > Établissement (`site.business`).
+  hoursLabel: { type: "text", label: "Titre des horaires (pied de page)" },
+  mapLabel: { type: "text", label: "Lien vers le plan (texte)" },
   socialLinks: {
     type: "array",
     label: "Réseaux sociaux",
@@ -70,9 +69,8 @@ export const settingsDefaults: SiteSettingsValues = {
   headerCtaLabel: "Nous contacter",
   headerCtaLink: null,
   footerText: "Présentez votre activité en une phrase.",
-  contactEmail: "contact@exemple.fr",
-  contactPhone: "",
-  address: "",
+  hoursLabel: "Horaires",
+  mapLabel: "Voir le plan",
   socialLinks: [],
   legalText: "Tous droits réservés.",
 };

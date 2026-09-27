@@ -9,7 +9,7 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
-| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
+| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`, `business` : fiche établissement, voir plus bas), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
 | `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy`. Pour un élément de collection : `collection` (son nom) et `summary` (valeurs affichées dans les listes, voir plus bas) | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages et des collections, en direct), `cmsPublish` |
 | `cms_page_content/{pageId}` | Contenu de la page (même identifiant) : `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin (enregistrement automatique, écrit avec la date de la fiche), `openflow seed`, `cmsMcp` | Admin (à l'ouverture de la page), `cmsPublish`, `cmsMcp` |
 | `cms_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
@@ -88,6 +88,30 @@ Aucune nouvelle collection Firestore ni règle de sécurité : les fiches resten
   collection, la liste triée de ses éléments (`id`, `href`, `title`, `date`, `description`, `image`,
   `readingTime`, `fields`), passée aux sections dans `puck.metadata.collections` (l'éditeur fait de même à
   partir des `summary`).
+
+## Fiche établissement (`site.business`)
+
+Écrite dans Réglages > Établissement (ou par l'outil IA `update_business`), publiée dans le snapshot
+(`site.business`, seules les valeurs valides) :
+
+```jsonc
+{
+  "type": "Bakery",                       // type schema.org parmi BUSINESS_TYPES
+  "name": "…",                            // si différent du nom du site
+  "phone": "01 23 45 67 89", "email": "bonjour@…",
+  "street": "12 rue du Four", "postalCode": "75006", "city": "Paris", "country": "FR",
+  "hours": { "mo": [], "tu": [{ "opens": "09:00", "closes": "12:30" }, { "opens": "14:00", "closes": "19:00" }] },
+  "hoursNote": "Sur rendez-vous le lundi",
+  "closures": [{ "from": "2026-08-10", "to": "2026-08-20", "label": "Congés d'été" }],
+  "priceRange": "€€", "areaServed": "…", "links": ["https://maps.app.goo.gl/…"]
+}
+```
+
+- Un jour sans plage est fermé ; `hours` absent signifie « horaires non indiqués ».
+- Elle alimente le JSON-LD de l'accueil (`LocalBusiness` ou son type, avec
+  `openingHoursSpecification` et, pour les fermetures à venir, `specialOpeningHoursSpecification`),
+  la rubrique « Informations pratiques » de `llms.txt`, l'outil `get_site_overview`, et le cadre du site
+  (`site.business` dans `LayoutProps`, par exemple le pied de page).
 
 ## Valeurs des champs OpenFlow
 

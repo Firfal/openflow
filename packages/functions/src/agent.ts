@@ -266,6 +266,13 @@ export function adminBackend({
         { mergeFields: ["theme", "updatedAt", "updatedBy"] },
       );
     },
+    async saveBusiness(business) {
+      // Only `site.business` is replaced (the rest of `site` stays as it is).
+      await settingsRef.set(
+        { site: { business: business ? JSON.parse(JSON.stringify(business)) : null }, ...stamp() },
+        { mergeFields: ["site.business", "updatedAt", "updatedBy"] },
+      );
+    },
     async listMedia() {
       const snap = await db
         .collection(COLLECTIONS.media)

@@ -337,6 +337,42 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("fills the business profile: hours and an exceptional closure", async () => {
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Réglages" }).click();
+    await page.getByRole("button", { name: "Établissement" }).click();
+    await page.getByRole("heading", { name: "Horaires d'ouverture" }).waitFor();
+    if (await page.getByRole("button", { name: "Indiquer les horaires" }).isVisible()) {
+      await page.getByRole("button", { name: "Indiquer les horaires" }).click();
+    }
+    const monday = page.getByRole("checkbox", { name: "Lundi" });
+    if (!(await monday.isChecked())) await monday.check();
+    await page.getByLabel("Lundi, ouverture").fill("10:00");
+    await page.getByLabel("Lundi, fermeture").fill("12:00");
+    await page.getByRole("button", { name: "Ajouter une fermeture" }).click();
+    const closures = page.getByRole("list", { name: "Fermetures exceptionnelles" });
+    await closures.getByLabel("Du", { exact: true }).last().fill("2099-08-10");
+    await closures.getByLabel("Au (inclus)").last().fill("2099-08-20");
+    await closures.getByLabel("Motif (facultatif)").last().fill("Congés d'été");
+    await page.getByText("Lundi : 10 h – 12 h").waitFor();
+    await page.screenshot({ path: path.join(SCREENSHOTS, "09-business.png"), fullPage: true });
+    await page.getByRole("button", { name: "Enregistrer la fiche" }).click();
+    const business = await waitFor(
+      async () => {
+        const value = (await db.doc("cms_site/settings").get()).data()?.site?.business;
+        return value?.hours?.mo?.[0]?.opens === "10:00" ? value : undefined;
+      },
+      30_000,
+      "fiche établissement enregistrée",
+    );
+    expect(business.closures).toContainEqual({
+      from: "2099-08-10",
+      to: "2099-08-20",
+      label: "Congés d'été",
+    });
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -363,6 +399,9 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(html).toContain('@media (max-width:767.98px){[data-of-s="');
     expect(html).toContain("color:#ff0000");
     expect(html).toContain(":root{--color-brand:#123456}");
+    // The business profile: structured data for Google and AI assistants.
+    expect(html).toContain('"openingHoursSpecification"');
+    expect(html).toContain('"validFrom":"2099-08-10"');
     // Collections: the new item has its page, is first in the lists, the feed and llms.txt.
     if (existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) {
       const item = readFileSync(

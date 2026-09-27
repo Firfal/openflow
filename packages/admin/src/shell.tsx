@@ -74,6 +74,7 @@ const SETTINGS: Array<[SettingsTab, string]> = [
   ["global", "Contenu commun"],
   ["theme", "Thème"],
   ["site", "Site et référencement"],
+  ["business", "Établissement"],
 ];
 
 function NavItem({
