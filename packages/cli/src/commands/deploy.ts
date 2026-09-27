@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { COLLECTIONS, DOCS, type ReleaseDoc, type SourceDoc, STORAGE_PATHS } from "@openflow/core";
 import {
+  ensureIndexNowKey,
   ensureWebApp,
   parseOwners,
   revokeFormerOwners,
@@ -198,6 +199,8 @@ export async function deploy(site: string, options: DeployOptions) {
     if (!options.noPublish) {
       log.step("Première publication");
       const ref = db.collection(COLLECTIONS.releases).doc();
+      // The IndexNow key, served by the site (as at each « Publier »).
+      await ensureIndexNowKey(db);
       const snapshot = await snapshotFromFirestore(db, ref.id);
       const file = snapshotPath(ref.id);
       await bucket
