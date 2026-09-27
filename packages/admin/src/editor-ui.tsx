@@ -38,6 +38,10 @@ export interface EditorChrome {
   open?: (pageId: string | null) => void;
   /** Page being edited (page editor only): AI assistants edit it through Puck. */
   pageId?: string;
+  /** Label of the back button (« Retour à « Actualités » » for an item). */
+  back?: string;
+  /** The item's collection, when the page is an item. */
+  collection?: string;
 }
 
 export const EditorChromeContext = createContext<EditorChrome | null>(null);
@@ -180,22 +184,35 @@ function UndoRedo() {
 
 /** Current page, with a menu to open another one (Webflow's page selector). */
 function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
-  const { pages } = useAdmin();
+  const { pages, config } = useAdmin();
   const page = pages.find((p) => p.id === chrome.pageId);
   if (!page) return null;
+  const collection = chrome.collection ? config.collections?.[chrome.collection] : undefined;
+  const entry = (p: (typeof pages)[number], icon: IconName) => ({
+    label: p.title,
+    hint: slugToPath(p.slug),
+    icon,
+    checked: p.id === page.id,
+    onSelect: () => chrome.open?.(p.id),
+  });
   return (
     <Menu
       label="Pages"
       align="left"
       items={[
+        ...(collection
+          ? [
+              { heading: collection.label },
+              ...pages
+                .filter((p) => p.collection === chrome.collection)
+                .slice(0, 30)
+                .map((p) => entry(p, collection.icon ?? "layers")),
+            ]
+          : []),
         { heading: "Ouvrir une page" },
-        ...pages.map((p) => ({
-          label: p.title,
-          hint: slugToPath(p.slug),
-          icon: (p.slug === "" ? "home" : "fileText") as IconName,
-          checked: p.id === page.id,
-          onSelect: () => chrome.open?.(p.id),
-        })),
+        ...pages
+          .filter((p) => !p.collection)
+          .map((p) => entry(p, p.slug === "" ? "home" : "fileText")),
       ]}
       trigger={(props) => (
         <button
@@ -251,8 +268,8 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
               type="button"
               className="of-home"
               onClick={() => chrome.open?.(null)}
-              aria-label="Retour aux pages"
-              title="Retour aux pages"
+              aria-label={chrome.back ?? "Retour aux pages"}
+              title={chrome.back ?? "Retour aux pages"}
             >
               <Icon name="arrowLeft" />
               <SiteMark name={siteName} />
@@ -451,9 +468,11 @@ function PagesPanel() {
   const { pages } = useAdmin();
   const sorted = useMemo(
     () =>
-      [...pages].sort((a, b) =>
-        a.slug === "" ? -1 : b.slug === "" ? 1 : a.title.localeCompare(b.title, "fr"),
-      ),
+      pages
+        .filter((page) => !page.collection)
+        .sort((a, b) =>
+          a.slug === "" ? -1 : b.slug === "" ? 1 : a.title.localeCompare(b.title, "fr"),
+        ),
     [pages],
   );
   return (

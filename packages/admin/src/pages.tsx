@@ -1,20 +1,24 @@
 import {
+  collectionEntry,
   isValidSlug,
   normalizeSlug,
   type PageSeo,
   type PageStatus,
   slugify,
   slugToPath,
+  today,
 } from "@openflow/core";
 import { useEffect, useState } from "react";
 import { AiPromo } from "./assistant.js";
 import { useAdmin } from "./context.js";
 import {
+  createItem,
   createPage,
   deletePage,
-  getPage,
+  duplicatePage,
   type PageEntry,
   type ReleaseEntry,
+  renameItem,
   updatePageMeta,
 } from "./data.js";
 import { errorMessage } from "./firebase.js";
@@ -24,20 +28,34 @@ import { Button, Dialog, EmptyState, FormField, Menu, MOD_KEY, StatusChip, timeA
 
 interface PageForm {
   title: string;
+  /** The address, after the collection's path for an item. */
   slug: string;
   status: PageStatus;
   seo: PageSeo;
+  /** Publication date of a new item (collections with a `dateField`). */
+  date: string;
 }
 
+/**
+ * Settings of a page (title, address, visibility, SEO), or creation of a page. With `collection`
+ * (or for an existing item), the same for an item: its address stays under the collection's.
+ */
 export function PageDialog({
   page,
   onClose,
+  collection,
 }: {
   page: PageEntry | "new" | null;
   onClose: () => void;
+  collection?: string;
 }) {
   return page ? (
-    <PageDialogInner key={page === "new" ? page : page.id} page={page} onClose={onClose} />
+    <PageDialogInner
+      key={page === "new" ? page : page.id}
+      page={page}
+      onClose={onClose}
+      collection={page === "new" ? collection : page.collection}
+    />
   ) : null;
 }
 
@@ -65,24 +83,39 @@ function SearchPreview({
   );
 }
 
-function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: () => void }) {
-  const { services, pages, user, notify, navigate, settings } = useAdmin();
+function PageDialogInner({
+  page,
+  onClose,
+  collection: name,
+}: {
+  page: PageEntry | "new";
+  onClose: () => void;
+  collection?: string;
+}) {
+  const { config, services, pages, user, notify, navigate, settings } = useAdmin();
   const isNew = page === "new";
   const existing = isNew ? undefined : page;
-  const isHome = existing?.slug === "";
+  const isHome = existing?.slug === "" && !name;
+  const collection = name ? config.collections?.[name] : undefined;
+  const prefix = collection ? `${collection.path}/` : "";
   const [form, setForm] = useState<PageForm>({
     title: existing?.title ?? "",
-    slug: existing?.slug ?? "",
+    slug: existing
+      ? existing.slug.startsWith(prefix)
+        ? existing.slug.slice(prefix.length)
+        : (existing.slug.split("/").pop() ?? "")
+      : "",
     status: existing?.status ?? "published",
     seo: existing?.seo ?? {},
+    date: today(),
   });
   const [slugTouched, setSlugTouched] = useState(!isNew);
   const [busy, setBusy] = useState(false);
 
-  const slug = isHome ? "" : form.slug;
+  const slug = isHome ? "" : `${prefix}${form.slug}`;
   const duplicate = pages.find((p) => p.slug === slug && p.id !== existing?.id);
   const slugError =
-    !isHome && !slug
+    !isHome && !form.slug
       ? "Adresse obligatoire"
       : !isValidSlug(slug)
         ? "Minuscules, chiffres et tirets uniquement"
@@ -94,13 +127,22 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
   const save = async () => {
     setBusy(true);
     try {
-      const meta = { title: form.title.trim(), slug, status: form.status, seo: form.seo };
+      const title = form.title.trim();
+      const meta = { title, slug, status: form.status, seo: form.seo };
+      const by = user.email ?? undefined;
       if (existing) {
-        await updatePageMeta(services.db, existing.id, meta, user.email ?? undefined);
-        notify("success", "Paramètres de la page enregistrés.");
+        // An item's title is its section's title field: both change together.
+        if (collection && title !== existing.title) {
+          await renameItem(services.db, config, existing.id, title, by);
+        }
+        await updatePageMeta(services.db, existing.id, meta, by);
+        notify("success", "Paramètres enregistrés.");
         onClose();
       } else {
-        const id = await createPage(services.db, meta, user.email ?? undefined);
+        const id =
+          name && collection
+            ? await createItem(services.db, config, name, { ...meta, date: form.date }, by)
+            : await createPage(services.db, meta, by);
         onClose();
         navigate({ view: "editor", pageId: id });
       }
@@ -111,11 +153,19 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
     }
   };
 
+  const itemDescription =
+    existing && collection ? collectionEntry(existing, collection, config).description : undefined;
   const seo = form.seo;
   return (
     <Dialog
       open
-      title={isNew ? "Nouvelle page" : `Paramètres — ${existing?.title}`}
+      title={
+        isNew
+          ? collection
+            ? (collection.addLabel ?? "Nouvel élément")
+            : "Nouvelle page"
+          : `Paramètres — ${existing?.title}`
+      }
       onClose={onClose}
       footer={
         <>
@@ -128,7 +178,10 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
         </>
       }
     >
-      <FormField label="Titre de la page">
+      <FormField
+        label={collection ? "Titre" : "Titre de la page"}
+        hint={collection && !isNew ? "Il se modifie aussi directement sur la page." : undefined}
+      >
         <input
           className="of-input"
           value={form.title}
@@ -149,21 +202,35 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
         }
       >
         <div className="of-prefixed">
-          <span>/</span>
+          <span>/{prefix}</span>
           <input
             className="of-input"
-            value={slug}
+            value={isHome ? "" : form.slug}
             disabled={isHome}
             onChange={(e) => {
               setSlugTouched(true);
-              setForm((f) => ({
-                ...f,
-                slug: normalizeSlug(e.target.value) || e.target.value.toLowerCase(),
-              }));
+              const typed = e.target.value;
+              // An item's address is one segment under its collection's.
+              const clean = collection ? slugify(typed) : normalizeSlug(typed);
+              setForm((f) => ({ ...f, slug: clean || typed.toLowerCase() }));
             }}
           />
         </div>
       </FormField>
+      {isNew && collection?.dateField && (
+        <FormField
+          label="Date de publication"
+          hint="Les éléments les plus récents sont affichés en premier."
+        >
+          <input
+            className="of-input"
+            type="date"
+            required
+            value={form.date}
+            onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+          />
+        </FormField>
+      )}
       <label className="of-checkbox">
         <input
           type="checkbox"
@@ -180,12 +247,15 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
           title={seo.title || form.title || "Titre de la page"}
           path={slugToPath(slug)}
           description={
-            seo.description || settings?.site?.description || "Ajoutez une description ci-dessous."
+            seo.description ||
+            itemDescription ||
+            settings?.site?.description ||
+            "Ajoutez une description ci-dessous."
           }
         />
         <FormField
           label="Titre affiché dans Google"
-          hint={`${(seo.title ?? "").length}/60 caractères. Laissez vide pour utiliser le titre de la page.`}
+          hint={`${(seo.title ?? "").length}/60 caractères. Laissez vide pour utiliser le titre${collection ? "" : " de la page"}.`}
         >
           <input
             className="of-input"
@@ -214,7 +284,7 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
               setForm((f) => ({ ...f, seo: { ...f.seo, noindex: e.target.checked } }))
             }
           />
-          Masquer cette page des moteurs de recherche
+          Masquer {collection ? "cet élément" : "cette page"} des moteurs de recherche
         </label>
       </fieldset>
     </Dialog>
@@ -222,7 +292,7 @@ function PageDialogInner({ page, onClose }: { page: PageEntry | "new"; onClose: 
 }
 
 /** Publication state of a page, as one status (Webflow's CMS vocabulary, simplified). */
-function pageStatus(page: PageEntry, lastLive: ReleaseEntry | undefined) {
+export function pageStatus(page: PageEntry, lastLive: ReleaseEntry | undefined) {
   if (page.status !== "published") {
     return { tone: "grey" as const, label: "Masquée", title: "N'apparaît pas sur le site" };
   }
@@ -249,7 +319,9 @@ function SiteStatus() {
   const siteUrl = useSiteUrl();
   const lastLive = releases.find((release) => release.status === "live");
   const running = releases.find((r) => r.status === "queued" || r.status === "building");
-  const changed = pages.filter((page) => !lastLive || page.updatedAt > lastLive.createdAt).length;
+  const changedAll = pages.filter((page) => !lastLive || page.updatedAt > lastLive.createdAt);
+  const changed = changedAll.filter((page) => !page.collection).length;
+  const changedItems = changedAll.length - changed;
   const settingsChanged = Boolean(
     lastLive && settings?.updatedAt && settings.updatedAt > lastLive.createdAt,
   );
@@ -262,14 +334,18 @@ function SiteStatus() {
   } else if (!lastLive) {
     text = "Le site n'a pas encore été publié depuis l'admin.";
     tone = "orange";
-  } else if (changed > 0 || settingsChanged) {
+  } else if (changedAll.length > 0 || settingsChanged) {
+    const s = (n: number) => (n > 1 ? "s" : "");
     const parts = [
-      changed > 0
-        ? `${changed} page${changed > 1 ? "s" : ""} modifiée${changed > 1 ? "s" : ""}`
+      changed > 0 ? `${changed} page${s(changed)} modifiée${s(changed)}` : "",
+      changedItems > 0
+        ? `${changedItems} élément${s(changedItems)} de collection modifié${s(changedItems)}`
         : "",
       settingsChanged ? "réglages modifiés" : "",
     ].filter(Boolean);
-    text = `${parts.join(" et ")} depuis la dernière publication (${timeAgo(lastLive.createdAt)}).`;
+    const list =
+      parts.length > 1 ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}` : parts[0];
+    text = `${list} depuis la dernière publication (${timeAgo(lastLive.createdAt)}).`;
     tone = "orange";
   } else {
     text = `Tout est en ligne. Dernière publication ${timeAgo(lastLive.createdAt)}.`;
@@ -308,18 +384,8 @@ export function PagesView() {
 
   const duplicate = async (page: PageEntry) => {
     try {
-      const full = await getPage(services.db, page.id);
-      if (!full) return;
-      let n = 2;
-      while (pages.some((p) => p.slug === `${page.slug || "accueil"}-copie${n > 2 ? `-${n}` : ""}`))
-        n++;
-      const slug = `${page.slug || "accueil"}-copie${n > 2 ? `-${n}` : ""}`;
-      await createPage(
-        services.db,
-        { title: `${page.title} (copie)`, slug, status: "draft", seo: full.seo },
-        user.email ?? undefined,
-        full.data,
-      );
+      const slugs = new Set(pages.map((p) => p.slug));
+      await duplicatePage(services.db, page, slugs, user.email ?? undefined);
       notify(
         "success",
         `« ${page.title} » dupliquée (masquée tant que vous ne la rendez pas visible).`,
@@ -340,8 +406,9 @@ export function PagesView() {
     setToDelete(null);
   };
 
-  // Home first, then by title: the order owners expect in a site map.
-  const sorted = [...pages].sort((a, b) =>
+  // Home first, then by title: the order owners expect in a site map. Items have their own view.
+  const sitePages = pages.filter((page) => !page.collection);
+  const sorted = [...sitePages].sort((a, b) =>
     a.slug === "" ? -1 : b.slug === "" ? 1 : a.title.localeCompare(b.title, "fr"),
   );
 
@@ -358,7 +425,7 @@ export function PagesView() {
       <section className="of-view">
         <SiteStatus />
         <AiPromo />
-        {pages.length === 0 ? (
+        {sitePages.length === 0 ? (
           <EmptyState icon="fileText" title="Aucune page pour l'instant">
             <p>Créez la première page de votre site.</p>
             <Button variant="primary" icon="plus" onClick={() => setDialog("new")}>

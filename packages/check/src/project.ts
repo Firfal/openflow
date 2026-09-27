@@ -7,6 +7,7 @@ import {
   type Issue,
   STORAGE_RULES_BLOCK,
 } from "@openflow/core";
+import { CONFIG_FILES } from "@openflow/core/node";
 import { getRule } from "./rules.js";
 
 function issue(ruleId: string, file: string, message: string, line?: number): Issue {
@@ -93,7 +94,13 @@ async function checkAiAccess(siteDir: string, site: HostingConfig | undefined): 
       );
     }
   }
-  for (const route of ["llms.txt", "llms-full.txt"]) {
+  // With collections (articles, events…), the RSS feed of their items too.
+  const config = CONFIG_FILES.map((file) => path.join(siteDir, file)).find((file) =>
+    existsSync(file),
+  );
+  const hasCollections =
+    config !== undefined && /\bcollections\s*:/.test(await readFile(config, "utf8"));
+  for (const route of ["llms.txt", "llms-full.txt", ...(hasCollections ? ["rss.xml"] : [])]) {
     const found = ["app", "src/app"].some((base) =>
       ["route.ts", "route.js", "route.tsx"].some((file) =>
         existsSync(path.join(siteDir, base, route, file)),

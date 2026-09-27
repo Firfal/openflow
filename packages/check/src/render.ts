@@ -1,11 +1,14 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  type CollectionEntry,
   getOpenFlowFieldKind,
   type Issue,
   type OpenFlowConfig,
+  type OpenFlowMetadata,
   prepareRenderConfig,
   validateConfig,
+  validateItem,
   validatePageData,
   validateSettingsValues,
 } from "@openflow/core";
@@ -157,6 +160,15 @@ function sentinelValue(
     });
     return { kind: "url", href: `${SENTINEL_HOST}/${href}` };
   }
+  if (kind === "date") {
+    // Not a real date: `formatDate` shows it as it is, so it can be found in the markup.
+    return sentinels.next({
+      path: fieldPath,
+      fieldType: "date",
+      contentEditable: false,
+      required: true,
+    });
+  }
   const editable = "contentEditable" in field && field.contentEditable === true;
   const inlineOptOut = field.metadata?.openflowInline === false;
   switch (field.type) {
@@ -219,6 +231,8 @@ function scenarioValue(field: Field, scenario: Scenario, fallback: unknown): unk
       : scenario === "vide"
         ? null
         : { kind: "url", href: `${SENTINEL_HOST}/long` };
+  if (kind === "date")
+    return scenario === "partiel" ? "2026-13-45" : scenario === "vide" ? "" : LONG_TEXT;
   switch (field.type) {
     case "text":
     case "textarea":
@@ -446,6 +460,79 @@ function makeIssue(ruleId: string, message: string, where?: { file: string; line
   };
 }
 
+/** Host of the sample items' images: not sentinels (they come from other pages). */
+const SAMPLE_HOST = "https://sample.openflow.invalid";
+
+/**
+ * What sections receive in `puck.metadata` during the check: a page, and three sample items per
+ * collection whose texts are tokens (so the items listed by a section are neither flagged as text
+ * written in the code, nor counted as its own fields).
+ */
+function sampleMetadata(config: OpenFlowConfig, section: string): OpenFlowMetadata {
+  const tokens = new Sentinels();
+  const collections: Record<string, CollectionEntry[]> = {};
+  let page: OpenFlowMetadata["page"] = { id: "check", slug: "check", title: tokens.next(ANY) };
+  for (const [name, collection] of Object.entries(config.collections ?? {})) {
+    const component = config.components[collection.component];
+    const entries: CollectionEntry[] = [0, 1, 2].map((n) => {
+      const fields: Record<string, unknown> = { ...(component?.defaultProps ?? {}) };
+      for (const [key, field] of fieldsOf(component?.fields)) {
+        fields[key] = sampleValue(field, tokens, n);
+      }
+      const slug = `${collection.path}/element-${n + 1}`;
+      return {
+        id: `${name}-${n + 1}`,
+        collection: name,
+        slug,
+        href: `/${slug}/`,
+        title: tokens.next(ANY),
+        date: tokens.next(ANY),
+        description: tokens.next(ANY),
+        image: { src: `${SAMPLE_HOST}/${n}.jpg`, alt: tokens.next(ANY) },
+        readingTime: 3,
+        fields,
+      };
+    });
+    collections[name] = entries;
+    if (collection.component === section) {
+      page = {
+        id: `${name}-2`,
+        slug: entries[1]!.slug,
+        title: entries[1]!.title,
+        collection: name,
+      };
+    }
+  }
+  return { page, collections };
+}
+
+const ANY: SentinelInfo = { path: "", fieldType: "text", contentEditable: false, required: false };
+
+function sampleValue(field: Field, tokens: Sentinels, n: number): unknown {
+  const kind = getOpenFlowFieldKind(field);
+  if (kind === "image")
+    return { src: `${SAMPLE_HOST}/${n}-${tokens.next(ANY)}.jpg`, alt: tokens.next(ANY) };
+  if (kind === "video") return null;
+  if (kind === "link") return null;
+  if (kind === "date") return tokens.next(ANY);
+  switch (field.type) {
+    case "text":
+    case "textarea":
+      return tokens.next(ANY);
+    case "richtext":
+      return `<p>${tokens.next(ANY)}</p>`;
+    case "array":
+      return [];
+    case "number":
+      return n + 1;
+    case "select":
+    case "radio":
+      return field.options?.[0]?.value;
+    default:
+      return undefined;
+  }
+}
+
 /**
  * Level `render`: validates config and seed, then renders every section with sentinel values
  * (dead fields OF-104, hard-coded text OF-101, inline editing OF-106/OF-108) and with edge-case
@@ -478,14 +565,23 @@ export async function checkRender(
   issues.push(...seedIssues);
   if (seed) {
     for (const page of seed.pages) {
-      issues.push(...validatePageData(page.data, config, `openflow/seed/pages/${page.id}.json`));
+      const file = `openflow/seed/pages/${page.id}.json`;
+      issues.push(
+        ...validatePageData(page.data, config, file),
+        ...validateItem(page, config, file),
+      );
     }
     issues.push(
       ...validateSettingsValues(seed.settings.values, config, "openflow/seed/settings.json"),
     );
   }
 
-  const render = (name: string, props: Record<string, unknown>, marked = false) =>
+  const render = (
+    name: string,
+    props: Record<string, unknown>,
+    marked = false,
+    metadata = sampleMetadata(config, name),
+  ) =>
     site.renderToStaticMarkup(
       site.createElement(site.Render, {
         config: marked
@@ -495,6 +591,7 @@ export async function checkRender(
           root: { props: {} },
           content: [{ type: name, props: { id: `${name}-check`, ...props } }],
         },
+        metadata,
       }),
     );
 
@@ -508,7 +605,12 @@ export async function checkRender(
         ...props,
         id: `${name}-check`,
         editMode: true,
-        puck: { isEditing: true, metadata: {}, dragRef: null, renderDropZone: () => null },
+        puck: {
+          isEditing: true,
+          metadata: sampleMetadata(config, name),
+          dragRef: null,
+          renderDropZone: () => null,
+        },
       }),
     );
 
@@ -539,9 +641,9 @@ export async function checkRender(
       continue;
     }
     const found = collect(html);
-    const merge = (variantProps: Record<string, unknown>) => {
+    const merge = (variantProps: Record<string, unknown>, metadata?: OpenFlowMetadata) => {
       try {
-        const variant = collect(render(name, variantProps));
+        const variant = collect(render(name, variantProps, false, metadata));
         for (const token of variant.text) found.text.add(token);
         for (const token of variant.attribute) found.attribute.add(token);
         found.leftoverText.push(...variant.leftoverText);
@@ -549,6 +651,16 @@ export async function checkRender(
         // crashes are reported by the edge-case renders below
       }
     };
+    // A field may only show when a collection is empty (« Aucun article pour l'instant »).
+    if (Object.keys(config.collections ?? {}).length > 0) {
+      const sample = sampleMetadata(config, name);
+      merge(props, {
+        ...sample,
+        collections: Object.fromEntries(
+          Object.keys(sample.collections ?? {}).map((key) => [key, []]),
+        ),
+      });
+    }
     // A field may only show for one option of a choice (e.g. an image when « Visuel » is
     // « Image »): render every option of radio/select fields and merge what is displayed. The
     // same for the choices of list items (e.g. the choices of a form field of type « liste »).

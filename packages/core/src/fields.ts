@@ -4,7 +4,7 @@ import { createElement } from "react";
 /** Key stored in `field.metadata` to mark OpenFlow-specific field kinds. */
 export const OPENFLOW_FIELD_KEY = "openflow";
 
-export type OpenFlowFieldKind = "image" | "link" | "video";
+export type OpenFlowFieldKind = "image" | "link" | "video" | "date";
 
 /** An optimized copy of an image (WebP), made when it is added to the media library. */
 export interface ImageVariant {
@@ -117,10 +117,64 @@ export function linkField(options: { label?: string } = {}): CustomField<LinkVal
   };
 }
 
-/** Returns the OpenFlow kind of a field (`image`, `link`) or `undefined` for plain Puck fields. */
+/**
+ * A calendar date (`"2026-03-12"`), e.g. the publication date of an article. Render it with
+ * `<time dateTime={date}>{formatDate(date, lang)}</time>`: the owner picks it in a date input.
+ */
+export function dateField(options: { label?: string } = {}): CustomField<string> {
+  return {
+    type: "custom",
+    label: options.label,
+    metadata: { [OPENFLOW_FIELD_KEY]: "date" },
+    render: placeholder("date") as CustomField<string>["render"],
+  };
+}
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** True for a real calendar date written `YYYY-MM-DD`. */
+export function isValidDate(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = ISO_DATE.exec(value);
+  if (!match) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+/** Today's date in the owner's time zone, as a {@link dateField} value. */
+export function today(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/**
+ * A {@link dateField} value for readers: « 12 mars 2026 » in French. Any other value (empty,
+ * invalid) is returned as it is, so a page never breaks on a date.
+ */
+export function formatDate(
+  value: string | null | undefined,
+  lang = "fr",
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" },
+): string {
+  if (!isValidDate(value)) return value ?? "";
+  const [year, month, day] = value.split("-").map(Number) as [number, number, number];
+  try {
+    return new Intl.DateTimeFormat(lang, { ...options, timeZone: "UTC" }).format(
+      new Date(Date.UTC(year, month - 1, day)),
+    );
+  } catch {
+    return value;
+  }
+}
+
+/** Returns the OpenFlow kind of a field (`image`, `link`…) or `undefined` for plain Puck fields. */
 export function getOpenFlowFieldKind(field: Field | undefined): OpenFlowFieldKind | undefined {
   const kind = field?.metadata?.[OPENFLOW_FIELD_KEY];
-  return kind === "image" || kind === "link" || kind === "video" ? kind : undefined;
+  return kind === "image" || kind === "link" || kind === "video" || kind === "date"
+    ? kind
+    : undefined;
 }
 
 /** Link targets allowed on the site: web pages, e-mail, phone, and paths of the site. */

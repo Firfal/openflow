@@ -61,14 +61,16 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
     try {
       await flushAllAutosaves();
       // The checks (and their schemas) are only downloaded when the owner publishes.
-      const [{ validatePageData, validateSettingsValues }, pages] = await Promise.all([
-        import("./publish-checks.js"),
-        getAllPages(services.db),
-      ]);
+      const [{ validateItem, validatePageData, validateSettingsValues }, pages] = await Promise.all(
+        [import("./publish-checks.js"), getAllPages(services.db)],
+      );
       const found: Problem[] = [];
       for (const page of pages) {
         if (page.status !== "published") continue;
-        for (const issue of validatePageData(page.data, config)) {
+        for (const issue of [
+          ...validatePageData(page.data, config),
+          ...validateItem(page, config),
+        ]) {
           if (issue.severity === "error") {
             found.push({ where: page.title, pageId: page.id, message: issue.message });
           }
@@ -198,10 +200,21 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                 <ul className="of-changes">
                   {changedPages.map((page) => (
                     <li key={page.id}>
-                      <Icon name={page.slug === "" ? "home" : "fileText"} />
+                      <Icon
+                        name={
+                          page.collection
+                            ? (config.collections?.[page.collection]?.icon ?? "layers")
+                            : page.slug === ""
+                              ? "home"
+                              : "fileText"
+                        }
+                      />
                       <div className="of-list__main">
                         <strong>{page.title}</strong>
                         <span className="of-subtle">
+                          {page.collection
+                            ? `${config.collections?.[page.collection]?.label ?? "Collection"} · `
+                            : ""}
                           {page.status === "published" ? "" : "Masquée · "}
                           modifiée {timeAgo(page.updatedAt)}
                           {page.updatedBy ? ` par ${page.updatedBy}` : ""}

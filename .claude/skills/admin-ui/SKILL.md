@@ -21,7 +21,8 @@ contributors: `docs/interface-admin.md`.
 | `packages/admin/src/shell.tsx` | Dashboard sidebar, `PageHead`, user menu, `openCommandPalette` |
 | `packages/admin/src/editor-ui.tsx` | Editor bar (Puck `overrides.header`), screens, rail plugins, drawer search |
 | `packages/admin/src/style-controls.tsx` | Style rows (set / inherited labels, scrub), box model, colour, length |
-| `packages/admin/src/command.tsx` | ⌘K palette (`requestPublish`, `requestNewPage` events) |
+| `packages/admin/src/command.tsx` | ⌘K palette (`requestPublish`, `requestNewPage`, `requestNewItem` events) |
+| `packages/admin/src/collection.tsx` | A collection's items (`?view=collection&c=…`): filters, search, thumbnails; items open in the page editor |
 | `packages/admin/src/assistant.tsx` | « Assistant IA » view (MCP address, per-assistant steps, connected AIs, keys), Pages card |
 | `packages/admin/src/connect.tsx` | OAuth consent screen of an AI assistant (`?view=connect&request=…`, full screen) |
 
@@ -85,6 +86,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   « Autoriser », « Refuser », « Déconnecter », « Messages » (sidebar, prefix: the unread count follows),
   lists « Messages reçus » / « Messages indésirables », dialog « Message de … », « Répondre »,
   « Identifiant Google Analytics », « Historique », « Modifier », « Retour aux pages », « Publier… »,
+  collections (template): sidebar « Actualités » (exact), list « Actualités », « Nouvel article », dialog
+  labels « Titre » (exact) / « Adresse » / « Date de publication », « Créer et modifier »,
+  « Retour à « Actualités » »,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

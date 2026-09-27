@@ -852,6 +852,31 @@ select.of-input {
   color: var(--of-text-2);
 }
 
+/* Collections: the item's image instead of the icon. */
+.of-list__thumb {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--of-radius-md);
+  object-fit: cover;
+  background: var(--of-surface-2);
+  box-shadow: inset 0 0 0 1px var(--of-border);
+}
+
+/* Filters and search above a list (collections). */
+.of-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.of-toolbar__search {
+  flex: 0 1 280px;
+  min-width: 180px;
+}
+
 /* « Messages »: one row per message, the whole row opens it. */
 .of-message {
   display: flex;

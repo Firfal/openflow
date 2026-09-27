@@ -29,6 +29,11 @@ export function requestNewPage() {
   window.dispatchEvent(new CustomEvent("openflow:new-page"));
 }
 
+/** Asks the collection view to open its « Nouvel article » dialog. */
+export function requestNewItem() {
+  window.dispatchEvent(new CustomEvent("openflow:new-item"));
+}
+
 /**
  * Quick find (⌘K / Ctrl+K), as in Webflow and Framer: jump to a page, a setting, or run an action
  * with the keyboard.
@@ -74,15 +79,32 @@ export function CommandPalette() {
       await flushAllAutosaves();
       run();
     };
-    const list: Command[] = pages.map((page) => ({
-      id: `page:${page.id}`,
-      group: "Pages",
-      label: page.title,
-      hint: slugToPath(page.slug),
-      icon: page.slug === "" ? "home" : "fileText",
-      keywords: "modifier page",
-      run: go(() => navigate({ view: "editor", pageId: page.id })),
-    }));
+    const collections = config.collections ?? {};
+    const list: Command[] = pages
+      .filter((page) => !page.collection)
+      .map((page) => ({
+        id: `page:${page.id}`,
+        group: "Pages",
+        label: page.title,
+        hint: slugToPath(page.slug),
+        icon: page.slug === "" ? "home" : "fileText",
+        keywords: "modifier page",
+        run: go(() => navigate({ view: "editor", pageId: page.id })),
+      }));
+    // Items, grouped by collection (« Actualités »), after the pages.
+    for (const [name, collection] of Object.entries(collections)) {
+      for (const page of pages.filter((p) => p.collection === name)) {
+        list.push({
+          id: `item:${page.id}`,
+          group: collection.label,
+          label: page.title,
+          hint: slugToPath(page.slug),
+          icon: collection.icon ?? "layers",
+          keywords: `modifier ${collection.label}`,
+          run: go(() => navigate({ view: "editor", pageId: page.id })),
+        });
+      }
+    }
     list.push(
       {
         id: "new-page",
@@ -95,6 +117,17 @@ export function CommandPalette() {
           setTimeout(requestNewPage, 0);
         }),
       },
+      ...Object.entries(collections).map(([name, collection]) => ({
+        id: `new-item:${name}`,
+        group: "Actions",
+        label: collection.addLabel ?? `Nouvel élément : ${collection.label}`,
+        icon: "plus" as const,
+        keywords: `créer ajouter ${collection.label}`,
+        run: go(() => {
+          navigate({ view: "collection", collection: name });
+          setTimeout(requestNewItem, 0);
+        }),
+      })),
       {
         id: "publish",
         group: "Actions",
@@ -117,6 +150,14 @@ export function CommandPalette() {
         icon: "fileText",
         run: go(() => navigate({ view: "pages" })),
       },
+      ...Object.entries(collections).map(([name, collection]) => ({
+        id: `go:collection:${name}`,
+        group: "Aller à",
+        label: collection.label,
+        icon: collection.icon ?? ("layers" as const),
+        keywords: "collection liste",
+        run: go(() => navigate({ view: "collection", collection: name })),
+      })),
       {
         id: "go:media",
         group: "Aller à",
@@ -203,7 +244,7 @@ export function CommandPalette() {
       },
     );
     return list;
-  }, [pages, navigate, config.theme, setTheme]);
+  }, [pages, navigate, config.theme, config.collections, setTheme]);
 
   const results = useMemo(() => {
     const words = fold(query).split(/\s+/).filter(Boolean);

@@ -2,6 +2,7 @@ import type { OpenFlowConfig, SettingsDoc } from "@openflow/core";
 import type { User } from "firebase/auth";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AssistantView } from "./assistant.js";
+import { CollectionView } from "./collection.js";
 import { CommandPalette } from "./command.js";
 import { ConnectView } from "./connect.js";
 import {
@@ -80,6 +81,9 @@ function Shell() {
       <Sidebar />
       <main className="of-main">
         {route.view === "pages" && <PagesView />}
+        {route.view === "collection" && (
+          <CollectionView key={route.collection} name={route.collection} />
+        )}
         {route.view === "media" && <MediaView />}
         {route.view === "assistant" && <AssistantView />}
         {route.view === "messages" && <MessagesView />}

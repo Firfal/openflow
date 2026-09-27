@@ -1,0 +1,32 @@
+{
+  "slug": "actualites/salon-artisanat",
+  "title": "Retrouvez-nous au salon de l'artisanat",
+  "status": "published",
+  "collection": "actualites",
+  "seo": {},
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Article",
+        "props": {
+          "id": "article",
+          "title": "Retrouvez-nous au salon de l'artisanat",
+          "date": "2026-03-08",
+          "excerpt": "Du 20 au 22 mars, nous présentons nos dernières créations au salon régional de l'artisanat, stand 42.",
+          "cover": {
+            "src": "/images/actu-salon.svg",
+            "alt": "Des stands de salon stylisés",
+            "width": 1200,
+            "height": 800
+          },
+          "body": "<p>Nous serons présents au salon régional de l'artisanat, du vendredi 20 au dimanche 22 mars, au parc des expositions.</p><p>Au programme : démonstrations tous les jours à 11 h et 16 h, et des conseils personnalisés pour vos projets. L'entrée est gratuite sur inscription.</p>",
+          "previousLabel": "Plus récent",
+          "nextLabel": "Plus ancien"
+        }
+      }
+    ]
+  }
+}

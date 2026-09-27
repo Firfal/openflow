@@ -3,7 +3,11 @@ import "@puckeditor/core/no-external.css";
 import {
   AGENT_AUTHOR,
   applyDefaults,
+  buildCollections,
   COLLECTIONS,
+  getCollectionConfig,
+  itemMeta,
+  type OpenFlowMetadata,
   PAGE_SIZE_WARNING_BYTES,
   type PageContentDoc,
   slugToPath,
@@ -31,10 +35,14 @@ import { FR_DICTIONARY } from "./i18n.js";
 import { Button, EmptyState, Spinner } from "./ui.js";
 
 export function EditorView({ pageId }: { pageId: string }) {
-  const { config, services, user, notify, navigate } = useAdmin();
+  const { config, services, user, notify, navigate, pages } = useAdmin();
   const [page, setPage] = useState<FullPage | null | undefined>(undefined);
   const lastSaved = useRef<string>("");
   const warned = useRef(false);
+  // Items of a collection (article, project…): their list values follow each save.
+  const collection = getCollectionConfig(config, page?.collection);
+  // The site's items as they were when the page opened (sections listing a collection).
+  const pagesAtOpen = useRef(pages);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +63,13 @@ export function EditorView({ pageId }: { pageId: string }) {
     async (data: Data) => {
       const json = JSON.stringify(data);
       if (json === lastSaved.current) return;
-      const size = await savePageData(services.db, pageId, data, user.email ?? undefined);
+      const size = await savePageData(
+        services.db,
+        pageId,
+        data,
+        user.email ?? undefined,
+        collection ? itemMeta(data, collection, config) : undefined,
+      );
       lastSaved.current = json;
       if (size > PAGE_SIZE_WARNING_BYTES && !warned.current) {
         warned.current = true;
@@ -65,7 +79,7 @@ export function EditorView({ pageId }: { pageId: string }) {
         );
       }
     },
-    [services.db, pageId, user.email, notify],
+    [services.db, pageId, user.email, notify, collection, config],
   );
   const autosave = useAutosave(save);
 
@@ -74,9 +88,22 @@ export function EditorView({ pageId }: { pageId: string }) {
     () => (page ? applyDefaults(page.data, config) : undefined),
     [page, config],
   );
-  const metadata = useMemo(
-    () => (page ? { page: { id: page.id, slug: page.slug, title: page.title } } : {}),
-    [page],
+  // Same as on the published site: the page, and every collection's visible items. Computed once
+  // (a new `metadata` object would remount the canvas).
+  const metadata = useMemo<OpenFlowMetadata>(
+    () =>
+      page
+        ? {
+            page: {
+              id: page.id,
+              slug: page.slug,
+              title: page.title,
+              ...(page.collection ? { collection: page.collection } : {}),
+            },
+            collections: buildCollections(pagesAtOpen.current, config),
+          }
+        : {},
+    [page, config],
   );
   const [focus, setFocus] = useState<Focus | null>(null);
   const focusStore = useMemo<FocusStore>(() => ({ focus, setFocus }), [focus]);
@@ -89,11 +116,20 @@ export function EditorView({ pageId }: { pageId: string }) {
       retry: () => void flush(),
       open: async (next) => {
         await flush();
-        navigate(next ? { view: "editor", pageId: next } : { view: "pages" });
+        navigate(
+          next
+            ? { view: "editor", pageId: next }
+            : page?.collection && collection
+              ? { view: "collection", collection: page.collection }
+              : { view: "pages" },
+        );
       },
       pageId,
+      ...(collection
+        ? { back: `Retour à « ${collection.label} »`, collection: page?.collection }
+        : {}),
     }),
-    [autosave.state, autosave.error, flush, navigate, pageId],
+    [autosave.state, autosave.error, flush, navigate, pageId, page?.collection, collection],
   );
   // Read once by Puck (initial screen: the closest to this device).
   const ui = useMemo(() => editorUi(), []);

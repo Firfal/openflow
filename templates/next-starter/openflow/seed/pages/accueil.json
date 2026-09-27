@@ -120,6 +120,18 @@
         }
       },
       {
+        "type": "ArticleList",
+        "props": {
+          "id": "dernieres-actualites",
+          "title": "Nos dernières actualités",
+          "intro": "Ce qui se passe à l'atelier, en bref.",
+          "count": "3",
+          "readMoreLabel": "Lire l'article",
+          "emptyText": "Aucune actualité pour le moment : revenez bientôt.",
+          "tone": "light"
+        }
+      },
+      {
         "type": "CallToAction",
         "props": {
           "id": "contact",

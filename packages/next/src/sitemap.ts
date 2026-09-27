@@ -1,4 +1,4 @@
-import { buildLlmsFullTxt, buildLlmsTxt, type OpenFlowConfig } from "@openflow/core";
+import { buildLlmsFullTxt, buildLlmsTxt, buildRssFeed, type OpenFlowConfig } from "@openflow/core";
 import type { MetadataRoute } from "next";
 import { getSnapshot } from "./snapshot.js";
 import { pageUrl } from "./urls.js";
@@ -45,7 +45,7 @@ const TEXT = { "Content-Type": "text/plain; charset=utf-8" };
  */
 export function createLlmsTxt(config: OpenFlowConfig) {
   return async function GET(): Promise<Response> {
-    return new Response(buildLlmsTxt(await getSnapshot(config)), { headers: TEXT });
+    return new Response(buildLlmsTxt(await getSnapshot(config), config), { headers: TEXT });
   };
 }
 
@@ -53,5 +53,21 @@ export function createLlmsTxt(config: OpenFlowConfig) {
 export function createLlmsFullTxt(config: OpenFlowConfig) {
   return async function GET(): Promise<Response> {
     return new Response(buildLlmsFullTxt(await getSnapshot(config), config), { headers: TEXT });
+  };
+}
+
+/**
+ * `app/rss.xml/route.ts`: the RSS feed of the collections (articles, events…), newest first. Pages
+ * announce it (`<link rel="alternate">`) as soon as the config declares a collection.
+ * ```ts
+ * export const dynamic = "force-static";
+ * export const GET = createRssFeed(config);
+ * ```
+ */
+export function createRssFeed(config: OpenFlowConfig) {
+  return async function GET(): Promise<Response> {
+    return new Response(buildRssFeed(await getSnapshot(config), config), {
+      headers: { "Content-Type": "application/rss+xml; charset=utf-8" },
+    });
   };
 }

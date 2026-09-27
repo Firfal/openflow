@@ -1,6 +1,6 @@
 import type { ComponentConfig, Field, Fields } from "@puckeditor/core";
-import type { OpenFlowConfig, SiteDefaults, ThemeConfig } from "../config.js";
-import { getOpenFlowFieldKind, imageField, linkField, videoField } from "../fields.js";
+import type { CollectionConfig, OpenFlowConfig, SiteDefaults, ThemeConfig } from "../config.js";
+import { dateField, getOpenFlowFieldKind, imageField, linkField, videoField } from "../fields.js";
 
 /**
  * Serializable description of a site (sections, fields, settings, theme), without React code.
@@ -21,6 +21,7 @@ export type FieldSchemaType =
   | "image"
   | "video"
   | "link"
+  | "date"
   | "slot"
   | "other";
 
@@ -55,6 +56,8 @@ export interface SiteSchema {
   settings?: { fields: Record<string, FieldSchema>; defaults: Record<string, unknown> };
   theme?: ThemeConfig;
   styles: "free" | "off";
+  /** Collections (articles, projects…): their items are pages built around `component`. */
+  collections?: Record<string, CollectionConfig>;
 }
 
 function plain(value: unknown): unknown {
@@ -145,6 +148,7 @@ export function buildSiteSchema(config: OpenFlowConfig): SiteSchema {
       : undefined,
     theme: plain(config.theme) as ThemeConfig | undefined,
     styles: config.editor?.styles ?? "free",
+    collections: plain(config.collections) as Record<string, CollectionConfig> | undefined,
   };
 }
 
@@ -163,6 +167,8 @@ export function schemaToField(schema: FieldSchema): Field {
       } as Field;
     case "link":
       return linkField({ label: schema.label }) as Field;
+    case "date":
+      return dateField({ label: schema.label }) as Field;
     case "text":
     case "textarea":
       return { type: schema.type, label: schema.label, contentEditable: schema.inline, metadata };
@@ -240,5 +246,6 @@ export function configFromSchema(schema: SiteSchema): OpenFlowConfig {
       : undefined,
     theme: schema.theme,
     editor: { styles: schema.styles },
+    collections: schema.collections,
   } as OpenFlowConfig;
 }

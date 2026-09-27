@@ -74,6 +74,49 @@ export interface EditorOptions {
   styles?: "free" | "off";
 }
 
+/** Icons offered for a collection in the admin menu. */
+export type CollectionIcon =
+  | "newspaper"
+  | "briefcase"
+  | "calendar"
+  | "users"
+  | "star"
+  | "tag"
+  | "image"
+  | "layers";
+
+/**
+ * A collection of similar items (articles, projects, events, team members…), each with its own
+ * page at `/<path>/<item>/`. The agency codes the item's design once (`component`, a section of
+ * `components`); the owner adds as many items as needed in the admin, and sections list them
+ * (`getCollection(puck.metadata, name)`).
+ */
+export interface CollectionConfig {
+  /** Name of the collection in the admin menu, plural: « Actualités », « Réalisations ». */
+  label: string;
+  /** Button creating an item: « Nouvel article » (default « Nouvel élément »). */
+  addLabel?: string;
+  /** Address prefix of the items: `actualites` gives `/actualites/mon-article/`. */
+  path: string;
+  /**
+   * Section of `components` that shows one item (its page's main block). It is added to every new
+   * item, can't be removed or duplicated, and is kept out of the section library.
+   */
+  component: string;
+  /** Text field of `component` that holds the item's title (default `title`). */
+  titleField?: string;
+  /** `dateField()` of `component`: publication date, used to sort and in search results. */
+  dateField?: string;
+  /** Text field of `component` summarising the item (lists, Google and social previews). */
+  descriptionField?: string;
+  /** Image field of `component` illustrating the item (lists, social previews, admin list). */
+  imageField?: string;
+  /** Order of the items: newest first (`date`, default with a `dateField`) or by `title`. */
+  sort?: "date" | "title";
+  /** Icon in the admin menu (default `layers`). */
+  icon?: CollectionIcon;
+}
+
 /**
  * OpenFlow configuration of a site: a Puck config (sections = components) plus global settings.
  * The same object is used by the public renderer and by the admin editor.
@@ -90,11 +133,18 @@ export type OpenFlowConfig = Config & {
   /** Theme tokens (colours, fonts) the owner can change in Réglages > Thème. */
   theme?: ThemeConfig;
   editor?: EditorOptions;
+  /** Collections, by name (stable, stored with each item): `{ actualites: { … } }`. */
+  collections?: Record<string, CollectionConfig>;
 };
 
 /** Identity helper giving type-checking and autocompletion for `openflow.config.tsx`. */
 export function defineConfig<T extends OpenFlowConfig>(config: T): T {
   return config;
+}
+
+/** Identity helper for a collection declared apart from `defineConfig`. */
+export function defineCollection(collection: CollectionConfig): CollectionConfig {
+  return collection;
 }
 
 /** Extracts the plain Puck config (components, categories, root) from an OpenFlow config. */

@@ -5,6 +5,8 @@ import {
   COLLECTIONS,
   DOCS,
   ensureIds,
+  getCollectionConfig,
+  itemMeta,
   type PageContentDoc,
   type PageMetaDoc,
   type SettingsDoc,
@@ -64,19 +66,21 @@ export async function seed(
         kept++;
         continue;
       }
+      const data = ensureIds(page.data);
+      // Items of a collection keep their collection and the values their lists show.
+      const collection = getCollectionConfig(config, page.collection);
       const meta: PageMetaDoc = {
         slug: page.slug,
         title: page.title,
         status: page.status,
         seo: page.seo,
+        ...(collection
+          ? { collection: page.collection, summary: itemMeta(data, collection, config).summary }
+          : {}),
         updatedAt: now,
         updatedBy: "openflow seed",
       };
-      const content: PageContentDoc = {
-        data: ensureIds(page.data),
-        updatedAt: now,
-        updatedBy: "openflow seed",
-      };
+      const content: PageContentDoc = { data, updatedAt: now, updatedBy: "openflow seed" };
       const batch = db.batch();
       batch.set(ref, JSON.parse(JSON.stringify(meta)));
       batch.set(

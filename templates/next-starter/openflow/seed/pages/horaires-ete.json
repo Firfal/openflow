@@ -1,0 +1,32 @@
+{
+  "slug": "actualites/horaires-ete",
+  "title": "Nos horaires d'été",
+  "status": "published",
+  "collection": "actualites",
+  "seo": {},
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Article",
+        "props": {
+          "id": "article",
+          "title": "Nos horaires d'été",
+          "date": "2026-06-20",
+          "excerpt": "Du 14 juillet au 20 août, nous vous accueillons du mardi au samedi, de 9 h à 13 h.",
+          "cover": {
+            "src": "/images/actu-horaires.svg",
+            "alt": "Une horloge sur fond jaune",
+            "width": 1200,
+            "height": 800
+          },
+          "body": "<p>Comme chaque année, l'équipe prend quelques congés cet été. L'atelier reste ouvert le matin, du mardi au samedi, de 9 h à 13 h.</p><p>Les commandes passées avant le 10 juillet seront livrées avant la fermeture. Pour une urgence, écrivez-nous : nous répondons sous 48 heures.</p>",
+          "previousLabel": "Plus récent",
+          "nextLabel": "Plus ancien"
+        }
+      }
+    ]
+  }
+}

@@ -20,7 +20,7 @@ frontière entre les deux est constituée des **champs** déclarés par chaque s
 
 | Fichier | Rôle | Qui le modifie |
 |---|---|---|
-| `openflow.config.tsx` | `defineConfig({ site, components, categories, settings, layout })` | Agent |
+| `openflow.config.tsx` | `defineConfig({ site, components, categories, settings, layout, collections })` | Agent |
 | `openflow/components/*.tsx` | Sections (`ComponentConfig` Puck) | Agent |
 | `openflow/layout/*` | `SiteLayout` (en-tête, pied de page, thème) et champs des réglages (`settings`) | Agent |
 | `app/(site)/layout.tsx` | `createOpenFlowLayout(config)` : rend `layout` autour des pages | Ne pas modifier |
@@ -29,6 +29,7 @@ frontière entre les deux est constituée des **champs** déclarés par chaque s
 | `app/(site)/[[...slug]]/page.tsx` | Rendu des pages à partir du snapshot | Ne pas modifier |
 | `app/admin/*` | Admin OpenFlow | Ne pas modifier |
 | `app/llms.txt/route.ts`, `app/llms-full.txt/route.ts` | Le site lu par les IA (`createLlmsTxt`, `createLlmsFullTxt`) | Ne pas modifier |
+| `app/rss.xml/route.ts` | Flux RSS des collections (`createRssFeed`), si le site en a | Ne pas modifier |
 | `firebase.json`, `*.rules`, `functions/` | Infrastructure et sécurité ; réécritures `/mcp` vers le serveur MCP (connexion des IA) et `/forms/submit` vers la fonction des formulaires | Seulement hors des blocs `openflow` |
 
 ## Anatomie d'une section
@@ -103,14 +104,15 @@ Puis, dans `openflow.config.tsx` : `components: { …, Offre }` et `categories.c
 - **OF-110** : une section a un seul élément racine (une `<section>`, un `<div>`…), pas un fragment de frères.
 - **OF-111** : une image est affichée avec `imageProps()` et une vidéo avec `videoProps()`, pour que le propriétaire
   puisse cliquer dessus dans la page.
-- **OF-201** : le contenu de départ respecte les champs déclarés.
+- **OF-201** : le contenu de départ respecte les champs déclarés (et un élément de collection, sa collection).
 - **OF-202** : on ne renomme ni ne supprime un champ ou une section déjà livrés.
-- **OF-203** : la config est valide (sections en PascalCase, `site.name`).
+- **OF-203** : la config est valide (sections en PascalCase, `site.name`, collections).
 - **OF-301** : export statique uniquement (pas de `next/headers`, pas de Server Actions, pas de middleware, pas d'ISR).
 - **OF-302** : aucun accès à Firebase dans le rendu public.
 - **OF-303** : les blocs `openflow` de `firebase.json` et des règles de sécurité ne sont pas modifiés.
 - **OF-304** : aucun secret dans le code.
-- **OF-305** : les IA peuvent se connecter (`/mcp` dans `firebase.json`) et lire le site (`llms.txt`).
+- **OF-305** : les IA peuvent se connecter (`/mcp` dans `firebase.json`) et lire le site (`llms.txt`, et
+  `rss.xml` avec des collections).
 - **OF-401 à OF-405** : HTML accessible et référençable (`alt`, un seul `h1`, `<title>` et description, liens valides, `lang`).
 
 Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
@@ -134,6 +136,84 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
   ajoute à la médiathèque (« Fichiers du site ») : le propriétaire peut les remplacer, puis y revenir.
 - **Vidéo.** `videoField()` et `videoProps()` : vidéo muette, en boucle, avec un bouton pause, et sans lecture
   automatique si le visiteur préfère réduire les animations. Voir `champs.md`.
+
+## Collections (articles, réalisations, événements…)
+
+Quand le propriétaire publie régulièrement des contenus de même forme (actualités, projets, recettes,
+membres de l'équipe), déclare une **collection** plutôt que des pages copiées à la main. Chaque élément a
+sa page (`/<path>/<élément>/`), le propriétaire les écrit dans l'admin (menu à son nom), et les sections
+de liste les affichent toutes seules, triés.
+
+1. **La section d'un élément** : une section ordinaire de `components`, qui porte les champs de l'élément
+   (titre, date, résumé, image, texte…). C'est le bloc principal de sa page : elle utilise le `h1`.
+
+   ```tsx
+   export const Article: ComponentConfig<ArticleProps> = {
+     label: "Article",
+     fields: {
+       title: { type: "text", label: "Titre", contentEditable: true },
+       date: dateField({ label: "Date de publication" }),
+       excerpt: { type: "textarea", label: "Résumé", contentEditable: true },
+       cover: imageField({ label: "Image principale" }),
+       body: { type: "richtext", label: "Texte" },
+     },
+     defaultProps: { title: "Titre de l'article", date: "2026-01-15", excerpt: "…", cover: null, body: "<p>…</p>" },
+     render: ({ title, date, excerpt, cover, body, puck }) => { /* h1, <time>, imageProps… */ },
+   };
+   ```
+
+2. **La collection**, dans `defineConfig` :
+
+   ```tsx
+   collections: {
+     actualites: {                 // nom stable, enregistré avec chaque élément
+       label: "Actualités",        // menu de l'admin
+       addLabel: "Nouvel article", // bouton de création
+       path: "actualites",         // adresses /actualites/<titre>/
+       component: "Article",       // la section d'un élément
+       titleField: "title",        // (défaut) titre de l'élément, de sa page et des listes
+       dateField: "date",          // tri (plus récent d'abord), données structurées, flux RSS
+       descriptionField: "excerpt",// listes, Google, réseaux sociaux (sinon, le début du texte)
+       imageField: "cover",        // listes, réseaux sociaux, vignette dans l'admin
+       icon: "newspaper",          // newspaper, briefcase, calendar, users, star, tag, image, layers
+     },
+   },
+   ```
+
+   La section d'un élément n'est pas proposée dans la bibliothèque, ne peut être ni supprimée ni
+   dupliquée, et ne peut pas figurer sur une page ordinaire. Le propriétaire peut ajouter d'autres sections
+   autour d'elle (un appel à l'action sous un article, par exemple).
+
+3. **Une section de liste**, qui lit les éléments dans `puck.metadata` (sur le site publié comme dans
+   l'éditeur) :
+
+   ```tsx
+   import { formatDate, getCollection, imageProps } from "@openflow/core";
+
+   render: ({ title, count, readMoreLabel, emptyText, puck }) => {
+     const items = getCollection<ArticleProps>(puck.metadata, "actualites").slice(0, Number(count));
+     // item : { id, href, title, date, description, image, readingTime, fields }
+     return items.length === 0 ? <p>{emptyText}</p> : (
+       <ul>{items.map((item) => <li key={item.id}><a href={item.href}>{item.title}</a></li>)}</ul>
+     );
+   }
+   ```
+
+   - Seuls les éléments visibles sont listés, dans l'ordre de la collection. `item.fields` contient les
+     valeurs de la section de l'élément, sauf ses textes enrichis.
+   - Les textes de la liste (« Lire l'article », « Aucun article ») sont des champs de la section, comme
+     partout (OF-101). Le texte affiché quand la liste est vide est contrôlé par la norme.
+   - Sur la page d'un élément, `adjacentEntries(puck.metadata)` donne les éléments précédent et suivant.
+   - `app/rss.xml/route.ts` (`createRssFeed(config)`) publie le flux des collections ; les pages
+     l'annoncent d'elles-mêmes.
+
+4. **Contenu de départ** : un fichier `openflow/seed/pages/<id>.json` par élément, avec
+   `"collection": "actualites"`, une adresse sous le `path` (`"slug": "actualites/mon-article"`) et une seule
+   section `Article`. Crée aussi la page qui les liste (`"slug": "actualites"`, avec la section de liste)
+   et son lien dans le menu.
+
+Ne renomme jamais une collection, son `path` ni sa section une fois le site livré (OF-202) : les
+éléments du propriétaire en dépendent.
 
 ## Style libre et thème
 

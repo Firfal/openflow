@@ -44,13 +44,14 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 
 | Outil | Rôle |
 |---|---|
-| `get_site_overview` | Pages, types de sections, réglages communs, thème, dernière publication (à appeler en premier) |
+| `get_site_overview` | Pages, collections (avec leurs derniers éléments), types de sections, réglages communs, thème, dernière publication (à appeler en premier) |
 | `list_section_types` | Champs de chaque type de section, format attendu des valeurs, valeurs par défaut |
 | `get_page` | Sections d'une page (par identifiant ou adresse), avec leurs valeurs et leur style |
 | `update_section` | Modifie des champs par chemin : `title`, `items[1].answer`, `image`… |
 | `add_section`, `duplicate_section`, `move_section`, `remove_section` | Composition de la page |
 | `set_style` | Style libre d'une section ou d'un élément, pour tous les écrans, la tablette ou le mobile |
-| `create_page`, `update_page`, `delete_page` | Pages : titre, adresse, statut, référencement |
+| `create_page`, `update_page`, `delete_page` | Pages : titre, adresse, statut, référencement. Un élément de collection se modifie ou se supprime avec ces outils ; son titre et son adresse restent liés à sa collection |
+| `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut) |
 | `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) |
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |

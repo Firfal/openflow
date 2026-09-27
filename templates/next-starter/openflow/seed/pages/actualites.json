@@ -1,0 +1,44 @@
+{
+  "slug": "actualites",
+  "title": "Actualités",
+  "status": "published",
+  "seo": {
+    "title": "Actualités",
+    "description": "Les dernières nouvelles de l'entreprise : ouvertures, horaires, événements."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-actualites",
+          "eyebrow": "Actualités",
+          "title": "Les nouvelles de l'atelier",
+          "subtitle": "Ouvertures, horaires, événements : tout ce qui se passe chez nous, au fil des mois.",
+          "primaryLabel": "",
+          "primaryLink": null,
+          "secondaryLabel": "",
+          "secondaryLink": null,
+          "image": null,
+          "layout": "centered",
+          "tone": "muted"
+        }
+      },
+      {
+        "type": "ArticleList",
+        "props": {
+          "id": "liste-actualites",
+          "title": "Tous les articles",
+          "intro": "",
+          "count": "all",
+          "readMoreLabel": "Lire l'article",
+          "emptyText": "Aucune actualité pour le moment : revenez bientôt.",
+          "tone": "light"
+        }
+      }
+    ]
+  }
+}

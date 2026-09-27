@@ -1,0 +1,32 @@
+{
+  "slug": "actualites/nouvel-atelier",
+  "title": "Nous ouvrons un second atelier",
+  "status": "published",
+  "collection": "actualites",
+  "seo": {},
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Article",
+        "props": {
+          "id": "article",
+          "title": "Nous ouvrons un second atelier",
+          "date": "2026-09-15",
+          "excerpt": "Plus d'espace, plus de machines et une équipe qui s'agrandit : notre nouvel atelier ouvre ses portes à la rentrée.",
+          "cover": {
+            "src": "/images/actu-atelier.svg",
+            "alt": "Façade du nouvel atelier",
+            "width": 1200,
+            "height": 800
+          },
+          "body": "<p>Après deux ans de préparation, notre second atelier ouvre ses portes le 1<sup>er</sup> octobre, à dix minutes du premier.</p><h2>Ce qui change pour vous</h2><ul><li>Des délais raccourcis d'une semaine en moyenne.</li><li>Un espace d'accueil pour voir les matières et les finitions.</li><li>Deux nouveaux artisans dans l'équipe.</li></ul><p>Venez le découvrir lors de la journée portes ouvertes du samedi 4 octobre.</p>",
+          "previousLabel": "Plus récent",
+          "nextLabel": "Plus ancien"
+        }
+      }
+    ]
+  }
+}

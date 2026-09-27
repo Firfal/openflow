@@ -130,6 +130,16 @@ export interface PageDoc {
   data: Data;
   updatedAt: string;
   updatedBy?: string;
+  /**
+   * Set on the items of a collection (`config.collections`): the page is an article, a project…
+   * Its slug starts with the collection's path, and its content holds the collection's section.
+   */
+  collection?: string;
+  /**
+   * Items only: the values of the collection's section shown in lists (texts, image, date…),
+   * copied at each save so the admin lists items without loading their content.
+   */
+  summary?: Record<string, unknown>;
 }
 
 /** `cms_pages/{id}`: the page without its content. `updatedAt` also moves when the content changes. */

@@ -50,6 +50,8 @@ export const snapshotPageSchema = z.object({
   slug: slugSchema,
   title: z.string().min(1),
   seo: seoSchema.default({}),
+  /** Items of a collection (`config.collections`): the collection's name. */
+  collection: z.string().optional(),
   data: pageDataSchema,
 });
 
@@ -75,7 +77,9 @@ export interface SnapshotInput {
   /** Public keys of the integrations (`cms_system/integrations`). */
   integrations?: { recaptchaSiteKey?: string };
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
-  pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;
+  pages: Array<
+    Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & { id: string }
+  >;
 }
 
 export class SnapshotError extends Error {
@@ -116,6 +120,7 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
       slug: page.slug,
       title: page.title,
       seo: page.seo ?? {},
+      ...(page.collection ? { collection: page.collection } : {}),
       // Styles are re-validated here: only whitelisted values reach the published CSS.
       data: sanitizePageStyles(resolvePageLinks(ensureIds(page.data), hrefByPageId)),
     }))

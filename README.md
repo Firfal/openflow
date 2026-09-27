@@ -6,6 +6,8 @@ ou Framer, avec un backend 100 % Firebase.**
 - Le propriétaire clique sur un texte pour le modifier, remplace les images, ajoute ou réordonne des
   sections, change le style écran par écran, puis clique sur « Publier ». Tout se fait depuis
   `https://son-site/admin`.
+- Il publie ses **actualités, réalisations ou événements** dans des collections : chaque élément a sa page,
+  les listes du site se mettent à jour seules, avec données structurées pour Google et flux RSS.
 - Il peut aussi **brancher son IA** (Claude, ChatGPT, Cursor…) sur son site et le modifier en discutant avec
   elle : il colle `https://son-site/mcp` dans son assistant, se connecte et clique sur « Autoriser »
   ([docs/assistant-ia.md](docs/assistant-ia.md)). Le site publié expose aussi `llms.txt` aux IA qui le lisent.
@@ -15,7 +17,7 @@ ou Framer, avec un backend 100 % Firebase.**
   automatique à chaque écart et se corrige seul.
 - Open-source (MIT). L'éditeur visuel est [Puck](https://puckeditor.com) ; OpenFlow apporte tout le reste.
 
-> Statut : **phase 1 (fondations)**. OpenFlow s'utilise depuis ce dépôt GitHub : les paquets ne sont pas
+> Statut : **phases 1 à 4 en partie réalisées** (voir la feuille de route). OpenFlow s'utilise depuis ce dépôt GitHub : les paquets ne sont pas
 > publiés sur npm, chaque site vit dans le dossier `sites/`. Feuille de route : [docs/roadmap.md](docs/roadmap.md).
 
 ## Créer un site

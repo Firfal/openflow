@@ -1,11 +1,16 @@
 import {
   type AgentTokenDoc,
   COLLECTIONS,
+  type CollectionConfig,
   DOCS,
   estimateSize,
+  type ItemMetaPatch,
+  itemMeta,
   joinPage,
   type MediaDoc,
   type MessageDoc,
+  newItemData,
+  type OpenFlowConfig,
   PAGE_SIZE_WARNING_BYTES,
   type PageContentDoc,
   type PageDoc,
@@ -13,6 +18,7 @@ import {
   type ReleaseDoc,
   type SettingsDoc,
   STORAGE_PATHS,
+  setItemTitle,
   slugify,
 } from "@openflow/core";
 import type { Data } from "@puckeditor/core";
@@ -101,6 +107,39 @@ export async function createPage(
   return id;
 }
 
+/**
+ * Copies a page (or an item) as a hidden draft, at the first free address « …-copie », and returns
+ * the copy's id.
+ */
+export async function duplicatePage(
+  db: Firestore,
+  page: PageEntry,
+  slugs: Set<string>,
+  by?: string,
+): Promise<string | undefined> {
+  const full = await getPage(db, page.id);
+  if (!full) return undefined;
+  const base = `${page.slug || "accueil"}-copie`;
+  let slug = base;
+  for (let n = 2; slugs.has(slug); n++) slug = `${base}-${n}`;
+  const title = `${page.title} (copie)`;
+  const baseId = slugify(title) || "page";
+  let id = baseId;
+  for (let n = 2; (await getDoc(doc(db, COLLECTIONS.pages, id))).exists(); n++)
+    id = `${baseId}-${n}`;
+  await writePage(db, id, {
+    title,
+    slug,
+    status: "draft",
+    seo: full.seo,
+    data: full.data,
+    ...(full.collection ? { collection: full.collection, summary: full.summary } : {}),
+    updatedAt: now(),
+    updatedBy: by,
+  });
+  return id;
+}
+
 /** Writes both documents of a new page at once. */
 export async function writePage(db: Firestore, id: string, page: PageDoc) {
   const { data, ...meta } = page;
@@ -127,9 +166,16 @@ export class PageTooLargeError extends Error {}
 
 /**
  * Saves the content of a page and, in the same write, the date of its metadata (the list shows
- * « Modifications non publiées » from it).
+ * « Modifications non publiées » from it). For an item of a collection, `item` also updates its
+ * title and the values shown in lists (see `itemMeta`).
  */
-export async function savePageData(db: Firestore, id: string, data: Data, by?: string) {
+export async function savePageData(
+  db: Firestore,
+  id: string,
+  data: Data,
+  by?: string,
+  item?: ItemMetaPatch,
+) {
   const size = estimateSize(data);
   if (size > PAGE_SIZE_WARNING_BYTES * 1.25) {
     throw new PageTooLargeError(
@@ -139,9 +185,59 @@ export async function savePageData(db: Firestore, id: string, data: Data, by?: s
   const stamp = { updatedAt: now(), updatedBy: by };
   const batch = writeBatch(db);
   batch.set(doc(db, COLLECTIONS.pageContent, id), { data, ...stamp } satisfies PageContentDoc);
-  batch.update(doc(db, COLLECTIONS.pages, id), stamp);
+  batch.update(doc(db, COLLECTIONS.pages, id), {
+    ...stamp,
+    ...(item ? { summary: item.summary, ...(item.title ? { title: item.title } : {}) } : {}),
+  });
   await batch.commit();
   return size;
+}
+
+/** Creates an item of a collection: its page, with the collection's section filled in. */
+export async function createItem(
+  db: Firestore,
+  config: OpenFlowConfig,
+  name: string,
+  input: Pick<PageDoc, "title" | "slug" | "status" | "seo"> & { date?: string },
+  by?: string,
+): Promise<string> {
+  const collection = config.collections?.[name] as CollectionConfig;
+  const data = newItemData(collection, config, {
+    title: input.title,
+    date: input.date,
+    id: `${collection.component}-${crypto.randomUUID()}`,
+  });
+  const meta = itemMeta(data, collection, config);
+  const base = slugify(input.title) || "element";
+  let id = base;
+  for (let n = 2; (await getDoc(doc(db, COLLECTIONS.pages, id))).exists(); n++) id = `${base}-${n}`;
+  await writePage(db, id, {
+    title: meta.title ?? input.title,
+    slug: input.slug,
+    status: input.status,
+    seo: input.seo,
+    collection: name,
+    summary: meta.summary,
+    data,
+    updatedAt: now(),
+    updatedBy: by,
+  });
+  return id;
+}
+
+/** Renames an item outside the editor: its section's title field follows. */
+export async function renameItem(
+  db: Firestore,
+  config: OpenFlowConfig,
+  id: string,
+  title: string,
+  by?: string,
+) {
+  const page = await getPage(db, id);
+  const collection = page?.collection ? config.collections?.[page.collection] : undefined;
+  if (!page || !collection) return;
+  const data = setItemTitle(page.data, collection, title);
+  await savePageData(db, id, data, by, itemMeta(data, collection, config));
 }
 
 export async function deletePage(db: Firestore, id: string) {

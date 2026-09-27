@@ -23,9 +23,9 @@ livraison, sans rien refaire de ce qui est déjà en place.
 
 | Paquet | Rôle |
 |---|---|
-| `@openflow/core` | `defineConfig`, champs `imageField` et `linkField`, modèle Firestore, format du snapshot (zod), validation, règles de sécurité de référence, documentation pour les agents |
+| `@openflow/core` | `defineConfig`, collections, champs `imageField`, `linkField` et `dateField`, modèle Firestore, format du snapshot (zod), validation, règles de sécurité de référence, documentation pour les agents |
 | `@openflow/check` | Norme OFS : registre des règles, analyse statique (Babel), rendu par sentinelles (Puck `Render` sous Node), contrôle du HTML, formats agent, JSON et SARIF, hooks Claude Code |
-| `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap, robots et `llms.txt` (`@openflow/next/data`), `<OpenFlowAdmin />` (`@openflow/next/admin`), `<OpenFlowForm />` (`@openflow/next/forms`), mesure d'audience avec consentement |
+| `@openflow/next` | Intégration Next.js : `createOpenFlowPage` (generateStaticParams, generateMetadata, rendu), `getSettings` et `getSite`, sitemap, robots, `llms.txt` et flux RSS (`@openflow/next/data`), données structurées, `<OpenFlowAdmin />` (`@openflow/next/admin`), `<OpenFlowForm />` (`@openflow/next/forms`), mesure d'audience avec consentement |
 | `@openflow/admin` | Application d'administration React : connexion, pages, médias, éditeur Puck avec sauvegarde automatique (barre unique, rail, panneau de droite en une colonne : contenu de l'élément, puis style), réglages, publication, historique, recherche rapide ⌘K ; interface en français, claire ou sombre (voir [interface-admin.md](interface-admin.md)) |
 | `@openflow/functions` | Cloud Functions : publication (snapshot, requête Cloud Build, API REST Hosting), serveur MCP et OAuth, optimisation des médias (sharp, ffmpeg), formulaires |
 | `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `setup`, `mail`, `deploy` |
@@ -39,6 +39,11 @@ livraison, sans rien refaire de ce qui est déjà en place.
   avec `dynamicParams = false`). Chaque page est rendue par `<Render config data>` de Puck, après
   application des `defaultProps`.
 - Les réglages globaux alimentent `app/(site)/layout.tsx` (en-tête, pied de page, thème).
+- **Collections** : les éléments (articles…) sont des pages du snapshot qui portent `collection`. Chaque
+  section reçoit dans `puck.metadata` la page courante et, pour chaque collection, ses éléments visibles
+  triés (`buildCollections`, calculé une fois par export) ; l'éditeur passe les mêmes données, tirées des
+  fiches (`summary`). Chaque page porte ses données structurées (JSON-LD : `WebSite` pour l'accueil,
+  `Article` pour un élément, fil d'Ariane), et `app/rss.xml/` publie le flux des collections.
 - Chaque section est entourée d'un `<div data-of-s="id" style="display:contents">`, et chaque texte, image
   ou vidéo éditable porte `data-of="chemin"` (`prepareRenderConfig`). L'éditeur utilise les mêmes marqueurs,
   plus `data-of-l="chemin"` sur les liens (posé par `linkProps`, dans l'éditeur seulement), pour qu'un clic sur

@@ -167,7 +167,7 @@ return img && <img {...img} className="rounded-xl" />;`,
     level: "render",
     status: "active",
     why: "Le contenu de départ (`openflow/seed`) est importé dans Firestore à la livraison. S'il ne correspond pas aux champs déclarés, l'éditeur affichera des valeurs vides ou fausses.",
-    fix: "Corrigez le fichier JSON indiqué : sections existantes uniquement, une propriété par champ déclaré, types respectés (texte, nombre, `{ src, alt }` pour une image, `{ kind, href }` pour un lien).",
+    fix: 'Corrigez le fichier JSON indiqué : sections existantes uniquement, une propriété par champ déclaré, types respectés (texte, nombre, `{ src, alt }` pour une image, `{ kind, href }` pour un lien, `"AAAA-MM-JJ"` pour une date). Un élément de collection porte `"collection": "<nom>"`, une adresse sous le `path` de sa collection et une seule section `component` de sa collection ; cette section ne figure sur aucune page.',
   },
   {
     id: "OF-202",
@@ -185,7 +185,7 @@ return img && <img {...img} className="rounded-xl" />;`,
     level: "render",
     status: "active",
     why: "`openflow.config.tsx` est partagé par le site public et l'admin ; une erreur empêche l'un ou l'autre de fonctionner.",
-    fix: "Utilisez `defineConfig({ site: { name, lang }, components, settings })`, des noms de sections en PascalCase, et des catégories qui référencent des sections existantes. Les noms de champs commençant par `_` sont réservés à OpenFlow (`_style` porte le style libre).",
+    fix: "Utilisez `defineConfig({ site: { name, lang }, components, settings })`, des noms de sections en PascalCase, et des catégories qui référencent des sections existantes. Les noms de champs commençant par `_` sont réservés à OpenFlow (`_style` porte le style libre). Une collection (`collections: { actualites: { label, path, component, dateField, descriptionField, imageField } }`) nomme une section de `components` qui affiche un élément ; son titre (`titleField`, `title` par défaut) et sa description sont des champs texte, sa date un `dateField()`, son image un `imageField()`.",
   },
   {
     id: "OF-301",
@@ -229,8 +229,8 @@ return img && <img {...img} className="rounded-xl" />;`,
     severity: "warning",
     level: "fast",
     status: "active",
-    why: "Le propriétaire branche Claude, ChatGPT ou son éditeur sur `https://<site>/mcp` pour modifier le site en discutant, et les IA qui lisent le site trouvent son contenu dans `llms.txt`. Sans les réécritures, l'assistant ne peut pas se connecter ; sans `llms.txt`, les IA comprennent moins bien le site.",
-    fix: 'Gardez dans `firebase.json` les réécritures `/mcp`, `/mcp/**`, `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/**` et `/.well-known/oauth-authorization-server` vers `{ "run": { "serviceId": "cmsmcp", "region": "<région des fonctions>" } }` (la région de `CMS_REGION`, `europe-west1` par défaut). Gardez `app/llms.txt/route.ts` (`createLlmsTxt`) et `app/llms-full.txt/route.ts` (`createLlmsFullTxt`), de `@openflow/next/data`, avec `dynamic = "force-static"`.',
+    why: "Le propriétaire branche Claude, ChatGPT ou son éditeur sur `https://<site>/mcp` pour modifier le site en discutant, et les IA qui lisent le site trouvent son contenu dans `llms.txt` (et les nouveautés des collections dans le flux `rss.xml`). Sans les réécritures, l'assistant ne peut pas se connecter ; sans `llms.txt` ni flux, les IA et les lecteurs de flux comprennent moins bien le site.",
+    fix: 'Gardez dans `firebase.json` les réécritures `/mcp`, `/mcp/**`, `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/**` et `/.well-known/oauth-authorization-server` vers `{ "run": { "serviceId": "cmsmcp", "region": "<région des fonctions>" } }` (la région de `CMS_REGION`, `europe-west1` par défaut). Gardez `app/llms.txt/route.ts` (`createLlmsTxt`) et `app/llms-full.txt/route.ts` (`createLlmsFullTxt`), de `@openflow/next/data`, avec `dynamic = "force-static"` ; avec des collections, ajoutez aussi `app/rss.xml/route.ts` (`createRssFeed`).',
     good: `// app/llms.txt/route.ts
 import { createLlmsTxt } from "@openflow/next/data";
 import config from "@/openflow.config";

@@ -1,7 +1,7 @@
 # Types de champs OpenFlow
 
-OpenFlow utilise les champs de [Puck](https://puckeditor.com/docs/api-reference/fields), plus quatre
-champs propres à OpenFlow (image, vidéo, lien et formulaire), branchés sur Firebase dans l'admin.
+OpenFlow utilise les champs de [Puck](https://puckeditor.com/docs/api-reference/fields), plus cinq
+champs propres à OpenFlow (image, vidéo, lien, date et formulaire), branchés sur Firebase dans l'admin.
 
 | Besoin | Déclaration | Affichage dans `render` |
 |---|---|---|
@@ -15,6 +15,7 @@ champs propres à OpenFlow (image, vidéo, lien et formulaire), branchés sur Fi
 | Image | `imageField({ label })` | `const img = imageProps(image); img && <img {...img} />` |
 | Vidéo muette en boucle | `videoField({ label })` | `const v = videoProps(video); v && <video {...v} muted loop playsInline />` |
 | Lien | `linkField({ label })` | `<a {...linkProps(link)}>{label}</a>` |
+| Date (publication, événement) | `dateField({ label })` | `<time dateTime={date}>{formatDate(date)}</time>` |
 | Formulaire (contact, devis…) | `formFields: formFieldsField()` | `<OpenFlowForm formId={id} fields={formFields} … />` (`@openflow/next/forms`) |
 | Zone de sections imbriquées | `{ type: "slot" }` | `<Content />` (voir la doc Puck) |
 
@@ -28,7 +29,10 @@ champs propres à OpenFlow (image, vidéo, lien et formulaire), branchés sur Fi
 - `formFieldsField` : `[{ "label": "E-mail", "type": "email", "required": "yes", "options": "" }]`.
 - `linkField` : `{ "kind": "page", "pageId": "a-propos", "href": "/a-propos/", "newTab": false }`,
   `{ "kind": "url", "href": "https://…" }` (ou `mailto:`, `tel:`), ou `null`.
-- `text`, `textarea` : une chaîne. `richtext` : du HTML (`<p>…</p>`).
+- `dateField` : `"2026-03-12"` (AAAA-MM-JJ) ou `""`. `formatDate(date, "fr")` donne « 12 mars 2026 » ; une
+  valeur invalide est affichée telle quelle, sans erreur.
+- `text`, `textarea` : une chaîne. `richtext` : du HTML (`<p>…</p>`), rendu par Puck dans un `div.rich-text`
+  (espace ses blocs avec `[&_.rich-text>*+*]:mt-4`, pas avec `space-y-*`).
 
 ## Bonnes pratiques
 

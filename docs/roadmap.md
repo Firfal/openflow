@@ -3,18 +3,19 @@
 | Phase | Contenu | Statut |
 |---|---|---|
 | **1 : Fondations** | Monorepo ; `@openflow/core` ; éditeur Puck avec persistance Firestore et sauvegarde automatique ; admin réservé au propriétaire (claim, règles) ; réglages globaux ; SEO par page ; import d'images ; publication statique (Cloud Build et builder local) ; historique et restauration ; CLI ; template Next.js ; kit Claude Code (AGENTS.md, skills, hooks) ; **norme OFS** et `openflow check` (fast, render, build) ; tests unitaires, tests des règles et scénario E2E sur émulateurs | **Réalisée** |
-| 2 : Contenu | Médiathèque optimisée (copies WebP en `srcset` par `sharp`, vidéos MP4 1080p et 720p par ffmpeg) : **réalisée**. Reste : texte alternatif proposé par défaut ; **collections CMS** (schéma dans la config, pages modèles, bloc « liste de collection », `generateStaticParams`) ; aperçu par preview channel Hosting ; historique par page (points de sauvegarde) ; contrôles qualité dans un navigateur (axe, Lighthouse, captures responsive relues par Claude) | Spécifiée |
+| 2 : Contenu | Médiathèque optimisée (copies WebP en `srcset` par `sharp`, vidéos MP4 1080p et 720p par ffmpeg) : **réalisée**. **Collections** (articles, réalisations… : `collections` dans la config, un élément = une page autour de la section de la collection, vue dédiée dans l'admin, sections de liste via `getCollection`, champ date, outils IA `list_items` et `create_item`, données structurées `Article`, fil d'Ariane, flux RSS) : **réalisées**. Reste : ordre manuel et filtres (catégories) des éléments ; texte alternatif proposé par défaut ; aperçu par preview channel Hosting ; historique par page (points de sauvegarde) ; contrôles qualité dans un navigateur (axe, Lighthouse, captures responsive relues par Claude) | En partie réalisée |
 | 3 : Interactions | **Formulaires** (section de contact aux champs choisis par le propriétaire, fonction `cmsSubmitForm` avec champ piège, temps de saisie, limite par visiteur et reCAPTCHA Enterprise, boîte de réception « Messages » dans l'admin, e-mail via Resend) : **réalisés**. Mesure d'audience Google Analytics avec consentement, sauvegardes quotidiennes et alertes (`openflow setup`) : **réalisées**. Reste : **multilingue** (structure partagée et surcharges par langue, verrouillage de la structure via `permissions` de Puck, URL `/en/…`, hreflang, bouton « traduire avec l'IA ») | En partie réalisée |
 | 4 : IA et outillage | **Serveur MCP OpenFlow** et **WebMCP** (18 outils : pages, sections, style, thème, médias, publication ; brouillons uniquement) : **réalisés**, voir [assistant-ia.md](assistant-ia.md). Connexion OAuth des connecteurs MCP à `https://<domaine>/mcp`, avec écran d'autorisation dans l'admin, et `llms.txt` : **réalisés**. Reste : assistant intégré à l'admin (API Claude dans une Cloud Function, affichage des différences), `openflow check --against-live` (OF-202) et migrations de schéma, demandes de modification transmises à Claude Code | En partie réalisée |
 | 5 : Multi-framework | Adaptateurs Vite SPA (prérendu), Astro, HTML pur (`data-of` et runtime DOM) | Spécifiée |
 
 ## Détails de conception des phases suivantes
 
-### Collections (phase 2)
-- `defineConfig({ collections: { blog: { fields, slugField, template: Component, listComponent } } })`.
-- Stockage : `cms_collections/{col}/items/{id}` (`slug`, `status`, `data`, `seo`).
-- Snapshot : `collections: { blog: [items publiés] }`. Pages générées : `/{collection}/{slug}/`.
-- Admin : liste filtrable, édition des éléments avec les mêmes champs Puck.
+### Collections (phase 2, réalisées)
+- Un élément est une page `cms_pages` avec `collection` et `summary` (voir
+  [modele-de-donnees.md](modele-de-donnees.md)) : l'éditeur, le référencement, les liens, la publication,
+  l'historique et les outils IA des pages valent pour les éléments.
+- Suite possible : ordre manuel (glisser dans la liste), filtres par catégorie dans les sections de liste,
+  pagination des listes longues, modèles de sections ajoutés à chaque nouvel élément.
 
 ### Multilingue (phase 3)
 - La langue par défaut porte la structure. Les autres langues stockent des **surcharges** de props

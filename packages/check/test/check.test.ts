@@ -313,6 +313,140 @@ export default defineConfig({ site: { name: "X" }, components: { Card } });`,
   }, 30_000);
 });
 
+describe("collections", () => {
+  const ARTICLE = `import { adjacentEntries, dateField, formatDate, imageField, imageProps, linkProps } from "@openflow/core";
+
+export const Article = {
+  label: "Article",
+  fields: {
+    title: { type: "text", contentEditable: true },
+    date: dateField({ label: "Date" }),
+    cover: imageField({ label: "Image" }),
+    body: { type: "richtext" },
+    nextLabel: { type: "text", contentEditable: true },
+  },
+  defaultProps: { title: "Titre", date: "2026-01-01", cover: null, body: "<p>Texte</p>", nextLabel: "Suivant" },
+  render: ({ title, date, cover, body, nextLabel, puck }) => {
+    const img = imageProps(cover);
+    const { next } = adjacentEntries(puck.metadata);
+    return (
+      <article>
+        <time dateTime={date}>{formatDate(date)}</time>
+        <h1>{title}</h1>
+        {img && <img {...img} />}
+        <div>{body}</div>
+        {next && <a href={next.href}>{nextLabel} {next.title}</a>}
+      </article>
+    );
+  },
+};
+`;
+  const LIST = `import { formatDate, getCollection, imageProps } from "@openflow/core";
+
+export const ArticleList = {
+  label: "Liste d'articles",
+  fields: {
+    title: { type: "text", contentEditable: true },
+    emptyText: { type: "text", contentEditable: true },
+  },
+  defaultProps: { title: "Actualités", emptyText: "Rien pour l'instant." },
+  render: ({ title, emptyText, puck }) => {
+    const items = getCollection(puck.metadata, "actualites");
+    return (
+      <section>
+        <h2>{title}</h2>
+        {items.length === 0 ? <p>{emptyText}</p> : null}
+        <ul>
+          {items.map((item) => {
+            const img = imageProps(item.image);
+            return (
+              <li key={item.id}>
+                {img && <img {...img} />}
+                <time dateTime={item.date}>{formatDate(item.date)}</time>
+                <a href={item.href}>{item.title}</a>
+                <p>{item.description}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  },
+};
+`;
+  const CONFIG = `import { defineConfig } from "@openflow/core";
+import { Hero } from "./openflow/components/Hero";
+import { Article } from "./openflow/components/Article";
+import { ArticleList } from "./openflow/components/ArticleList";
+
+export default defineConfig({
+  site: { name: "Boulangerie", lang: "fr" },
+  components: { Hero, Article, ArticleList },
+  collections: {
+    actualites: { label: "Actualités", path: "actualites", component: "Article", dateField: "date", imageField: "cover" },
+  },
+});
+`;
+  const item = (slug: string, count = 1) => ({
+    slug,
+    title: "Pain",
+    collection: "actualites",
+    data: {
+      root: { props: {} },
+      content: Array.from({ length: count }, (_, n) => ({
+        type: "Article",
+        props: { id: `a${n}`, title: "Le pain", date: "2026-03-01" },
+      })),
+    },
+  });
+
+  it("accepts an item section and a list section, both fully editable", async () => {
+    const dir = await makeSite("collections-ok", {
+      "openflow.config.tsx": CONFIG,
+      "openflow/components/Article.tsx": ARTICLE,
+      "openflow/components/ArticleList.tsx": LIST,
+      "openflow/seed/pages/pain.json": item("actualites/pain"),
+    });
+    const result = await runCheck({ siteDir: dir, level: "render" });
+    expect(result.issues.filter((issue) => issue.severity === "error")).toEqual([]);
+    expect(result.sections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "Article", fields: 5, renderedFields: 5 }),
+        expect.objectContaining({ name: "ArticleList", fields: 2, renderedFields: 2 }),
+      ]),
+    );
+  }, 30_000);
+
+  it("reports a collection without its section and misplaced items", async () => {
+    const dir = await makeSite("collections-bad", {
+      "openflow.config.tsx": CONFIG.replace('component: "Article"', 'component: "Post"'),
+      "openflow/components/Article.tsx": ARTICLE,
+      "openflow/components/ArticleList.tsx": LIST,
+      "openflow/seed/pages/pain.json": item("pain", 2),
+    });
+    const result = await runCheck({ siteDir: dir, level: "render" });
+    const messages = result.issues.map((issue) => `${issue.rule} ${issue.message}`);
+    expect(messages).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^OF-203 .*« Post » n'existe pas/)]),
+    );
+    const fixed = await makeSite("collections-bad-items", {
+      "openflow.config.tsx": CONFIG,
+      "openflow/components/Article.tsx": ARTICLE,
+      "openflow/components/ArticleList.tsx": LIST,
+      "openflow/seed/pages/pain.json": item("pain", 2),
+    });
+    const items = (await runCheck({ siteDir: fixed, level: "render" })).issues.map(
+      (issue) => `${issue.rule} ${issue.message}`,
+    );
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^OF-201 .*doit commencer par \/actualites\//),
+        expect.stringMatching(/^OF-201 .*une seule section « Article » \(trouvé : 2\)/),
+      ]),
+    );
+  }, 30_000);
+});
+
 describe("html checks (build)", () => {
   it("checks lang, title, headings, alt and internal links", async () => {
     const dir = await makeSite("html");

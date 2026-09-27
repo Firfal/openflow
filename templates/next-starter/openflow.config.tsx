@@ -1,4 +1,6 @@
 import { defineConfig } from "@openflow/core";
+import { Article } from "./openflow/components/Article";
+import { ArticleList } from "./openflow/components/ArticleList";
 import { CallToAction } from "./openflow/components/CallToAction";
 import { ContactForm } from "./openflow/components/ContactForm";
 import { Faq } from "./openflow/components/Faq";
@@ -21,10 +23,37 @@ export default defineConfig({
   },
   categories: {
     header: { title: "En-têtes", components: ["Hero"] },
-    content: { title: "Contenu", components: ["TextImage", "Features", "Testimonials", "Faq"] },
+    content: {
+      title: "Contenu",
+      components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList"],
+    },
     conversion: { title: "Conversion", components: ["CallToAction", "ContactForm"] },
   },
-  components: { Hero, TextImage, Features, Testimonials, Faq, CallToAction, ContactForm },
+  components: {
+    Hero,
+    TextImage,
+    Features,
+    Testimonials,
+    Faq,
+    ArticleList,
+    CallToAction,
+    ContactForm,
+    Article,
+  },
+  // News items: each one has its page at /actualites/<titre>/, written in the admin
+  // (menu « Actualités »); « Liste d'actualités » shows the latest ones.
+  collections: {
+    actualites: {
+      label: "Actualités",
+      addLabel: "Nouvel article",
+      path: "actualites",
+      component: "Article",
+      dateField: "date",
+      descriptionField: "excerpt",
+      imageField: "cover",
+      icon: "newspaper",
+    },
+  },
   settings: {
     fields: settingsFields,
     defaultProps: settingsDefaults,

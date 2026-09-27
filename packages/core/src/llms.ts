@@ -1,6 +1,13 @@
 import type { Data, Field, Fields } from "@puckeditor/core";
+import { buildCollections } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
-import { getOpenFlowFieldKind, type ImageValue, type VideoValue } from "./fields.js";
+import {
+  formatDate,
+  getOpenFlowFieldKind,
+  type ImageValue,
+  isValidDate,
+  type VideoValue,
+} from "./fields.js";
 import { slugToPath } from "./slug.js";
 import type { Snapshot } from "./snapshot.js";
 import { applyDefaults } from "./validate.js";
@@ -40,7 +47,7 @@ export function htmlToMarkdown(html: string): string {
 }
 
 /** Text of one field value: texts, rich texts, lists and groups, image and video descriptions. */
-function fieldText(field: Field, value: unknown, out: string[]): void {
+function fieldText(field: Field, value: unknown, out: string[], lang = "fr"): void {
   if (value === null || value === undefined || value === "") return;
   const kind = getOpenFlowFieldKind(field);
   if (kind === "image") {
@@ -54,6 +61,10 @@ function fieldText(field: Field, value: unknown, out: string[]): void {
     return;
   }
   if (kind === "link") return;
+  if (kind === "date") {
+    if (isValidDate(value)) out.push(`Date : ${formatDate(value, lang)}`);
+    return;
+  }
   switch (field.type) {
     case "text":
     case "textarea":
@@ -69,7 +80,7 @@ function fieldText(field: Field, value: unknown, out: string[]): void {
       for (const item of value) {
         const parts: string[] = [];
         for (const [key, sub] of Object.entries(field.arrayFields ?? {})) {
-          fieldText(sub as Field, (item as Record<string, unknown>)?.[key], parts);
+          fieldText(sub as Field, (item as Record<string, unknown>)?.[key], parts, lang);
         }
         // The first text of an item is its title (« question », « nom »…), unless it is a media.
         if (parts.length === 1 || parts[0]?.startsWith("[")) {
@@ -81,7 +92,7 @@ function fieldText(field: Field, value: unknown, out: string[]): void {
       return;
     case "object":
       for (const [key, sub] of Object.entries(field.objectFields ?? {})) {
-        fieldText(sub as Field, (value as Record<string, unknown>)[key], out);
+        fieldText(sub as Field, (value as Record<string, unknown>)[key], out, lang);
       }
       return;
     default:
@@ -91,14 +102,14 @@ function fieldText(field: Field, value: unknown, out: string[]): void {
 }
 
 /** The text of a page, section after section, in Markdown. */
-export function pageText(data: Data, config: OpenFlowConfig): string {
+export function pageText(data: Data, config: OpenFlowConfig, lang = "fr"): string {
   const sections: string[] = [];
   walkComponents(applyDefaults(data, config), (item) => {
     const fields = config.components[item.type]?.fields as Fields | undefined;
     if (!fields) return;
     const out: string[] = [];
     for (const [key, field] of Object.entries(fields)) {
-      if (!key.startsWith("_")) fieldText(field as Field, item.props[key], out);
+      if (!key.startsWith("_")) fieldText(field as Field, item.props[key], out, lang);
     }
     if (out.length > 0) sections.push(out.join("\n\n"));
   });
@@ -115,17 +126,38 @@ function pageAddress(site: Snapshot["site"], slug: string): string {
 const indexed = (snapshot: Snapshot) => snapshot.pages.filter((page) => !page.seo.noindex);
 const line = (text: string) => text.replace(/\s+/g, " ").trim();
 
-/** `llms.txt`: the site, its description and the list of its pages. */
-export function buildLlmsTxt(snapshot: Snapshot): string {
+/**
+ * `llms.txt`: the site, its description and the list of its pages; with the config, the items of
+ * each collection come under their own heading (newest first), with their date and summary.
+ */
+export function buildLlmsTxt(snapshot: Snapshot, config?: OpenFlowConfig): string {
   const { site } = snapshot;
   const lines = [`# ${line(site.name)}`, ""];
   if (site.description) lines.push(`> ${line(site.description)}`, "");
+  const known = new Set(Object.keys(config?.collections ?? {}));
+  const pages = indexed(snapshot).filter((page) => !page.collection || !known.has(page.collection));
   lines.push("## Pages", "");
-  for (const page of indexed(snapshot)) {
+  for (const page of pages) {
     const description = page.seo.description ? `: ${line(page.seo.description)}` : "";
     lines.push(
       `- [${line(page.seo.title || page.title)}](${pageAddress(site, page.slug)})${description}`,
     );
+  }
+  if (config) {
+    const hidden = new Set(snapshot.pages.filter((p) => p.seo.noindex).map((p) => p.id));
+    const collections = buildCollections(snapshot.pages, config);
+    for (const [name, entries] of Object.entries(collections)) {
+      const visible = entries.filter((entry) => !hidden.has(entry.id));
+      if (visible.length === 0) continue;
+      lines.push("", `## ${line(config.collections?.[name]?.label ?? name)}`, "");
+      for (const entry of visible) {
+        const date = entry.date ? ` (${formatDate(entry.date, site.lang)})` : "";
+        const description = entry.description ? `: ${line(entry.description)}` : "";
+        lines.push(
+          `- [${line(entry.title)}](${pageAddress(site, entry.slug)})${date}${description}`,
+        );
+      }
+    }
   }
   lines.push(
     "",
@@ -150,7 +182,7 @@ export function buildLlmsFullTxt(snapshot: Snapshot, config: OpenFlowConfig): st
       `URL : ${pageAddress(site, page.slug)}`,
     ];
     if (page.seo.description) head.push("", `> ${line(page.seo.description)}`);
-    const text = pageText(page.data, config);
+    const text = pageText(page.data, config, site.lang);
     parts.push(text ? `${head.join("\n")}\n\n${text}` : head.join("\n"));
   }
   return `${parts.join("\n\n---\n\n")}\n`;

@@ -53,7 +53,7 @@ export const TextImage: ComponentConfig<TextImageProps> = {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className={imagePosition === "left" ? "lg:order-2" : ""}>
             {title && <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>}
-            <div className="mt-6 space-y-4 text-lg leading-8 opacity-80 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6">
+            <div className="mt-6 text-lg leading-8 opacity-80 [&_.rich-text>*+*]:mt-4 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6">
               {body}
             </div>
             {linkLabel && (

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getCollectionConfig, itemMeta } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
 import type { MediaDoc } from "./model.js";
 import {
@@ -113,7 +114,11 @@ export async function loadSeed(siteDir: string, config: OpenFlowConfig): Promise
       }
       continue;
     }
-    pages.push({ id, ...parsed.data } as Seed["pages"][number]);
+    const page = { id, ...parsed.data } as Seed["pages"][number];
+    // An item's title is its section's title field (as in the admin).
+    const collection = getCollectionConfig(config, page.collection);
+    if (collection) page.title = itemMeta(page.data, collection, config).title ?? page.title;
+    pages.push(page);
   }
 
   const seed: Seed | undefined = settingsParsed.success

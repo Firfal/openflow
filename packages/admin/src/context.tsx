@@ -8,6 +8,8 @@ export type SettingsTab = "global" | "theme" | "site";
 
 export type Route =
   | { view: "pages" }
+  /** Items of a collection (`config.collections`): articles, projects… */
+  | { view: "collection"; collection: string }
   | { view: "editor"; pageId: string }
   | { view: "settings"; tab?: SettingsTab }
   | { view: "media" }
@@ -66,6 +68,8 @@ function readRoute(): Route {
   const tab = params.get("tab");
   const request = params.get("request");
   if (view === "editor" && pageId) return { view: "editor", pageId };
+  const collection = params.get("c");
+  if (view === "collection" && collection) return { view: "collection", collection };
   if (view === "connect" && request) return { view: "connect", request };
   // Former address of the assistant page (Réglages > Assistant IA).
   if (view === "assistant" || (view === "settings" && tab === "assistant")) {
@@ -84,6 +88,7 @@ function routeToSearch(route: Route): string {
   const params = new URLSearchParams();
   if (route.view !== "pages") params.set("view", route.view);
   if (route.view === "editor") params.set("page", route.pageId);
+  if (route.view === "collection") params.set("c", route.collection);
   if (route.view === "settings" && route.tab) params.set("tab", route.tab);
   if (route.view === "connect") params.set("request", route.request);
   const search = params.toString();

@@ -1,12 +1,20 @@
 import {
   applyDefaults,
+  buildCollections,
   buildPageCss,
+  type CollectionEntry,
+  FEED_PATH,
   findPage,
+  itemEntry,
+  jsonLdScript,
   type OpenFlowConfig,
+  type OpenFlowMetadata,
+  pageJsonLd,
   paramsToSlug,
   prepareRenderConfig,
   type Snapshot,
   type SnapshotPage,
+  shareImageUrl,
   slugToParams,
 } from "@openflow/core";
 import { Render } from "@puckeditor/core";
@@ -17,28 +25,57 @@ import { pageUrl } from "./urls.js";
 
 type Params = Promise<{ slug?: string[] }>;
 
-/** Next.js metadata of a page from its SEO fields and the site defaults. */
-export function buildMetadata(site: Snapshot["site"], page: SnapshotPage): Metadata {
+/**
+ * Next.js metadata of a page from its SEO fields and the site defaults. An item of a collection
+ * (`entry`) is an article: its description and image are the default ones, with its date.
+ */
+export function buildMetadata(
+  site: Snapshot["site"],
+  page: SnapshotPage,
+  entry?: CollectionEntry,
+  options: { feed?: boolean } = {},
+): Metadata {
   const title = page.seo.title || page.title;
   const fullTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
-  const description = page.seo.description || site.description;
+  const description = page.seo.description || entry?.description || site.description;
   const url = pageUrl(site, page.slug);
-  const image = page.seo.ogImage || site.ogImage;
+  const shared = page.seo.ogImage || shareImageUrl(entry?.image) || site.ogImage;
+  // A relative image needs the site's address (otherwise Next.js would resolve it on localhost).
+  const image = shared && (/^https?:\/\//i.test(shared) || site.url) ? shared : undefined;
   return {
+    ...(site.url ? { metadataBase: new URL(site.url) } : {}),
     title: { absolute: fullTitle },
     description,
-    alternates: url ? { canonical: url } : undefined,
+    alternates: {
+      ...(url ? { canonical: url } : {}),
+      ...(options.feed
+        ? { types: { "application/rss+xml": [{ url: FEED_PATH, title: site.name }] } }
+        : {}),
+    },
     openGraph: {
       title: fullTitle,
       description,
       url,
       siteName: site.name,
       locale: site.lang,
-      type: "website",
+      ...(entry
+        ? { type: "article", ...(entry.date ? { publishedTime: entry.date } : {}) }
+        : { type: "website" }),
       images: image ? [{ url: image }] : undefined,
     },
     robots: page.seo.noindex ? { index: false, follow: true } : undefined,
   };
+}
+
+/** The collections of a snapshot, computed once per build (every page lists the same items). */
+const collectionsCache = new WeakMap<Snapshot, Record<string, CollectionEntry[]>>();
+function collectionsOf(snapshot: Snapshot, config: OpenFlowConfig) {
+  let collections = collectionsCache.get(snapshot);
+  if (!collections) {
+    collections = buildCollections(snapshot.pages, config);
+    collectionsCache.set(snapshot, collections);
+  }
+  return collections;
 }
 
 /**
@@ -69,7 +106,12 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
 
   async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
     const { snapshot, page } = await load(params);
-    return page ? buildMetadata(snapshot.site, page) : {};
+    if (!page) return {};
+    const collections = collectionsOf(snapshot, config);
+    return buildMetadata(snapshot.site, page, itemEntry(snapshot, page, config, collections), {
+      // `app/rss.xml/route.ts` lists the collections' items (see `createRssFeed`).
+      feed: Object.keys(config.collections ?? {}).length > 0,
+    });
   }
 
   async function Page({ params }: { params: Params }) {
@@ -77,6 +119,19 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
     if (!page) notFound();
     // Free style of the sections (`_style`), hoisted into <head> by React.
     const css = buildPageCss(page.data);
+    const collections = collectionsOf(snapshot, config);
+    // What sections receive in `puck.metadata`: the site, the page, and every collection's items.
+    const metadata: OpenFlowMetadata = {
+      site: snapshot.site,
+      settings: snapshot.settings,
+      page: {
+        id: page.id,
+        slug: page.slug,
+        title: page.title,
+        ...(page.collection ? { collection: page.collection } : {}),
+      },
+      collections,
+    };
     return (
       <>
         {css && (
@@ -84,15 +139,15 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
             {css}
           </style>
         )}
-        <Render
-          config={renderConfig}
-          data={applyDefaults(page.data, config)}
-          metadata={{
-            site: snapshot.site,
-            settings: snapshot.settings,
-            page: { id: page.id, slug: page.slug, title: page.title },
-          }}
-        />
+        {pageJsonLd(snapshot, page, config, collections).map((item, index) => (
+          <script
+            key={index}
+            type="application/ld+json"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON escaped by jsonLdScript.
+            dangerouslySetInnerHTML={{ __html: jsonLdScript(item) }}
+          />
+        ))}
+        <Render config={renderConfig} data={applyDefaults(page.data, config)} metadata={metadata} />
       </>
     );
   }

@@ -1,6 +1,7 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
+import { validateCollections } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
-import { getOpenFlowFieldKind } from "./fields.js";
+import { getOpenFlowFieldKind, isValidDate } from "./fields.js";
 import { STYLE_KEY, sanitizeStyle } from "./style.js";
 import { walkComponents } from "./walk.js";
 
@@ -84,6 +85,7 @@ export function validateConfig(config: OpenFlowConfig, file = "openflow.config.t
       }
     }
   }
+  issues.push(...validateCollections(config, file));
   if (config.settings) {
     issues.push(
       ...checkDefaults(
@@ -160,6 +162,11 @@ function checkValue(field: Field, value: unknown, path: string): string | undefi
       return `${path} : vidéo attendue sous la forme { "src": "...", "poster": "...", "description": "..." } ou null`;
     }
     return undefined;
+  }
+  if (kind === "date") {
+    return value === "" || isValidDate(value)
+      ? undefined
+      : `${path} : date attendue sous la forme "AAAA-MM-JJ" (ex. "2026-03-12") ou ""`;
   }
   if (kind === "link") {
     if (value === null) return undefined;

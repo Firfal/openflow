@@ -1,6 +1,7 @@
 import {
   getOpenFlowFieldKind,
   type ImageValue,
+  itemComponents,
   type LinkValue,
   markComponent,
   type OpenFlowConfig,
@@ -161,7 +162,7 @@ export function LinkInput({
   readOnly?: boolean;
   label: string;
 }) {
-  const { pages } = useAdmin();
+  const { pages, config } = useAdmin();
   const kind = value?.kind ?? "page";
   const id = useId();
   return (
@@ -213,11 +214,25 @@ export function LinkInput({
             }}
           >
             <option value="">— Choisir une page —</option>
-            {pages.map((page) => (
-              <option key={page.id} value={page.id}>
-                {page.title} ({slugToPath(page.slug)})
-              </option>
-            ))}
+            {pages
+              .filter((page) => !page.collection)
+              .map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.title} ({slugToPath(page.slug)})
+                </option>
+              ))}
+            {Object.entries(config.collections ?? {}).map(([name, collection]) => {
+              const items = pages.filter((page) => page.collection === name);
+              return items.length > 0 ? (
+                <optgroup key={name} label={collection.label}>
+                  {items.map((page) => (
+                    <option key={page.id} value={page.id}>
+                      {page.title} ({slugToPath(page.slug)})
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null;
+            })}
           </select>
         ) : (
           <input
@@ -392,6 +407,40 @@ export function VideoInput({
   );
 }
 
+/** A calendar date (`dateField`): the browser's date picker, stored as `YYYY-MM-DD`. */
+export function DateInput({
+  value,
+  onChange,
+  readOnly,
+  label,
+}: {
+  value: string | null | undefined;
+  onChange: (value: string) => void;
+  readOnly?: boolean;
+  label: string;
+}) {
+  const id = useId();
+  return (
+    <FieldLabel label={label} el="div" readOnly={readOnly}>
+      <input
+        id={id}
+        className="of-input of-date-input"
+        type="date"
+        aria-label={label}
+        value={value ?? ""}
+        readOnly={readOnly}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </FieldLabel>
+  );
+}
+
+function DateFieldRender({ field, name, value, onChange, readOnly }: RenderProps<string>) {
+  return (
+    <DateInput label={field.label ?? name} value={value} onChange={onChange} readOnly={readOnly} />
+  );
+}
+
 function VideoFieldRender({
   field,
   name,
@@ -436,6 +485,8 @@ function mapField(field: Field): Field {
     return { ...(field as CustomField<VideoValue | null>), render: VideoFieldRender } as Field;
   if (kind === "link")
     return { ...(field as CustomField<LinkValue | null>), render: LinkFieldRender } as Field;
+  if (kind === "date")
+    return { ...(field as CustomField<string>), render: DateFieldRender } as Field;
   if (field.type === "array")
     return { ...field, arrayFields: mapFields(field.arrayFields as Fields) } as Field;
   if (field.type === "object")
@@ -458,13 +509,29 @@ export function mapFields(fields: Fields | undefined): Fields {
  * site layout (header, footer, theme) around the page when the config declares one.
  */
 export function prepareEditorConfig(config: OpenFlowConfig): Config {
+  // The section of each collection's items: never removed nor copied, never offered to add.
+  const items = itemComponents(config);
   const components = Object.fromEntries(
     Object.entries(config.components).map(([name, component]) => [
       name,
       // Element markers (data-of): the owner clicks a text or an image to select its field.
-      markComponent({ ...component, fields: mapFields(component.fields) }),
+      markComponent({
+        ...component,
+        fields: mapFields(component.fields),
+        ...(items.has(name)
+          ? { permissions: { ...component.permissions, delete: false, duplicate: false } }
+          : {}),
+      }),
     ]),
   );
+  const categories =
+    items.size > 0
+      ? {
+          ...config.categories,
+          // A hidden category keeps them out of the library (and out of « Autres »).
+          _items: { title: "Éléments", components: [...items], visible: false },
+        }
+      : config.categories;
   const userRoot = config.root;
   const root =
     userRoot || config.layout || config.theme
@@ -476,5 +543,5 @@ export function prepareEditorConfig(config: OpenFlowConfig): Config {
           ),
         }
       : undefined;
-  return { categories: config.categories, components, root } as Config;
+  return { categories, components, root } as Config;
 }

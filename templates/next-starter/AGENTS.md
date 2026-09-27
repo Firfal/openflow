@@ -7,7 +7,7 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 
 ## Architecture (à ne pas changer)
 
-- `openflow.config.tsx` : `defineConfig({ site, components, categories, settings })`. Il est partagé
+- `openflow.config.tsx` : `defineConfig({ site, components, categories, settings, collections })`. Il est partagé
   par le site public et par l'admin.
 - `openflow/components/*.tsx` : les **sections**, c'est-à-dire des composants Puck (`ComponentConfig`)
   avec `fields`, `defaultProps` et `render`.
@@ -22,6 +22,10 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   `@openflow/next/forms`). Les messages arrivent dans l'admin (« Messages ») via la réécriture
   `/forms/submit` de `firebase.json`. Pour un autre formulaire (devis, inscription), reprends ce modèle :
   prop `formFields`, `formId={id}` (voir `champs.md`).
+- Collections (`collections` dans la config) : des contenus de même forme, chacun avec sa page. Ici
+  « Actualités » : la section `Article` (un élément, sur `/actualites/<titre>/`), la section de liste
+  `ArticleList` (`getCollection(puck.metadata, "actualites")`) et le flux `app/rss.xml/`. Pour une autre
+  collection (réalisations, événements, équipe), reprends ce modèle (voir « Collections » dans `contrat.md`).
 - Export statique (`output: "export"`) sur Firebase Hosting. Il n'y a **pas de serveur Next.js**.
 
 ## Contrat des sections (obligatoire)
@@ -36,7 +40,8 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 5. **Rendu robuste** : `image?.src`, `items?.map(...)`, des champs vides ou très longs, et aucun accès à `window` ou `document` pendant le rendu.
 6. Un champ `contentEditable` s'affiche **uniquement comme contenu d'un élément** (`<h2>{title}</h2>`), jamais
    dans un attribut (`alt`, `title`, `aria-label`) ni dans une chaîne concaténée.
-7. Seule la section d'en-tête de page (Hero) utilise `h1`. Les autres sections utilisent `h2` puis `h3`.
+7. Seules la section d'en-tête de page (Hero) et la section d'un élément de collection (Article) utilisent
+   `h1`. Les autres sections utilisent `h2` puis `h3`.
 8. **Ne renomme ni ne supprime** une section ou un champ déjà livré : le contenu du propriétaire en dépend.
    Ajoute plutôt un nouveau champ avec une valeur par défaut.
 9. Styles : classes Tailwind et jetons du thème déclarés dans `app/globals.css` (`@theme`). N'écris pas de couleur

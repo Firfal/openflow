@@ -26,10 +26,36 @@ export {
   type AgentSettings,
   type AgentToolInfo,
   agentInstructions,
+  type ItemMetaPatch,
   runAgentTool,
   type ToolAnnotations,
 } from "./agent/tools.js";
+export {
+  adjacentEntries,
+  buildCollections,
+  COLLECTION_NAME,
+  type CollectionEntry,
+  collectionEntry,
+  findItemComponent,
+  getCollection,
+  getCollectionConfig,
+  type ItemSource,
+  itemComponents,
+  itemMeta,
+  itemSlug,
+  itemSummary,
+  newItemData,
+  type OpenFlowMetadata,
+  richTextToPlain,
+  setItemTitle,
+  sortEntries,
+  titleFieldOf,
+  validateCollections,
+  validateItem,
+} from "./collections.js";
 export type {
+  CollectionConfig,
+  CollectionIcon,
   EditorOptions,
   LayoutProps,
   OpenFlowConfig,
@@ -38,7 +64,7 @@ export type {
   ThemeConfig,
   ThemeToken,
 } from "./config.js";
-export { defineConfig, toPuckConfig } from "./config.js";
+export { defineCollection, defineConfig, toPuckConfig } from "./config.js";
 export type {
   ImageValue,
   ImageVariant,
@@ -48,13 +74,17 @@ export type {
   VideoVariant,
 } from "./fields.js";
 export {
+  dateField,
+  formatDate,
   getOpenFlowFieldKind,
   imageField,
   imageProps,
   isSafeHref,
+  isValidDate,
   linkField,
   linkProps,
   OPENFLOW_FIELD_KEY,
+  today,
   videoField,
   videoProps,
 } from "./fields.js";
@@ -120,6 +150,15 @@ export {
 } from "./model.js";
 export type { Seed, SeedPage, SeedSettings } from "./seed.js";
 export { PAGE_ID, resolveSeedSettings, seedPageSchema, seedSettingsSchema } from "./seed.js";
+export {
+  absoluteUrl,
+  buildRssFeed,
+  FEED_PATH,
+  itemEntry,
+  jsonLdScript,
+  pageJsonLd,
+  shareImageUrl,
+} from "./seo.js";
 export {
   isValidSlug,
   normalizeSlug,

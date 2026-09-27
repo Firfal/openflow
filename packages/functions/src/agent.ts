@@ -195,6 +195,7 @@ export function adminBackend({
     seo: doc.seo ?? {},
     data: doc.data,
     updatedAt: doc.updatedAt,
+    ...(doc.collection ? { collection: doc.collection } : {}),
   });
   return {
     async listPages() {
@@ -211,11 +212,20 @@ export function adminBackend({
         joinPage(meta.data() as PageMetaDoc, content.data() as PageContentDoc | undefined),
       );
     },
-    async savePageData(id, data) {
+    async savePageData(id, data, item) {
       const at = stamp();
       const batch = db.batch();
       batch.set(contents.doc(id), { data: JSON.parse(JSON.stringify(data)), ...at });
-      batch.update(pages.doc(id), at);
+      // An item's title and list values follow its content.
+      batch.update(pages.doc(id), {
+        ...at,
+        ...(item
+          ? {
+              summary: JSON.parse(JSON.stringify(item.summary)),
+              ...(item.title ? { title: item.title } : {}),
+            }
+          : {}),
+      });
       await batch.commit();
     },
     async savePageMeta(id, meta) {

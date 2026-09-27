@@ -18,7 +18,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 - **Barre latérale** :
   - le site et son adresse ;
   - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
-  - **Pages**, **Médias** ;
+  - **Pages**, puis une entrée par collection du site (« Actualités », « Réalisations »…), puis **Médias** ;
   - **Messages**, avec le nombre de messages non lus ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
   - **Réglages**, qui se déplie en trois sous-pages : Contenu commun, Thème, Site et référencement
@@ -37,6 +37,16 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - le menu « ⋯ » propose Paramètres et référencement, Dupliquer, Voir en ligne et Supprimer ;
   - les paramètres d'une page montrent un **aperçu du résultat Google** et le nombre de caractères du titre et
     de la description.
+- **Collections** (une vue par collection, par exemple « Actualités ») : ses éléments, du plus récent au
+  plus ancien (ou par titre), avec leur image, leur date, leur adresse et **un seul statut**, comme les
+  pages.
+  - Filtres **Tous**, **Visibles**, **Masqués** (avec leur nombre) et recherche par titre.
+  - « Nouvel article » (le libellé vient de la collection) demande le titre, l'adresse (sous celle de la
+    collection, ex. `/actualites/…`), la date de publication et la visibilité, puis ouvre l'éditeur.
+  - « Modifier » ouvre l'élément dans l'éditeur, comme une page ; le menu « ⋯ » propose Paramètres et
+    référencement, Dupliquer (en élément masqué), Voir en ligne et Supprimer.
+  - Les éléments n'apparaissent ni dans la liste des pages ni dans le panneau « Pages » de l'éditeur ; le
+    choix de la page d'un lien les propose, groupés par collection.
 - **Médias** : toute la médiathèque. On peut l'importer (plusieurs fichiers à la fois), la filtrer (fichiers
   importés ou fichiers du site) et chercher par nom. Chaque fichier a une fiche : dimensions, poids, origine et
   adresse à copier. Les images vont jusqu'à 15 Mo et les vidéos jusqu'à 100 Mo (MP4, WebM, MOV). À
@@ -68,8 +78,8 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   l'assistant, ce qu'il pourra faire et l'adresse où le navigateur sera renvoyé. Un site inconnu est
   signalé. Deux boutons : « Autoriser » et « Refuser ».
 - **Recherche rapide** (<kbd>⌘</kbd> <kbd>K</kbd> ou <kbd>Ctrl</kbd> <kbd>K</kbd>, comme Quick Find dans Webflow
-  et la palette de commandes de Framer) : ouvrir une page ou un réglage, créer une page, publier, voir le
-  site, connecter une IA, changer d'apparence.
+  et la palette de commandes de Framer) : ouvrir une page, un élément de collection ou un réglage, créer une
+  page ou un élément, publier, voir le site, connecter une IA, changer d'apparence.
 
 ## Éditeur de page
 
@@ -105,6 +115,14 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 
   Un clic à côté des éléments, ou la croix de l'élément, affiche toute la section : ses champs, puis son
   style, replié de la même façon.
+- **Élément d'une collection** (un article…) : il s'ouvre dans le même éditeur. Sa section principale (titre,
+  date, résumé, image, texte) se modifie sur la page ; la date se choisit dans le panneau de droite. Cette
+  section ne peut être ni supprimée ni dupliquée, et elle n'est pas proposée dans « Ajouter » ; on peut
+  ajouter d'autres sections autour. Le titre tapé sur la page devient celui de l'élément dans les listes et
+  l'onglet du navigateur. Le bouton de retour ramène à la collection (« Retour à « Actualités » »), et le
+  sélecteur de page propose aussi les autres éléments de la collection.
+- **Sections qui listent une collection** (« Liste d'actualités ») : l'éditeur montre les éléments visibles
+  tels qu'ils étaient à l'ouverture de la page, comme ils apparaîtront sur le site.
 
 ### Bloc Style
 

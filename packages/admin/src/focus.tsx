@@ -145,7 +145,12 @@ export function resolveGroup(fields: Fields | undefined, focus: Focus): FocusGro
 
   return {
     title: main.label,
-    kind: focus.kind === "link" || kind === "link" ? "link" : (kind ?? "text"),
+    kind:
+      focus.kind === "link" || kind === "link"
+        ? "link"
+        : kind === "date"
+          ? "text"
+          : (kind ?? "text"),
     fields: [{ ...main, short: "" }],
   };
 }

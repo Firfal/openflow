@@ -1,7 +1,18 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
 import { z } from "zod";
+import {
+  buildCollections,
+  getCollectionConfig,
+  itemComponents,
+  itemMeta,
+  itemSlug,
+  newItemData,
+  setItemTitle,
+  titleFieldOf,
+  validateItem,
+} from "../collections.js";
 import type { OpenFlowConfig } from "../config.js";
-import { getOpenFlowFieldKind, isSafeHref } from "../fields.js";
+import { getOpenFlowFieldKind, isSafeHref, isValidDate, today } from "../fields.js";
 import { collectEditablePaths } from "../marks.js";
 import type { MediaDoc, PageSeo, PageStatus, ReleaseStatus, SiteSettings } from "../model.js";
 import { isValidSlug, normalizeSlug, slugify, slugToPath } from "../slug.js";
@@ -43,6 +54,14 @@ export interface AgentPage {
   seo: PageSeo;
   data: Data;
   updatedAt?: string;
+  /** Items of a collection (article, project…): the collection's name. */
+  collection?: string;
+}
+
+/** What a save of an item's content also updates on its page: title and list values. */
+export interface ItemMetaPatch {
+  title?: string;
+  summary: Record<string, unknown>;
 }
 
 export interface AgentMedia extends Pick<MediaDoc, "url" | "name" | "contentType"> {
@@ -72,13 +91,17 @@ export interface AgentSettings {
 export interface AgentBackend {
   listPages(): Promise<AgentPage[]>;
   getPage(id: string): Promise<AgentPage | undefined>;
-  savePageData(id: string, data: Data): Promise<void>;
+  /** Saves a page's content; for an item, `meta` updates its title and summary in the same write. */
+  savePageData(id: string, data: Data, meta?: ItemMetaPatch): Promise<void>;
   savePageMeta(
     id: string,
     meta: Partial<Pick<AgentPage, "title" | "slug" | "status" | "seo">>,
   ): Promise<void>;
-  /** Creates a page with this id (the caller made it unique) and returns it. */
-  createPage(id: string, page: Omit<AgentPage, "id" | "updatedAt">): Promise<string>;
+  /** Creates a page (or an item) with this id (the caller made it unique) and returns it. */
+  createPage(
+    id: string,
+    page: Omit<AgentPage, "id" | "updatedAt"> & { summary?: Record<string, unknown> },
+  ): Promise<string>;
   deletePage(id: string): Promise<void>;
   getSettings(): Promise<AgentSettings>;
   saveSettingsValues(values: Record<string, unknown>): Promise<void>;
@@ -360,12 +383,26 @@ function applyChanges(
   return next;
 }
 
-function check(data: Data, config: OpenFlowConfig): string[] {
-  const issues = validatePageData(data, config);
+function check(data: Data, config: OpenFlowConfig, page?: Pick<AgentPage, "slug" | "collection">) {
+  const issues = [
+    ...validatePageData(data, config),
+    // The address is checked when it changes (update_page), not at each edit of the content.
+    ...(page ? validateItem({ ...page, data }, config, undefined, { address: false }) : []),
+  ];
   const errors = issues.filter((issue) => issue.severity === "error");
   if (errors.length > 0)
     throw new AgentError(`Modification refusée : ${errors.map((e) => e.message).join(" ; ")}`);
   return issues.map((issue) => issue.message);
+}
+
+/** Saves a page's content; an item's title and summary follow its section. */
+async function saveData(ctx: AgentContext, page: AgentPage, data: Data) {
+  const collection = getCollectionConfig(ctx.config, page.collection);
+  await ctx.backend.savePageData(
+    page.id,
+    data,
+    collection ? itemMeta(data, collection, ctx.config) : undefined,
+  );
 }
 
 function newSectionId(type: string): string {
@@ -480,6 +517,7 @@ tool({
     return {
       site: { name: settings.site.name, url: settings.site.url, lang: settings.site.lang },
       pages: pages
+        .filter((p) => !p.collection)
         .sort((a, b) => a.slug.localeCompare(b.slug))
         .map((p) => ({
           id: p.id,
@@ -489,11 +527,36 @@ tool({
           sections: p.data.content.map((item) => item.type),
           updatedAt: p.updatedAt,
         })),
-      sectionTypes: Object.entries(ctx.schema.sections).map(([type, section]) => ({
-        type,
-        label: section.label,
-        category: section.category,
-      })),
+      collections: Object.entries(ctx.config.collections ?? {}).map(([name, collection]) => {
+        const items = pages.filter((p) => p.collection === name);
+        const latest = buildCollections(
+          items.map((p) => ({ ...p, status: "published" as const })),
+          ctx.config,
+        )[name]?.slice(0, 5);
+        return {
+          name,
+          label: collection.label,
+          path: `/${collection.path}/`,
+          itemSection: collection.component,
+          titleField: titleFieldOf(collection),
+          dateField: collection.dateField,
+          count: items.length,
+          latest: latest?.map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            path: entry.href,
+            date: entry.date,
+            status: items.find((p) => p.id === entry.id)?.status,
+          })),
+        };
+      }),
+      sectionTypes: Object.entries(ctx.schema.sections)
+        .filter(([type]) => !itemComponents(ctx.config).has(type))
+        .map(([type, section]) => ({
+          type,
+          label: section.label,
+          category: section.category,
+        })),
       settings: Object.entries(ctx.schema.settings?.fields ?? {}).map(([key, field]) => ({
         key,
         label: field.label,
@@ -519,6 +582,7 @@ tool({
       notes: [
         "Toutes les modifications sont enregistrées en brouillon : rien n'est en ligne avant publish.",
         "Pour modifier un texte : get_page, puis update_section avec le chemin du champ (ex. « title » ou « items[1].answer »).",
+        "Collections (articles, réalisations…) : list_items, create_item ; un élément est une page (get_page, update_section, update_page, delete_page), dont la section « itemSection » porte les champs.",
         "Demandez confirmation au propriétaire avant publish, delete_page et remove_section.",
       ],
     };
@@ -561,6 +625,7 @@ tool({
       title: page.title,
       path: slugToPath(page.slug),
       status: page.status,
+      ...(page.collection ? { collection: page.collection } : {}),
       seo: page.seo,
       sections: data.content.map((item) => sectionSummary(ctx, item)),
     };
@@ -593,8 +658,8 @@ tool({
     const fields = sectionFields(ctx, item.type);
     const props = applyChanges(fields, item.props, changes, await hrefsByPageId(ctx));
     list[index] = { ...item, props: props as ComponentData["props"] };
-    const warnings = check(data, ctx.config);
-    await ctx.backend.savePageData(page.id, data);
+    const warnings = check(data, ctx.config, page);
+    await saveData(ctx, page, data);
     return { ok: true, section: sectionSummary(ctx, list[index] as ComponentData), warnings };
   },
 });
@@ -635,8 +700,8 @@ tool({
       );
     }
     data.content.splice(index, 0, { type, props: props as ComponentData["props"] });
-    const warnings = check(data, ctx.config);
-    await ctx.backend.savePageData(page.id, data);
+    const warnings = check(data, ctx.config, page);
+    await saveData(ctx, page, data);
     return { ok: true, sectionId: id, position: index, warnings };
   },
 });
@@ -654,7 +719,8 @@ tool({
     const copy = structuredClone(item);
     copy.props.id = newSectionId(item.type);
     list.splice(index + 1, 0, copy);
-    await ctx.backend.savePageData(page.id, data);
+    check(data, ctx.config, page);
+    await saveData(ctx, page, data);
     return { ok: true, sectionId: copy.props.id, position: index + 1 };
   },
 });
@@ -677,7 +743,7 @@ tool({
     list.splice(index, 1);
     const target = Math.min(position, list.length);
     list.splice(target, 0, item);
-    await ctx.backend.savePageData(page.id, data);
+    await saveData(ctx, page, data);
     return { ok: true, order: list.map((section) => section.props.id) };
   },
 });
@@ -694,7 +760,8 @@ tool({
     const data = structuredClone(page.data);
     const { list, index, item } = requireSection(data, sectionId);
     list.splice(index, 1);
-    await ctx.backend.savePageData(page.id, data);
+    check(data, ctx.config, page);
+    await saveData(ctx, page, data);
     return { ok: true, removed: { id: item.props.id, type: item.type } };
   },
 });
@@ -769,7 +836,7 @@ tool({
     if (next) props[STYLE_KEY] = next;
     else delete props[STYLE_KEY];
     list[index] = { ...item, props: props as ComponentData["props"] };
-    await ctx.backend.savePageData(page.id, data);
+    await saveData(ctx, page, data);
     return { ok: true, style: next ?? null };
   },
 });
@@ -794,6 +861,13 @@ tool({
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   run: async ({ title, path, status, sections, seo }, ctx) => {
     const slug = normalizeSlug(path ?? title);
+    for (const [name, collection] of Object.entries(ctx.config.collections ?? {})) {
+      if (slug.startsWith(`${collection.path}/`)) {
+        throw new AgentError(
+          `L'adresse ${slugToPath(slug)} est réservée à la collection « ${collection.label} » : utilisez create_item avec collection « ${name} ».`,
+        );
+      }
+    }
     await assertFreeSlug(ctx, slug);
     const hrefs = await hrefsByPageId(ctx);
     const content = (sections ?? []).map(({ type, values }) => {
@@ -811,10 +885,129 @@ tool({
       return { type, props: props as ComponentData["props"] };
     });
     const data: Data = { root: { props: {} }, content };
-    check(data, ctx.config);
+    check(data, ctx.config, { slug });
     const id = await uniquePageId(ctx, slugify(title) || slug.split("/").pop() || "page");
     await ctx.backend.createPage(id, { slug, title, status, seo: seo ?? {}, data });
     return { ok: true, pageId: id, path: slugToPath(slug), status };
+  },
+});
+
+const collectionRef = z
+  .string()
+  .min(1)
+  .describe("Nom de la collection (voir « collections » dans get_site_overview).");
+
+function requireCollection(ctx: AgentContext, name: string) {
+  const collection = getCollectionConfig(ctx.config, name);
+  if (!collection) {
+    const names = Object.keys(ctx.config.collections ?? {});
+    throw new AgentError(
+      `Collection « ${name} » inconnue. Collections du site : ${names.join(", ") || "aucune"}.`,
+    );
+  }
+  return collection;
+}
+
+tool({
+  name: "list_items",
+  title: "Lister les éléments d'une collection",
+  description:
+    "Éléments d'une collection (articles, réalisations…), dans l'ordre du site : titre, adresse, date, statut et valeurs principales. « query » filtre sur le titre.",
+  input: z.object({
+    collection: collectionRef,
+    query: z.string().optional(),
+    status: z.enum(["draft", "published"]).optional(),
+  }),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async ({ collection: name, query, status }, ctx) => {
+    requireCollection(ctx, name);
+    const pages = (await ctx.backend.listPages()).filter(
+      (p) => p.collection === name && (!status || p.status === status),
+    );
+    const byId = new Map(pages.map((p) => [p.id, p]));
+    const entries =
+      buildCollections(
+        pages.map((p) => ({ ...p, status: "published" as const })),
+        ctx.config,
+      )[name] ?? [];
+    const needle = query?.trim().toLowerCase();
+    const items = entries
+      .filter((entry) => !needle || entry.title.toLowerCase().includes(needle))
+      .map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        path: entry.href,
+        status: byId.get(entry.id)?.status,
+        date: entry.date,
+        description: entry.description,
+        fields: entry.fields,
+        updatedAt: byId.get(entry.id)?.updatedAt,
+      }));
+    return { collection: name, count: items.length, items };
+  },
+});
+
+tool({
+  name: "create_item",
+  title: "Ajouter un élément à une collection",
+  description:
+    "Crée un élément d'une collection (un article, une réalisation…) avec sa page : « values » remplit les champs de sa section (voir list_section_types pour « itemSection »). Statut « draft » par défaut (absent du site).",
+  input: z.object({
+    collection: collectionRef,
+    title: z.string().min(1),
+    values: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe("Valeurs des champs de la section de l'élément (chemin → valeur)."),
+    date: z
+      .string()
+      .optional()
+      .describe(
+        "Date de publication AAAA-MM-JJ (aujourd'hui par défaut), si la collection en a une.",
+      ),
+    path: z
+      .string()
+      .optional()
+      .describe("Dernière partie de l'adresse (déduite du titre par défaut)."),
+    status: z.enum(["draft", "published"]).default("draft"),
+    seo: seoInput,
+  }),
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  run: async ({ collection: name, title, values, date, path, status, seo }, ctx) => {
+    const collection = requireCollection(ctx, name);
+    if (date !== undefined && !isValidDate(date))
+      throw new AgentError(`Date invalide « ${date} » : AAAA-MM-JJ attendu.`);
+    const slug = path
+      ? `${collection.path}/${normalizeSlug(path).split("/").pop() || "element"}`
+      : itemSlug(collection, title);
+    await assertFreeSlug(ctx, slug);
+    const data = newItemData(collection, ctx.config, {
+      title,
+      date: date ?? today(),
+      id: newSectionId(collection.component),
+    });
+    const item = data.content[0] as ComponentData;
+    item.props = applyChanges(
+      sectionFields(ctx, collection.component),
+      item.props,
+      values ?? {},
+      await hrefsByPageId(ctx),
+    ) as ComponentData["props"];
+    // The title given here wins over a title value.
+    (item.props as Record<string, unknown>)[titleFieldOf(collection)] = title;
+    const warnings = check(data, ctx.config, { slug, collection: name });
+    const id = await uniquePageId(ctx, slugify(title) || "element");
+    const meta = itemMeta(data, collection, ctx.config);
+    await ctx.backend.createPage(id, {
+      slug,
+      title: meta.title ?? title,
+      status,
+      seo: seo ?? {},
+      data,
+      collection: name,
+      summary: meta.summary,
+    });
+    return { ok: true, pageId: id, path: slugToPath(slug), status, warnings };
   },
 });
 
@@ -838,13 +1031,21 @@ tool({
   },
   run: async ({ pageId, title, path, status, seo }, ctx) => {
     const page = await findPage(ctx, pageId);
+    const collection = getCollectionConfig(ctx.config, page.collection);
     const meta: Partial<Pick<AgentPage, "title" | "slug" | "status" | "seo">> = {};
     if (title !== undefined) meta.title = title;
     if (path !== undefined) {
       if (page.slug === "" && normalizeSlug(path) !== "")
         throw new AgentError("La page d'accueil garde l'adresse « / ».");
       meta.slug = normalizeSlug(path);
+      if (collection && !meta.slug.startsWith(`${collection.path}/`)) {
+        meta.slug = `${collection.path}/${meta.slug.split("/").pop()}`;
+      }
       await assertFreeSlug(ctx, meta.slug, page.id);
+    }
+    // An item's title is its section's title field: both change together.
+    if (collection && title !== undefined) {
+      await saveData(ctx, page, setItemTitle(page.data, collection, title));
     }
     if (status !== undefined) meta.status = status;
     if (seo !== undefined) meta.seo = { ...page.seo, ...seo };

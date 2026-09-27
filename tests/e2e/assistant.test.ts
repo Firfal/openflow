@@ -162,6 +162,22 @@ describe("assistant IA (MCP et WebMCP)", () => {
     expect(list.body.result.tools.map((t: any) => t.name)).toContain("update_section");
     const overview = await tool("get_site_overview", {});
     expect(overview.pages.map((p: any) => p.path)).toContain("/");
+    // Collections: the AI lists and adds items (their title and list values are stored too).
+    for (const collection of overview.collections ?? []) {
+      const { items } = await tool("list_items", { collection: collection.name });
+      expect(items.length).toBe(collection.count);
+      const created = await tool("create_item", {
+        collection: collection.name,
+        title: "Écrit par l'assistant",
+        date: "2026-01-02",
+      });
+      expect(created.path).toBe(`${collection.path}ecrit-par-lassistant/`);
+      const meta = (await db.doc(`cms_pages/${created.pageId}`).get()).data();
+      expect(meta?.collection).toBe(collection.name);
+      expect(meta?.status).toBe("draft");
+      expect(meta?.summary?.[collection.titleField]).toBe("Écrit par l'assistant");
+      await tool("delete_page", { pageId: created.pageId, confirm: true });
+    }
   });
 
   it("connects an assistant with OAuth: discovery, registration, consent, tokens", async () => {

@@ -10,13 +10,13 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
 | `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
-| `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy` | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages, en direct), `cmsPublish` |
+| `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy`. Pour un élément de collection : `collection` (son nom) et `summary` (valeurs affichées dans les listes, voir plus bas) | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages et des collections, en direct), `cmsPublish` |
 | `cms_page_content/{pageId}` | Contenu de la page (même identifiant) : `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin (enregistrement automatique, écrit avec la date de la fiche), `openflow seed`, `cmsMcp` | Admin (à l'ouverture de la page), `cmsPublish`, `cmsMcp` |
 | `cms_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt` | Cloud Functions et CLI uniquement | Admin |
 | `cms_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` ; `variants` (copies optimisées : `url`, `width`, `height`, `size`), `poster` (aperçu d'une vidéo), `optimization` (`status` : `pending`, `done`, `skipped` ou `failed`) | Admin, `openflow seed`, `cmsOptimizeMedia` (copies) | Admin (médiathèque), `cmsPublish` |
 | `cms_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `cmsPublish` |
 | `cms_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires, publiée dans le snapshot | `openflow setup` | `cmsPublish` |
-| `cms_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème (`buildSiteSchema`) | `openflow seed` / `deploy` | `cmsMcp` |
+| `cms_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème, collections (`buildSiteSchema`) | `openflow seed` / `deploy` | `cmsMcp` |
 | `cms_agent_tokens/{id}` | IA connectées et clés d'accès : `kind` (`key` ou `oauth`), `label`, `hash` (SHA-256 de la clé ou du jeton d'accès), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` ; en OAuth, `clientId`, `expiresAt`, `refreshHash`, `refreshExpiresAt`, `redirect` | `cmsCreateAgentToken`, `cmsMcp` | Admin (liste, déconnexion) |
 | `cms_agent_clients/{clientId}` | Clients OAuth enregistrés par les IA : `name`, `redirectUris`, `authMethod`, `secretHash`, `createdAt`, `lastUsedAt` | `cmsMcp` | `cmsMcp` |
 | `cms_agent_requests/{id}` | Demandes d'autorisation en attente du propriétaire (10 min) | `cmsMcp` | `cmsAgentConsent` |
@@ -29,9 +29,27 @@ refuse d'enregistrer au-delà d'environ 1 Mo (limite des documents Firestore). L
 fiche pour que la liste des pages, suivie en direct par l'admin, reste légère quel que soit le nombre ou le
 poids des pages : elle ne lit que les fiches, et le contenu d'une page n'est lu qu'à son ouverture.
 
+### Collections (articles, réalisations, événements…)
+
+Un élément de collection est une **page** comme les autres, avec deux propriétés de plus sur sa fiche :
+tout ce qui existe pour les pages (éditeur, enregistrement automatique, référencement, liens internes,
+publication, historique, outils de l'IA) vaut donc aussi pour les éléments.
+
+- `collection` : le nom de sa collection dans `config.collections` (`"actualites"`). Son `slug` commence
+  par le `path` de la collection (`actualites/portes-ouvertes`).
+- Son contenu contient **une seule** section `component` de la collection (`Article`), qui porte les champs
+  de l'élément. Le propriétaire peut ajouter d'autres sections autour.
+- `summary` : copie des valeurs de cette section **sans ses textes enrichis ni ses zones imbriquées**, plus
+  `_excerpt` (début du premier texte enrichi, 220 caractères) et `_words` (nombre de mots, pour le temps de
+  lecture). Elle est réécrite à chaque enregistrement du contenu (admin, `cmsMcp`, `openflow seed`), dans
+  la même écriture : l'admin liste les éléments et les montre dans l'éditeur sans lire leur contenu.
+- `title` suit le champ titre de la section (`titleField`) : le propriétaire modifie le titre sur la page,
+  la liste et l'onglet du navigateur suivent.
+
+Aucune nouvelle collection Firestore ni règle de sécurité : les fiches restent dans `cms_pages`.
+
 ### Collections prévues
 
-- `cms_collections/{collection}/items/{itemId}` : contenus structurés (phase 2).
 - `cms_pages/{id}/locales/{locale}` : surcharges de traduction (phase 3).
 
 ## Cloud Storage
@@ -55,7 +73,8 @@ poids des pages : elle ne lit que les fiches, et le contenu d'une page n'est lu 
   "theme": { "color-ink": "#101820", "font-display": "var(--font-plex)" },
   "integrations": { "recaptchaSiteKey": "6Lc…" },
   "pages": [
-    { "id": "accueil", "slug": "", "title": "Accueil", "seo": { … }, "data": { "root": { "props": {} }, "content": [ … ] } }
+    { "id": "accueil", "slug": "", "title": "Accueil", "seo": { … }, "data": { "root": { "props": {} }, "content": [ … ] } },
+    { "id": "portes-ouvertes", "slug": "actualites/portes-ouvertes", "title": "…", "collection": "actualites", "seo": {}, "data": { … } }
   ]
 }
 ```
@@ -65,6 +84,10 @@ poids des pages : elle ne lit que les fiches, et le contenu d'une page n'est lu 
 - Chaque section a un `props.id` unique.
 - Les styles (`_style`) et le thème sont revalidés : les valeurs hors liste blanche sont retirées.
 - La publication est refusée si deux pages ont la même adresse ou si un slug est invalide.
+- Les éléments de collection gardent leur `collection`. Au rendu, `buildCollections` en tire, pour chaque
+  collection, la liste triée de ses éléments (`id`, `href`, `title`, `date`, `description`, `image`,
+  `readingTime`, `fields`), passée aux sections dans `puck.metadata.collections` (l'éditeur fait de même à
+  partir des `summary`).
 
 ## Valeurs des champs OpenFlow
 
@@ -76,6 +99,7 @@ poids des pages : elle ne lit que les fiches, et le contenu d'une page n'est lu 
   `tel`, `textarea`, `select`, `checkbox` ; `required` vaut `yes` ou `no` ; `options` liste les choix d'un
   `select`, un par ligne.
 - Lien : `{ kind: "page", pageId, href, newTab? }`, `{ kind: "url", href, newTab? }`, ou `null`.
+- Date (`dateField`) : `"AAAA-MM-JJ"` ou `""` ; `formatDate` l'affiche dans la langue du site.
 
 ## Style libre (`_style`)
 

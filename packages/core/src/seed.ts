@@ -10,6 +10,8 @@ export const seedPageSchema = z.object({
   title: z.string().min(1),
   status: z.enum(["draft", "published"]).default("published"),
   seo: seoSchema.default({}),
+  /** Items of a collection: its name (`config.collections`); the slug starts with its path. */
+  collection: z.string().optional(),
   data: pageDataSchema,
 });
 
@@ -28,7 +30,9 @@ export type SeedSettings = z.infer<typeof seedSettingsSchema>;
 
 export interface Seed {
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
-  pages: Array<Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data"> & { id: string }>;
+  pages: Array<
+    Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & { id: string }
+  >;
 }
 
 /** Completes seed settings with the config defaults (`site`, `settings.defaultProps`). */

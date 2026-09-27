@@ -12,6 +12,7 @@ const PORT = 3100;
 const ADMIN = `http://localhost:${PORT}/admin/`;
 const OWNER = "proprietaire@exemple.fr";
 const NEW_TITLE = "Titre modifié en ligne par le propriétaire";
+const ITEM_TITLE = "Portes ouvertes du samedi 4 octobre";
 const SCREENSHOTS = path.join(import.meta.dirname, "screenshots");
 
 let server: ChildProcess;
@@ -246,6 +247,71 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("writes a news item in its collection, edited in place like a page", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) return;
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    // Items live in their own view, not among the pages.
+    expect(
+      await page
+        .getByRole("list", { name: "Pages du site" })
+        .getByText("Nos horaires d'été")
+        .count(),
+    ).toBe(0);
+    await page
+      .getByRole("navigation", { name: "Navigation" })
+      .getByRole("button", { name: "Actualités", exact: true })
+      .click();
+    const list = page.getByRole("list", { name: "Actualités" });
+    await list.getByText("Nos horaires d'été").waitFor();
+    // Newest first.
+    expect(await list.locator(".of-list__title").first().innerText()).toBe(
+      "Nous ouvrons un second atelier",
+    );
+    await page.screenshot({ path: path.join(SCREENSHOTS, "07-collection.png") });
+
+    await page.getByRole("button", { name: "Nouvel article" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Nouvel article" });
+    await dialog.getByLabel("Titre", { exact: true }).fill("Portes ouvertes");
+    expect(await dialog.getByLabel("Adresse").inputValue()).toBe("portes-ouvertes");
+    await dialog.getByLabel("Date de publication").fill("2026-10-04");
+    await dialog.getByRole("button", { name: "Créer et modifier" }).click();
+
+    const frame = page.frameLocator("#preview-frame");
+    const heading = frame.locator("h1");
+    await heading.waitFor({ timeout: 120_000 });
+    expect(await heading.innerText()).toContain("Portes ouvertes");
+    const editable = heading.locator("[contenteditable]").first();
+    await editable.hover();
+    await editable.click();
+    await page.keyboard.press("ControlOrMeta+A");
+    await page.keyboard.type(ITEM_TITLE);
+    await page.getByText("Enregistré", { exact: true }).waitFor({ timeout: 30_000 });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "08-item-editor.png") });
+    // The item's title and list values follow what the owner typed on the page.
+    const meta = await waitFor(
+      async () => {
+        const snap = await db
+          .collection("cms_pages")
+          .where("slug", "==", "actualites/portes-ouvertes")
+          .get();
+        const data = snap.docs[0]?.data();
+        return data?.title === ITEM_TITLE ? data : undefined;
+      },
+      30_000,
+      "titre de l'article enregistré",
+    );
+    expect(meta.collection).toBe("actualites");
+    expect(meta.status).toBe("published");
+    expect(meta.summary.title).toBe(ITEM_TITLE);
+    expect(meta.summary.date).toBe("2026-10-04");
+    expect(meta.summary.body).toBeUndefined();
+
+    await page.getByRole("button", { name: "Retour à « Actualités »" }).click();
+    await list.getByText(ITEM_TITLE).waitFor();
+    expect(await list.locator(".of-list__title").first().innerText()).toBe(ITEM_TITLE);
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -272,6 +338,19 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(html).toContain('@media (max-width:767.98px){[data-of-s="');
     expect(html).toContain("color:#ff0000");
     expect(html).toContain(":root{--color-brand:#123456}");
+    // Collections: the new item has its page, is first in the lists, the feed and llms.txt.
+    if (existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) {
+      const item = readFileSync(
+        path.join(site, "out", "actualites", "portes-ouvertes", "index.html"),
+        "utf8",
+      );
+      expect(item).toContain(ITEM_TITLE);
+      expect(item).toContain('"@type":"Article"');
+      expect(item).toContain('property="og:type" content="article"');
+      expect(html.indexOf(ITEM_TITLE)).toBeLessThan(html.indexOf("Nous ouvrons un second atelier"));
+      expect(readFileSync(path.join(site, "out", "rss.xml"), "utf8")).toContain(ITEM_TITLE);
+      expect(readFileSync(path.join(site, "out", "llms.txt"), "utf8")).toContain("## Actualités");
+    }
     expect(existsSync(path.join(site, "out", "admin", "index.html"))).toBe(true);
     await page
       .getByText("Le site est en ligne avec vos dernières modifications.")

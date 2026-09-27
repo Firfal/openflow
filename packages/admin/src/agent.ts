@@ -59,6 +59,7 @@ function toAgentPage(page: FullPage): AgentPage {
     seo: page.seo ?? {},
     data,
     updatedAt: page.updatedAt,
+    ...(page.collection ? { collection: page.collection } : {}),
   };
 }
 
@@ -79,10 +80,11 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
       const page = await getPage(db, id);
       return page ? toAgentPage(page) : undefined;
     },
-    savePageData: async (id, data) => {
+    savePageData: async (id, data, item) => {
       const bridge = getEditorBridge();
+      // Open in the editor: through Puck, whose autosave also updates an item's title and summary.
       if (bridge?.pageId === id) bridge.setData(applyDefaults(data, config));
-      else await savePageData(db, id, data, AGENT_AUTHOR);
+      else await savePageData(db, id, data, AGENT_AUTHOR, item);
     },
     savePageMeta: (id, meta) => updatePageMeta(db, id, meta, AGENT_AUTHOR),
     createPage: async (id, page) => {

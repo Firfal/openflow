@@ -139,6 +139,15 @@ export function Sidebar() {
           current={route.view === "pages"}
           onClick={() => navigate({ view: "pages" })}
         />
+        {Object.entries(config.collections ?? {}).map(([name, collection]) => (
+          <NavItem
+            key={name}
+            icon={collection.icon ?? "layers"}
+            label={collection.label}
+            current={route.view === "collection" && route.collection === name}
+            onClick={() => navigate({ view: "collection", collection: name })}
+          />
+        ))}
         <NavItem
           icon="image"
           label="Médias"

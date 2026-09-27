@@ -44,13 +44,19 @@ mémorable), et suis ses règles pour chaque section.
 - En-tête et pied de page : `openflow/layout/SiteLayout.tsx`, déclaré dans `layout` de `defineConfig` et alimenté par
   `settings` (menu, coordonnées, réseaux sociaux). L'admin affiche ce cadre autour de la page éditée.
 - Couleurs : ajuste les thèmes dans `app/globals.css` (`--site-accent`) et les options du réglage `theme`.
+- Contenus qui reviennent (actualités, réalisations, événements, recettes, équipe) : une **collection**,
+  pas des pages copiées. Le modèle en montre une (« Actualités » : section `Article`, section de liste
+  `ArticleList`, route `app/rss.xml/`) ; adapte-la, ou retire-la si le site n'en a pas l'usage (config,
+  sections, contenu de départ, lien du menu et route du flux). Voir « Collections » dans `contrat.md`.
 
 Après chaque fichier écrit, les hooks OpenFlow t'envoient les erreurs `OF-xxx` : corrige-les tout de suite.
 
 ## 4. Écrire le contenu de départ
 
 - `openflow/seed/settings.json` : nom du site, langue, description, menu et coordonnées.
-- `openflow/seed/pages/<id>.json` : une page par fichier. L'accueil a le slug `""`.
+- `openflow/seed/pages/<id>.json` : une page par fichier. L'accueil a le slug `""`. Un élément de
+  collection porte `"collection": "<nom>"` et une adresse sous celle de la collection ; prévois deux ou
+  trois éléments réalistes pour que les listes aient de l'allure dès la livraison.
 - Liens internes : `{ "kind": "page", "pageId": "<id>", "href": "/<slug>/" }`. Liens externes :
   `{ "kind": "url", "href": "https://…" }`.
 - Renseigne `seo.title` et `seo.description` pour chaque page.
