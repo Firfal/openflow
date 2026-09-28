@@ -1,6 +1,8 @@
 ---
 name: admin-ui
 description: Design system and UI rules of the OpenFlow admin (packages/admin). Use before changing any admin screen, component, style or copy — dashboard, editor bar, rail panels, style panel, dialogs, menus — so new work matches the Webflow/Framer-inspired interface, stays accessible in light and dark, and keeps the e2e selectors stable.
+metadata:
+  internal: true
 ---
 
 # OpenFlow admin UI

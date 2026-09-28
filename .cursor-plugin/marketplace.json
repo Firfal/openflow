@@ -1,5 +1,4 @@
 {
-  "$schema": "https://code.claude.com/schemas/marketplace.json",
   "name": "openflow",
   "owner": {
     "name": "OpenFlow contributors",
@@ -11,9 +10,9 @@
   "plugins": [
     {
       "name": "openflow",
-      "displayName": "OpenFlow",
       "source": "./plugins/openflow",
       "description": "Crée, conçoit et livre des sites éditables par leur propriétaire : skills, norme OFS et hooks de conformité.",
+      "version": "0.2.0",
       "category": "development",
       "tags": ["cms", "nextjs", "firebase", "website"]
     }

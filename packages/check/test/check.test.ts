@@ -5,6 +5,8 @@ import {
   analyzeSource,
   checkHtml,
   checkProject,
+  editedFiles,
+  findSites,
   formatAgent,
   formatSarif,
   postToolUseHook,
@@ -13,6 +15,7 @@ import {
   runCheck,
   scanSecrets,
   stopHook,
+  toCursorResult,
 } from "../src/index.js";
 import { FIREBASE_JSON, GOOD_HERO, makeSite, TMP } from "./helpers.js";
 
@@ -660,4 +663,76 @@ describe("Claude Code hooks", () => {
       (await stopHook({ cwd: path.dirname(ok), session_id: "s3" })).stdout ?? "",
     ).not.toContain("block");
   }, 60_000);
+
+  it("reads the edited files of Claude Code, Copilot CLI, Codex and Cursor", () => {
+    expect(editedFiles({ tool_input: { file_path: "/s/a.tsx" } })).toEqual(["/s/a.tsx"]);
+    expect(editedFiles({ tool_input: { path: "b.tsx" } })).toEqual(["b.tsx"]);
+    expect(editedFiles({ file_path: "/s/c.tsx" })).toEqual(["/s/c.tsx"]);
+    const patch = [
+      "*** Begin Patch",
+      "*** Update File: openflow/components/Hero.tsx",
+      "@@",
+      "-a",
+      "+b",
+      "*** Add File: openflow/components/Menu.tsx",
+      "+export const Menu = {};",
+      "*** Update File: openflow/components/Old.tsx",
+      "*** Move to: openflow/components/New.tsx",
+      "*** End Patch",
+    ].join("\n");
+    expect(editedFiles({ tool_name: "apply_patch", tool_input: { command: patch } })).toEqual([
+      "openflow/components/Hero.tsx",
+      "openflow/components/Menu.tsx",
+      "openflow/components/Old.tsx",
+      "openflow/components/New.tsx",
+    ]);
+    expect(editedFiles({ tool_input: { command: ["apply_patch", patch] } })).toHaveLength(4);
+    expect(editedFiles({ tool_input: { command: "ls -la" } })).toEqual([]);
+  });
+
+  it("checks every file of a Codex patch", async () => {
+    const dir = await makeSite("hook-codex", {
+      "openflow/components/Bad.tsx": `export const Bad = { render: () => <h2>Titre figé</h2> };`,
+    });
+    const result = await postToolUseHook({
+      cwd: dir,
+      tool_name: "apply_patch",
+      tool_input: {
+        command:
+          "*** Begin Patch\n*** Update File: openflow/components/Hero.tsx\n*** Add File: openflow/components/Bad.tsx\n*** End Patch",
+      },
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("openflow/components/Bad.tsx:1");
+  }, 30_000);
+
+  it("answers Cursor in its own format", () => {
+    expect(toCursorResult("post-tool-use", { exitCode: 2, stderr: "OF-101 …" })).toEqual({
+      exitCode: 0,
+      stdout: JSON.stringify({ additional_context: "OF-101 …" }),
+    });
+    const warning = JSON.stringify({
+      hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: "OF-110 …" },
+    });
+    expect(
+      JSON.parse(toCursorResult("post-tool-use", { exitCode: 0, stdout: warning }).stdout!),
+    ).toEqual({
+      additional_context: "OF-110 …",
+    });
+    expect(toCursorResult("post-tool-use", { exitCode: 0 }).stdout).toBe("{}");
+    const block = JSON.stringify({ decision: "block", reason: "Corrigez OF-101" });
+    expect(JSON.parse(toCursorResult("stop", { exitCode: 0, stdout: block }).stdout!)).toEqual({
+      followup_message: "Corrigez OF-101",
+    });
+    const done = JSON.stringify({ systemMessage: "conforme" });
+    expect(toCursorResult("stop", { exitCode: 0, stdout: done }).stdout).toBe("{}");
+  });
+
+  it("finds the sites of an OpenFlow repository cloned in the project", async () => {
+    const site = await makeSite("clone-parent/openflow/sites/boulangerie");
+    await makeSite("clone-parent/openflow/templates/next-starter");
+    const sites = await findSites(path.join(TMP, "clone-parent"));
+    expect(sites).toEqual([site]);
+    expect(await findSites(path.join(TMP, "clone-parent/openflow"))).toHaveLength(2);
+  });
 });

@@ -6,21 +6,59 @@ import { countBySeverity, formatAgent } from "./format.js";
 import { PROJECT_FILES } from "./project.js";
 import { runCheck, writeReport } from "./run.js";
 
-/** What a Claude Code hook command should do: exit code plus stdout/stderr payloads. */
+/** What a hook command should do: exit code plus stdout/stderr payloads. */
 export interface HookResult {
   exitCode: number;
   stdout?: string;
   stderr?: string;
 }
 
-/** Subset of the JSON Claude Code sends on stdin to hook commands. */
+/**
+ * Subset of the JSON the AI coding tools send on stdin to hook commands. Claude Code's format, also
+ * used by Codex (an edit is an `apply_patch` whose text is in `tool_input.command`) and GitHub Copilot
+ * CLI (`tool_input.path`); Cursor adds `conversation_id` and `workspace_roots`.
+ */
 export interface HookInput {
   session_id?: string;
+  conversation_id?: string;
   cwd?: string;
+  workspace_roots?: string[];
   hook_event_name?: string;
   tool_name?: string;
-  tool_input?: { file_path?: string; notebook_path?: string };
+  tool_input?: { file_path?: string; notebook_path?: string; path?: string; command?: unknown };
+  file_path?: string;
   stop_hook_active?: boolean;
+}
+
+/** Tools whose hook answers the CLI writes. Codex and Copilot CLI read Claude Code's. */
+export type HookClient = "claude" | "cursor";
+
+/** The files an edit tool wrote, relative to the hook's directory or absolute. */
+export function editedFiles(input: HookInput): string[] {
+  const tool = input.tool_input;
+  const direct = tool?.file_path ?? tool?.notebook_path ?? tool?.path ?? input.file_path;
+  if (direct) return [direct];
+  const command = tool?.command;
+  const patch = Array.isArray(command)
+    ? command.join("\n")
+    : typeof command === "string"
+      ? command
+      : "";
+  const files = [...patch.matchAll(/^\*\*\* (?:Add File|Update File|Move to): (.+)$/gm)].map(
+    (match) => match[1]!.trim(),
+  );
+  return [...new Set(files)];
+}
+
+/** The directory the agent works in. */
+export function hookCwd(input: HookInput): string {
+  return (
+    input.cwd ??
+    input.workspace_roots?.[0] ??
+    process.env.CLAUDE_PROJECT_DIR ??
+    process.env.CURSOR_PROJECT_DIR ??
+    process.cwd()
+  );
 }
 
 /** Maximum number of times the Stop hook sends Claude back to work on the same session. */
@@ -51,41 +89,48 @@ export async function projectDeclaresHooks(projectDir: string | undefined): Prom
   }
 }
 
-/** PostToolUse (Write|Edit|MultiEdit): fast check of the edited file. Exit 2 feeds errors back. */
+/** PostToolUse (Write|Edit|MultiEdit): fast check of the edited files. Exit 2 feeds errors back. */
 export async function postToolUseHook(input: HookInput): Promise<HookResult> {
-  const target = input.tool_input?.file_path ?? input.tool_input?.notebook_path;
-  if (!target) return { exitCode: 0 };
-  const file = path.resolve(input.cwd ?? process.cwd(), target);
-  if (IGNORED.test(file)) return { exitCode: 0 };
-  const base = path.basename(file);
-  if (!RELEVANT.test(file) && !PROJECT_FILES.includes(base)) return { exitCode: 0 };
-  const siteDir = findSiteRoot(path.dirname(file));
-  if (!siteDir) return { exitCode: 0 };
+  const cwd = hookCwd(input);
+  const errors: string[] = [];
+  const notes: string[] = [];
+  for (const target of editedFiles(input)) {
+    const file = path.resolve(cwd, target);
+    if (IGNORED.test(file)) continue;
+    const base = path.basename(file);
+    if (!RELEVANT.test(file) && !PROJECT_FILES.includes(base)) continue;
+    const siteDir = findSiteRoot(path.dirname(file));
+    if (!siteDir) continue;
 
-  const result = await runCheck({ siteDir, level: "fast", files: [file] });
-  const { errors } = countBySeverity(result.issues);
-  const rel = path.relative(siteDir, file);
-  if (errors > 0) {
+    const result = await runCheck({ siteDir, level: "fast", files: [file] });
+    if (result.issues.length === 0) continue;
+    const report = formatAgent(result.issues, {
+      title: `OpenFlow — ${path.relative(siteDir, file)}`,
+    });
+    if (countBySeverity(result.issues).errors > 0) errors.push(report);
+    else notes.push(report);
+  }
+  if (errors.length > 0) {
     return {
       exitCode: 2,
-      stderr: `${formatAgent(result.issues, { title: `OpenFlow — ${rel}` })}\nCorrigez ces points maintenant (le site doit rester éditable par son propriétaire).`,
+      stderr: `${[...errors, ...notes].join("\n\n")}\nCorrigez ces points maintenant (le site doit rester éditable par son propriétaire).`,
     };
   }
-  if (result.issues.length > 0) {
+  if (notes.length > 0) {
     return {
       exitCode: 0,
       stdout: JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: "PostToolUse",
-          additionalContext: formatAgent(result.issues, { title: `OpenFlow — ${rel}` }),
-        },
+        hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: notes.join("\n\n") },
       }),
     };
   }
   return { exitCode: 0 };
 }
 
-/** Finds OpenFlow sites in `cwd` (itself, a parent, or a direct/second-level sub-directory). */
+/**
+ * Finds OpenFlow sites in `cwd`: itself, a parent, a direct or second-level sub-directory, or the
+ * `sites/` folder of an OpenFlow repository cloned in it (`openflow/sites/<site>`).
+ */
 export async function findSites(cwd: string): Promise<string[]> {
   const root = findSiteRoot(cwd);
   if (root) return [root];
@@ -97,7 +142,7 @@ export async function findSites(cwd: string): Promise<string[]> {
         continue;
       const full = path.join(dir, entry.name);
       if (CONFIG_FILES.some((file) => existsSync(path.join(full, file)))) sites.push(full);
-      else if (depth > 1) await scan(full, depth - 1);
+      else if (depth > 1 || entry.name === "sites") await scan(full, depth - 1);
     }
   };
   await scan(cwd, 2);
@@ -122,7 +167,8 @@ async function readState(file: string): Promise<StopState> {
  * is sent back to work (`decision: "block"`), at most {@link MAX_STOP_ATTEMPTS} times per session.
  */
 export async function stopHook(input: HookInput): Promise<HookResult> {
-  const sites = await findSites(input.cwd ?? process.cwd());
+  const sites = await findSites(hookCwd(input));
+  const sessionId = input.session_id ?? input.conversation_id;
   if (sites.length === 0) return { exitCode: 0 };
 
   const reports: string[] = [];
@@ -160,9 +206,9 @@ export async function stopHook(input: HookInput): Promise<HookResult> {
   }
 
   const state = await readState(stateFile);
-  const attempts = (state.sessionId === input.session_id ? state.attempts : 0) + 1;
+  const attempts = (state.sessionId === sessionId ? state.attempts : 0) + 1;
   await mkdir(stateDir, { recursive: true });
-  await writeFile(stateFile, JSON.stringify({ sessionId: input.session_id, attempts }), "utf8");
+  await writeFile(stateFile, JSON.stringify({ sessionId, attempts }), "utf8");
   if (attempts > MAX_STOP_ATTEMPTS) {
     return {
       exitCode: 0,
@@ -178,4 +224,38 @@ export async function stopHook(input: HookInput): Promise<HookResult> {
       reason: `${reports.join("\n\n")}\n\nLe site n'est pas encore conforme à la norme OpenFlow (tentative ${attempts}/${MAX_STOP_ATTEMPTS}). Corrigez ces erreurs, puis terminez.`,
     }),
   };
+}
+
+function parseJson(text: string | undefined): Record<string, unknown> | undefined {
+  try {
+    return text ? (JSON.parse(text) as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The same answer in Cursor's format (https://cursor.com/docs/hooks): JSON on stdout,
+ * `additional_context` for the agent after an edit, `followup_message` to send it back to work when
+ * it stops.
+ */
+export function toCursorResult(event: string, result: HookResult): HookResult {
+  const payload = parseJson(result.stdout);
+  if (event === "post-tool-use") {
+    const context =
+      result.exitCode === 2
+        ? result.stderr
+        : (payload?.hookSpecificOutput as { additionalContext?: string } | undefined)
+            ?.additionalContext;
+    return { exitCode: 0, stdout: JSON.stringify(context ? { additional_context: context } : {}) };
+  }
+  if (event === "stop") {
+    return {
+      exitCode: 0,
+      stdout: JSON.stringify(
+        payload?.decision === "block" ? { followup_message: payload.reason } : {},
+      ),
+    };
+  }
+  return result;
 }

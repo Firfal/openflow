@@ -18,7 +18,11 @@ immédiatement le problème signalé.
 - Créer un site : suis le skill **openflow-new-site**.
 - Concevoir ou retoucher l'apparence d'un site : le skill **openflow-design**.
 - Livrer ou déployer : le skill **openflow-deploy**, déclenché par l'utilisateur avec `/openflow:openflow-deploy`.
-- Modifier un site existant : lis `AGENTS.md` à la racine du site, puis respecte le contrat ci-dessous.
+- Modifier le code d'un site existant : lis `AGENTS.md` à la racine du site, puis respecte le contrat ci-dessous.
+- Modifier le **contenu** d'un site déjà livré (textes, pages, articles) : pas dans `openflow/seed/`, qui n'est
+  importé qu'une fois, mais par le serveur MCP du site, `https://<domaine>/mcp` (dans Claude Code :
+  `claude mcp add --transport http <nom> https://<domaine>/mcp`, puis `/mcp` pour se connecter), ou dans
+  l'admin. Voir `docs/assistant-ia.md` du dépôt OpenFlow.
 
 ## Le contrat en bref
 
@@ -46,5 +50,8 @@ règles : [references/norme.md](references/norme.md).
 npx openflow check                 # norme OFS (sections affichées avec des sentinelles)
 npx openflow check --level build   # + export statique et contrôle du HTML
 ```
+
+Avec le plugin Claude Code, les hooks lancent ces contrôles à chaque modification et en fin de tâche. Dans
+un outil sans ces hooks, lance `npx openflow check` toi-même après chaque série de modifications.
 
 Un site n'est terminé que lorsque `openflow check --level build` affiche « conforme à la norme OFS ✓ ».

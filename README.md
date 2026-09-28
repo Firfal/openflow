@@ -36,7 +36,39 @@ ou Framer, avec un backend 100 % Firebase.**
 > Statut : **phases 1 à 4 en partie réalisées** (voir la feuille de route). OpenFlow s'utilise depuis ce dépôt GitHub : les paquets ne sont pas
 > publiés sur npm, chaque site vit dans le dossier `sites/`. Feuille de route : [docs/roadmap.md](docs/roadmap.md).
 
-## Créer un site
+## Démarrer avec votre IA
+
+Installez le plugin OpenFlow dans votre outil, puis demandez-lui, depuis n'importe quel dossier :
+
+```text
+> Crée le site de la boulangerie Dupont avec OpenFlow
+```
+
+L'IA installe ce qui manque (le dépôt OpenFlow, ses dépendances et ses paquets : il suffit de git et de
+Node.js 22), crée le site, conçoit ses sections et son contenu, vérifie la norme OFS et le prévisualise. Pour
+le livrer : `/openflow:openflow-deploy` (Claude Code), ou « Livre le site sur Firebase ».
+
+| Outil | Installation | Ce que l'IA reçoit |
+|---|---|---|
+| **Claude Code** | `/plugin marketplace add Firfal/openflow`, puis `/plugin install openflow@openflow` | Skills, hooks de conformité |
+| **Codex** | `codex plugin marketplace add Firfal/openflow --ref main`, puis `codex plugin add openflow@openflow` (ou `/plugins`) | Skills, hooks (à approuver dans Codex) |
+| **GitHub Copilot CLI** | `copilot plugin marketplace add Firfal/openflow`, puis `copilot plugin install openflow@openflow` | Skills, hooks |
+| **Cursor** | Plugins > « From GitHub Repository » : `https://github.com/Firfal/openflow` (ou `cursor-agent plugin marketplace add https://github.com/Firfal/openflow`, puis `/plugin`) | Skills, hooks |
+| **Gemini CLI**, Windsurf, Cline, OpenCode… | `npx skills add Firfal/openflow` (choisir l'outil ; `-g` pour tous les projets) | Skills |
+
+- Dans le dépôt OpenFlow et dans chaque site, un fichier `AGENTS.md` donne le contrat à tous ces outils
+  (Claude Code le lit par `CLAUDE.md`, Gemini CLI par `.gemini/settings.json`).
+- Ouvert dans le dépôt ou dans un site, Claude Code propose lui-même le plugin (`.claude/settings.json`).
+- Les **skills** : `openflow` (le contrat), `openflow-new-site` (installation et création), `openflow-design`
+  (direction artistique, UI/UX, accessibilité) et `openflow-deploy` (livraison et passation au propriétaire).
+- Les **hooks** lancent `openflow check` après chaque fichier modifié et avant la fin de chaque tâche : l'IA
+  reçoit les écarts à la norme et se corrige seule. Au démarrage, ils signalent ce qui manque pour que ces
+  contrôles tournent. Sans hooks, l'IA lance `npx openflow check` elle-même (les skills le lui demandent).
+
+Le propriétaire, lui, branche son IA (Claude, ChatGPT…) sur son site livré, avec l'adresse
+`https://son-site/mcp` ([docs/assistant-ia.md](docs/assistant-ia.md)).
+
+## Créer un site à la main
 
 Les sites se créent dans le dossier `sites/` de ce dépôt, où ils utilisent directement les paquets
 OpenFlow. Pour des sites clients qui ne doivent pas être publics, travaillez dans une copie privée du dépôt
@@ -48,23 +80,13 @@ pnpm install && pnpm build
 pnpm openflow create sites/boulangerie --name "Boulangerie Dupont"
 pnpm install                       # relie le nouveau site aux paquets
 cd sites/boulangerie
-npx openflow dev                   # site + /admin sur les émulateurs Firebase
+npx openflow dev                   # site + /admin sur les émulateurs Firebase (Java 21)
 npx openflow check --level build   # conformité à la norme OFS
 npx openflow deploy --project mon-projet --owner client@exemple.fr
 ```
 
-Avec Claude Code, ouvert dans le dépôt :
-
-```text
-/plugin marketplace add Firfal/openflow
-/plugin install openflow@openflow
-
-> Crée le site de la boulangerie Dupont avec OpenFlow
-```
-
-Le plugin fournit :
-- les skills `openflow`, `openflow-new-site`, `openflow-design` et `openflow-deploy` ;
-- des hooks qui lancent `openflow check` après chaque modification et avant la fin de chaque tâche.
+Le script du skill `openflow-new-site` fait les quatre premières lignes en une commande, sans pnpm installé :
+`sh plugins/openflow/skills/openflow-new-site/scripts/openflow-init.sh --site boulangerie --name "Boulangerie Dupont"`.
 
 `openflow deploy` embarque les paquets du dépôt dans la livraison (`vendor/`) : Cloud Build et Cloud
 Functions n'ont pas besoin de npm pour les installer.
@@ -80,7 +102,7 @@ Functions n'ont pas besoin de npm pour les installer.
 | [Sécurité](docs/securite.md) | Propriétaire unique, règles, build |
 | [Interface de l'admin](docs/interface-admin.md) | Tableau de bord, éditeur, panneau de droite et style, raccourcis, clair et sombre |
 | [Assistant IA](docs/assistant-ia.md) | Brancher Claude, ChatGPT ou Cursor sur `https://<site>/mcp` (connexion OAuth), WebMCP, `llms.txt` |
-| [Contrat d'intégration](docs/contrat-integration.md) | Kit Claude Code, boucle de retour |
+| [Contrat d'intégration](docs/contrat-integration.md) | Kit pour les outils IA (plugin, skills, hooks), boucle de retour |
 | [Norme OFS](docs/norme/README.md) | Les règles OF-xxx vérifiées par `openflow check` |
 | [Feuille de route](docs/roadmap.md) | Phases 2 à 5 |
 | [Les sites de demain](docs/sites-de-demain.md) | Recherche par IA, agents, droit européen : les enjeux et les priorités qui en découlent |
@@ -97,14 +119,14 @@ packages/
   cli/         openflow             create, dev, check, hook, seed, build, deploy
 templates/next-starter/             site de départ (conforme à 100 %)
 sites/                              les sites (landing du projet, sites clients)
-plugins/openflow/                   plugin Claude Code (skills, hooks)
+plugins/openflow/                   plugin des outils IA : Claude Code, Codex, Copilot CLI, Cursor (skills, hooks)
 tests/e2e/                          règles de sécurité et scénario admin sur les émulateurs
 docs/                               spécification (FR)
 ```
 
 ## Contribuer
 
-Prérequis : Node 22+, pnpm 10, Java 11+ (émulateurs Firebase).
+Prérequis : Node 22+, pnpm 10, Java 21+ (émulateurs Firebase).
 
 ```bash
 pnpm install

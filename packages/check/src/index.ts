@@ -1,12 +1,15 @@
 export type { OutputFormat } from "./format.js";
 export { countBySeverity, dedupe, formatAgent, formatJson, formatSarif } from "./format.js";
-export type { HookInput, HookResult } from "./hooks.js";
+export type { HookClient, HookInput, HookResult } from "./hooks.js";
 export {
+  editedFiles,
   findSites,
+  hookCwd,
   MAX_STOP_ATTEMPTS,
   postToolUseHook,
   projectDeclaresHooks,
   stopHook,
+  toCursorResult,
 } from "./hooks.js";
 export { checkHtml } from "./html.js";
 export { checkProject, PROJECT_FILES } from "./project.js";

@@ -21,7 +21,9 @@ npx openflow check --level build   # + export statique et HTML (alt, h1, liens, 
 ```
 
 Avec Claude Code, les hooks de `.claude/settings.json` lancent ces contrôles automatiquement et
-renvoient les erreurs à l'agent pour qu'il les corrige.
+renvoient les erreurs à l'agent pour qu'il les corrige ; Claude Code propose aussi le plugin OpenFlow (skills
+de design et de livraison). Codex, Cursor, Copilot et Gemini CLI lisent le contrat dans `AGENTS.md` ; leur
+plugin s'installe comme indiqué dans le README du dépôt OpenFlow (« Démarrer avec votre IA »).
 
 ## Livraison
 

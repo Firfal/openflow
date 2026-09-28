@@ -28,11 +28,17 @@ jobs:
       - name: Landing page (built with OpenFlow) complies with the standard (build level)
         working-directory: sites/landing
         run: npx openflow check --level build
-      - name: Validate Claude Code plugin manifests
+      - name: Plugin and marketplace valid for Claude Code (official validator)
         run: |
-          node -e "JSON.parse(require('fs').readFileSync('.claude-plugin/marketplace.json'))"
-          node -e "JSON.parse(require('fs').readFileSync('plugins/openflow/.claude-plugin/plugin.json'))"
-          node -e "JSON.parse(require('fs').readFileSync('plugins/openflow/hooks/hooks.json'))"
+          npx --yes @anthropic-ai/claude-code@2.1.283 plugin validate --strict .
+          npx --yes @anthropic-ai/claude-code@2.1.283 plugin validate --strict plugins/openflow
+          sh -n plugins/openflow/scripts/openflow-hook.sh
+          sh -n plugins/openflow/skills/openflow-new-site/scripts/openflow-init.sh
+      - name: One-command setup (skill openflow-new-site) creates a compliant site
+        run: |
+          touch node_modules/.openflow-built
+          sh plugins/openflow/skills/openflow-new-site/scripts/openflow-init.sh --site ci-smoke --name "Site de test"
+          cd sites/ci-smoke && npx openflow check
 
   e2e:
     runs-on: ubuntu-latest

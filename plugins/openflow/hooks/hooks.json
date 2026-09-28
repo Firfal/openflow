@@ -1,5 +1,17 @@
 {
+  "description": "Norme OFS : contrôle de chaque fichier modifié et de fin de tâche ; au démarrage, ce qu'il manque pour que les contrôles tournent.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/openflow-hook.sh\" session-start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",

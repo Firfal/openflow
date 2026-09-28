@@ -1,4 +1,16 @@
 {
+  "extraKnownMarketplaces": {
+    "openflow": {
+      "source": {
+        "source": "github",
+        "repo": "Firfal/openflow",
+        "ref": "main"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "openflow@openflow": true
+  },
   "hooks": {
     "PostToolUse": [
       {

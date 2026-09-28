@@ -6,11 +6,13 @@ import {
   formatAgent,
   formatJson,
   formatSarif,
+  type HookClient,
   type OutputFormat,
   postToolUseHook,
   projectDeclaresHooks,
   runCheck,
   stopHook,
+  toCursorResult,
   writeReport,
 } from "@openflow/check";
 import { CliError, cliVersion, log, readStdin, siteDir } from "../util.js";
@@ -48,18 +50,33 @@ export async function check(files: string[], options: CheckCommandOptions): Prom
 }
 
 /**
- * `openflow hook <event>`: Claude Code hook entry point (reads the hook JSON on stdin).
+ * `openflow hook <event>`: entry point of the AI tools' hooks (reads the hook JSON on stdin). Claude
+ * Code, Codex and GitHub Copilot CLI share one format; `--client cursor` answers in Cursor's.
  * With `--source plugin`, stays silent when the project already declares the hooks itself.
  */
-export async function hook(event: string, options: { source?: string }): Promise<number> {
-  if (options.source === "plugin" && (await projectDeclaresHooks(process.env.CLAUDE_PROJECT_DIR)))
+export async function hook(
+  event: string,
+  options: { source?: string; client?: string },
+): Promise<number> {
+  const client = (options.client ?? "claude") as HookClient;
+  if (client !== "claude" && client !== "cursor")
+    throw new CliError(`Outil inconnu : ${options.client} (claude | cursor)`);
+  // Only Claude Code also runs the project's own hooks (.claude/settings.json); Codex and Copilot CLI
+  // set PLUGIN_ROOT for the plugins they run.
+  const claudeCode =
+    client === "claude" && !process.env.PLUGIN_ROOT && !process.env.COPILOT_PLUGIN_ROOT;
+  if (
+    options.source === "plugin" &&
+    claudeCode &&
+    (await projectDeclaresHooks(process.env.CLAUDE_PROJECT_DIR))
+  )
     return 0;
   let input: Record<string, unknown> = {};
   try {
     const raw = await readStdin();
     input = raw ? JSON.parse(raw) : {};
   } catch {
-    return 0; // Never block Claude because of a malformed hook payload.
+    return 0; // Never block the agent because of a malformed hook payload.
   }
   let result: { exitCode: number; stdout?: string; stderr?: string };
   try {
@@ -70,12 +87,15 @@ export async function hook(event: string, options: { source?: string }): Promise
     if (error instanceof CliError) throw error;
     // A crash of the checker must not block the agent; report it without failing.
     console.log(
-      JSON.stringify({
-        systemMessage: `OpenFlow check indisponible : ${(error as Error).message}`,
-      }),
+      JSON.stringify(
+        client === "cursor"
+          ? {}
+          : { systemMessage: `OpenFlow check indisponible : ${(error as Error).message}` },
+      ),
     );
     return 0;
   }
+  if (client === "cursor") result = toCursorResult(event, result);
   if (result.stdout) process.stdout.write(`${result.stdout}\n`);
   if (result.stderr) process.stderr.write(`${result.stderr}\n`);
   return result.exitCode;

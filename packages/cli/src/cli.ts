@@ -55,8 +55,15 @@ program
 program
   .command("hook")
   .argument("<événement>", "post-tool-use | stop")
-  .description("point d'entrée des hooks Claude Code (JSON sur stdin)")
+  .description(
+    "point d'entrée des hooks des outils IA : Claude Code, Codex, Copilot CLI, Cursor (JSON sur stdin)",
+  )
   .option("--source <source>", "plugin | project")
+  .option(
+    "--client <outil>",
+    "format des réponses : claude (aussi Codex et Copilot CLI) | cursor",
+    "claude",
+  )
   .action(async (event, options) => {
     process.exitCode = await hook(event, options);
   });

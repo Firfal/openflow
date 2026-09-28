@@ -31,7 +31,7 @@ livraison, sans rien refaire de ce qui est déjà en place.
 | `@openflow/functions` | Cloud Functions : publication (snapshot, requête Cloud Build, API REST Hosting), serveur MCP et OAuth, optimisation des médias (sharp, ffmpeg), formulaires |
 | `openflow` (CLI) | `create`, `dev`, `check`, `validate`, `hook`, `seed`, `snapshot`, `build`, `setup`, `mail`, `deploy` |
 | `templates/next-starter` | Site Next.js de départ, conforme à 100 % à la norme OFS |
-| `plugins/openflow` | Plugin Claude Code : skills et hooks |
+| `plugins/openflow` | Plugin des outils IA (Claude Code, Codex, Copilot CLI, Cursor ; skills seuls pour Gemini CLI et les autres) : skills, hooks, script d'installation |
 
 ## Rendu
 

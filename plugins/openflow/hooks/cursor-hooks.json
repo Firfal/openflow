@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "\"${CURSOR_PLUGIN_ROOT}/scripts/openflow-hook.sh\" session-start cursor"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "\"${CURSOR_PLUGIN_ROOT}/scripts/openflow-hook.sh\" post-tool-use cursor",
+        "matcher": "Write"
+      }
+    ],
+    "stop": [
+      {
+        "command": "\"${CURSOR_PLUGIN_ROOT}/scripts/openflow-hook.sh\" stop cursor"
+      }
+    ]
+  }
+}

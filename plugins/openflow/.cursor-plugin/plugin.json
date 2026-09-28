@@ -1,7 +1,5 @@
 {
-  "$schema": "https://code.claude.com/schemas/plugin.json",
   "name": "openflow",
-  "displayName": "OpenFlow",
   "version": "0.2.0",
   "description": "Crée des sites Next.js que leur propriétaire modifie lui-même (éditeur visuel OpenFlow, 100 % Firebase) : installation en une commande, design, norme OFS vérifiée à chaque modification, livraison.",
   "author": {
@@ -20,5 +18,7 @@
     "website",
     "agency",
     "openflow"
-  ]
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/cursor-hooks.json"
 }
