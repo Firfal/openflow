@@ -112,6 +112,15 @@ export async function create(dir: string, options: CreateOptions) {
       configPath,
       config.replace(/name: "[^"]*"/, `name: ${JSON.stringify(options.name)}`),
     );
+    // The login screen's name (the config itself loads after sign-in).
+    const adminPath = path.join(target, "app", "admin", "page.tsx");
+    const admin = await readFile(adminPath, "utf8").catch(() => undefined);
+    if (admin) {
+      await writeFile(
+        adminPath,
+        admin.replace(/siteName="[^"]*"/, `siteName=${JSON.stringify(options.name)}`),
+      );
+    }
   }
   if (options.project) {
     await writeFile(

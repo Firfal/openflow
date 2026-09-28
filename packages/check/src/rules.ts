@@ -239,6 +239,17 @@ export const dynamic = "force-static";
 export const GET = createLlmsTxt(config);`,
   },
   {
+    id: "OF-306",
+    title: "Réécriture d'un service du site absente",
+    severity: "error",
+    level: "fast",
+    status: "active",
+    why: "Les formulaires et la prise de rendez-vous du site statique envoient leurs demandes à une Cloud Function, par une réécriture de `firebase.json` sur le domaine du site. Sans elle, les visiteurs remplissent le formulaire ou choisissent un créneau, et leur demande se perd.",
+    fix: 'Un site qui utilise `formFieldsField()` ou `<OpenFlowForm>` garde dans `firebase.json` la réécriture `{ "source": "/forms/submit", "run": { "serviceId": "cmssubmitform", "region": "<région des fonctions>" } }` ; un site qui utilise `bookingServicesField()` ou `<OpenFlowBooking>` garde `{ "source": "/cms/booking", "run": { "serviceId": "cmsbooking", "region": "<région des fonctions>" } }`.',
+    good: `// firebase.json (extrait)
+{ "source": "/cms/booking", "run": { "serviceId": "cmsbooking", "region": "europe-west1" } }`,
+  },
+  {
     id: "OF-401",
     title: "Image sans attribut alt",
     severity: "error",

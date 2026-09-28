@@ -547,6 +547,29 @@ describe("admin OpenFlow (émulateurs)", () => {
       .waitFor({ timeout: 30_000 });
   });
 
+  it("links Google Search Console: its tag in the settings, the code alone kept", async () => {
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Réglages" }).click();
+    await page.getByRole("button", { name: "Site et référencement" }).click();
+    const field = page.getByLabel("Validation Google Search Console");
+    await field.fill("<script>");
+    await page
+      .getByText("Collez la balise meta donnée par Search Console, ou son code (content=…).")
+      .waitFor();
+    await field.fill('<meta name="google-site-verification" content="Ab12_cd34-EF56gh78" />');
+    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await waitFor(
+      async () =>
+        (await db.doc("cms_site/settings").get()).data()?.site?.verification?.google ===
+        "Ab12_cd34-EF56gh78"
+          ? true
+          : undefined,
+      30_000,
+      "balise Search Console enregistrée",
+    );
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -591,6 +614,10 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(readFileSync(path.join(site, "out", "indexnow.txt"), "utf8")).toMatch(/^[a-f0-9]{32}$/);
     // The business profile: structured data for Google and AI assistants.
     expect(html).toContain('"openingHoursSpecification"');
+    // Search Console checks the home page's tag.
+    expect(html).toMatch(
+      /<meta name="google-site-verification" content="Ab12_cd34-EF56gh78"\s*\/?>/,
+    );
     expect(html).toContain('"validFrom":"2099-08-10"');
     // Collections: the new item has its page, is first in the lists, the feed and llms.txt.
     if (existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) {
@@ -720,6 +747,104 @@ describe("admin OpenFlow (émulateurs)", () => {
     await dialog.getByRole("button", { name: "Fermer" }).click();
   });
 
+  it("books an appointment on the site, seen and cancelled in « Rendez-vous »", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "rendez-vous.json"))) return;
+    const visitor = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    let slot: { date: string; time: string } | undefined;
+    try {
+      await visitor.goto(`http://localhost:${PORT}/rendez-vous/`);
+      // Services, then the days and times computed from the opening hours.
+      // The service cards are labels around a visually hidden radio: click the card.
+      await visitor.locator("label", { hasText: "Rendez-vous conseil" }).click();
+      expect(await visitor.getByRole("radio", { name: /Rendez-vous conseil/ }).isChecked()).toBe(
+        true,
+      );
+      const times = visitor.locator("button[aria-pressed]", { hasText: /^\d{1,2}\sh/ });
+      await times.first().waitFor({ timeout: 60_000 });
+      await times.first().click();
+      await visitor.getByText(/^Votre rendez-vous/).waitFor();
+      await visitor.screenshot({ path: path.join(SCREENSHOTS, "19-booking.png"), fullPage: true });
+      await visitor.getByLabel(/^Nom/).fill("Camille Martin");
+      await visitor.getByLabel(/^E-mail/).fill("camille@exemple.fr");
+      await visitor.getByLabel(/^Téléphone/).fill("06 12 34 56 78");
+      await visitor.waitForTimeout(3000);
+      await visitor.getByRole("button", { name: "Réserver ce créneau" }).click();
+      await visitor
+        .getByRole("status")
+        .getByText(/C'est réservé/)
+        .waitFor({ timeout: 60_000 });
+      await visitor.getByRole("button", { name: "Ajouter à mon agenda" }).waitFor();
+      await visitor.screenshot({ path: path.join(SCREENSHOTS, "19-booking-done.png") });
+      const booking = await waitFor(
+        async () => (await db.collection("cms_bookings").get()).docs[0]?.data(),
+        30_000,
+        "rendez-vous enregistré",
+      );
+      expect(booking).toMatchObject({
+        service: "Rendez-vous conseil",
+        duration: 60,
+        name: "Camille Martin",
+        email: "camille@exemple.fr",
+        status: "confirmed",
+        timeZone: "Europe/Paris",
+      });
+      slot = { date: booking.date, time: booking.time };
+      // The same time again: taken.
+      const again = await fetch("http://127.0.0.1:5001/demo-openflow/europe-west1/cmsBooking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: "/rendez-vous/",
+          sectionId: "booking-rendez-vous",
+          service: 1,
+          ...slot,
+          values: { name: "Autre", email: "autre@exemple.fr" },
+          elapsed: 5000,
+        }),
+      });
+      expect(again.status).toBe(409);
+      // The times taken are public, without names.
+      const busy = await (
+        await fetch(
+          `http://127.0.0.1:5001/demo-openflow/europe-west1/cmsBooking?from=${slot.date}&days=1`,
+        )
+      ).json();
+      expect(busy.busy).toHaveLength(1);
+      expect(JSON.stringify(busy)).not.toContain("Camille");
+    } finally {
+      await visitor.close();
+    }
+
+    await page.getByRole("button", { name: "Rendez-vous", exact: true }).click();
+    const row = page.locator(".of-booking", { hasText: "Camille Martin" });
+    await row.getByText("Rendez-vous conseil").waitFor();
+    await page.screenshot({ path: path.join(SCREENSHOTS, "20-bookings.png") });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "20-bookings-dark.png") });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "20-bookings-mobile-dark.png") });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ colorScheme: "light" });
+    await row.getByRole("button", { name: /^Plus d'actions/ }).click();
+    await page.getByRole("menuitem", { name: "Annuler le rendez-vous" }).click();
+    await page
+      .getByRole("dialog", { name: "Annuler ce rendez-vous ?" })
+      .getByRole("button", { name: "Annuler le rendez-vous" })
+      .click();
+    await waitFor(
+      async () => {
+        const [booking] = (await db.collection("cms_bookings").get()).docs;
+        const day = await db.doc(`cms_booking_days/${slot?.date}`).get();
+        return booking?.data().status === "cancelled" && day.data()?.busy?.length === 0
+          ? true
+          : undefined;
+      },
+      30_000,
+      "rendez-vous annulé",
+    );
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("counts visits without cookies, the AI assistant named, in « Statistiques »", async () => {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -785,6 +910,11 @@ describe("admin OpenFlow (émulateurs)", () => {
       /1 visite, 1 depuis un assistant IA, 2 pages vues$/,
     );
     await page.screenshot({ path: path.join(SCREENSHOTS, "07-stats.png") });
+    // Google Search Console: until the site's account is added, how to link it.
+    const search = page.getByRole("region", { name: "Recherche Google" });
+    await search.getByText(/À faire une fois/).waitFor();
+    await search.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(SCREENSHOTS, "21-search-console.png") });
   });
 
   it("lets a visitor stop the counting from the privacy policy", async () => {

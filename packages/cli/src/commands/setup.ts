@@ -39,6 +39,8 @@ export const REQUIRED_SERVICES = [
   "monitoring",
   "secretmanager",
   "recaptchaenterprise",
+  // « Recherche Google » in Statistiques (Search Console read with the functions' account).
+  "searchconsole",
 ].map((name) => `${name}.googleapis.com`);
 
 /** Roles of the service account that rebuilds the site at each « Publier ». */
@@ -527,11 +529,14 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
   }).catch(() => undefined);
 
   // Removed by Firestore once expired (TTL): the forms' flood counters (10 min), the audience
-  // counters (25 months, CNIL) and the forms' messages (3 years, privacy policy).
+  // counters (25 months, CNIL), the forms' messages (3 years) and the appointments (a year after
+  // they took place), as the privacy policy says.
   for (const [group, label] of [
     [COLLECTIONS.rateLimits, "des compteurs anti-spam"],
     [COLLECTIONS.stats, "des statistiques après 25 mois"],
     [COLLECTIONS.messages, "des messages après 3 ans"],
+    [COLLECTIONS.bookings, "des rendez-vous un an après leur date"],
+    [COLLECTIONS.bookingDays, "des agendas des jours passés"],
   ] as const) {
     const ttlUrl = `${firestoreApi}/(default)/collectionGroups/${group}/fields/expiresAt`;
     const ttl = await get<{ ttlConfig?: { state?: string } }>(client, ttlUrl).catch(

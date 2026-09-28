@@ -1,4 +1,5 @@
 import type { Data, Field, Fields } from "@puckeditor/core";
+import { bookingPageOf } from "./booking.js";
 import { businessLines } from "./business.js";
 import { buildCollections } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
@@ -125,6 +126,19 @@ function pageAddress(site: Snapshot["site"], slug: string): string {
 }
 
 const indexed = (snapshot: Snapshot) => snapshot.pages.filter((page) => !page.seo.noindex);
+
+/** The business's practical information, and where to book an appointment. */
+function practicalLines(snapshot: Snapshot): string[] {
+  const lines = businessLines(snapshot.site, snapshot.createdAt.slice(0, 10));
+  const booking = bookingPageOf(snapshot.pages);
+  if (booking !== undefined) {
+    const label = snapshot.site.lang.startsWith("fr")
+      ? "Prendre rendez-vous en ligne"
+      : "Book an appointment online";
+    lines.push(`- ${label} : ${pageAddress(snapshot.site, booking)}`);
+  }
+  return lines;
+}
 const line = (text: string) => text.replace(/\s+/g, " ").trim();
 
 /**
@@ -135,7 +149,7 @@ export function buildLlmsTxt(snapshot: Snapshot, config?: OpenFlowConfig): strin
   const { site } = snapshot;
   const lines = [`# ${line(site.name)}`, ""];
   if (site.description) lines.push(`> ${line(site.description)}`, "");
-  const practical = businessLines(site, snapshot.createdAt.slice(0, 10));
+  const practical = practicalLines(snapshot);
   if (practical.length > 0) lines.push("## Informations pratiques", "", ...practical, "");
   const known = new Set(Object.keys(config?.collections ?? {}));
   const pages = indexed(snapshot).filter((page) => !page.collection || !known.has(page.collection));
@@ -189,7 +203,7 @@ export function buildLlmsFullTxt(snapshot: Snapshot, config: OpenFlowConfig): st
   const { site } = snapshot;
   const header = [`# ${line(site.name)}`];
   if (site.description) header.push(`> ${line(site.description)}`);
-  const practical = businessLines(site, snapshot.createdAt.slice(0, 10));
+  const practical = practicalLines(snapshot);
   if (practical.length > 0) header.push(`## Informations pratiques\n\n${practical.join("\n")}`);
   const parts = [header.join("\n\n")];
   for (const page of indexed(snapshot)) {

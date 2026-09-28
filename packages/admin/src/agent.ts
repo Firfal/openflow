@@ -7,6 +7,7 @@ import {
   type AgentPage,
   type AgentRelease,
   applyDefaults,
+  type BookingDoc,
   buildSiteSchema,
   COLLECTIONS,
   DOCS,
@@ -15,6 +16,7 @@ import {
   type PageDoc,
   type ReleaseDoc,
   runAgentTool,
+  type SearchStatsResult,
   type SettingsDoc,
   type StatsDoc,
   toolResult,
@@ -32,6 +34,7 @@ import {
 } from "firebase/firestore";
 import { getEditorBridge } from "./bridge.js";
 import {
+  cancelBooking,
   deletePage,
   type FullPage,
   getAllPages,
@@ -183,6 +186,27 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
       } catch (error) {
         throw new AgentError(errorMessage(error));
       }
+    },
+    searchStats: async (days) =>
+      call<{ days: number }, SearchStatsResult>(services, FUNCTION_NAMES.searchStats, { days }),
+    listBookings: async (from) => {
+      const snap = await getDocs(
+        query(
+          collection(db, COLLECTIONS.bookings),
+          where("start", ">=", from),
+          orderBy("start"),
+          limit(500),
+        ),
+      );
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as BookingDoc) }));
+    },
+    cancelBooking: async (id) => {
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return undefined;
+      const snap = await getDoc(doc(db, COLLECTIONS.bookings, id));
+      if (!snap.exists()) return undefined;
+      const booking = { id, ...(snap.data() as BookingDoc) };
+      if (booking.status !== "cancelled") await cancelBooking(db, booking);
+      return booking;
     },
     listStats: async (from) => {
       const snap = await getDocs(

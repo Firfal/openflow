@@ -10,7 +10,7 @@ Projet Firebase du client (plan Blaze)
 ├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
 ├─ Cloud Functions   → cmsClaimOwner, cmsPublish, cmsOnBuildStatus, cmsRestoreRelease,
 │                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm, cmsPageView,
-│                      cmsDailyRefresh, cmsScheduledPublish
+│                      cmsDailyRefresh, cmsScheduledPublish, cmsBooking, cmsSearchStats
 ├─ Cloud Build       → reconstruit le site à chaque « Publier »
 └─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
                        reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
@@ -70,6 +70,17 @@ livraison, sans rien refaire de ce qui est déjà en place.
   `videoProps` des `<source>` (720p sur mobile). L'original reste la solution de repli.
 - **Formulaires** : `<OpenFlowForm>` envoie à `/forms/submit` (réécriture vers `cmsSubmitForm`), qui
   vérifie l'envoi contre la page publiée (voir [securite.md](securite.md#formulaires)).
+- **Prise de rendez-vous** : une section porte les prestations (`bookingServicesField()`) et les règles
+  (créneau, délai, horizon, pause : `bookingRuleFields()`) ; les créneaux suivent les horaires et les
+  fermetures de la fiche établissement, dans le fuseau du pays de l'établissement. `<OpenFlowBooking>`
+  (`@openflow/next/booking`) calcule les créneaux libres dans le navigateur (`bookingDays`, partagé avec le
+  serveur) après avoir lu les créneaux pris (`GET /cms/booking`, réécriture vers `cmsBooking`, sans aucune
+  donnée personnelle), puis réserve (`POST`). La fonction vérifie la demande contre la section publiée et
+  prend le créneau dans une transaction sur le document du jour (`cms_booking_days/{date}`) : deux
+  visiteurs n'obtiennent jamais le même créneau. Le propriétaire les voit dans « Rendez-vous » et par
+  e-mail ; l'assistant IA du visiteur peut lire les créneaux et préparer un rendez-vous (WebMCP), que le
+  visiteur confirme. La page de rendez-vous est annoncée à Google et aux IA (`ReserveAction` dans les
+  données de l'établissement, ligne dans `llms.txt`).
 - **Mesure d'audience sans cookie** : `createOpenFlowLayout` ajoute `<OpenFlowStats>` (sauf si le
   propriétaire l'a désactivée). À chaque page affichée, il envoie avec `sendBeacon` quelques octets à
   `/cms/view` (réécriture vers `cmsPageView`) : l'adresse de la page, la largeur de la fenêtre et, pour la
@@ -93,6 +104,12 @@ livraison, sans rien refaire de ce qui est déjà en place.
   (`scheduledPages`), d'où l'admin tire le statut de chaque page. Si une publication est en cours, la
   page attend le quart d'heure suivant ; si le build ne peut pas démarrer, elle devient visible et partira
   avec la prochaine publication (une alerte signale l'échec).
+- **Google Search Console** : la balise de validation du propriétaire (`site.verification`) est publiée
+  dans le `<head>` de l'accueil. `cmsSearchStats` (réservée au propriétaire) lit la propriété du site
+  (domaine `sc-domain:` d'abord, puis l'adresse du site) avec le compte de service des fonctions, que le
+  propriétaire a ajouté comme utilisateur « Restreint » dans Search Console : totaux, recherches et pages
+  sur 7, 28 ou 90 jours, gardés 30 minutes par instance. Rien n'est stocké. L'API Search Console est
+  activée par `openflow setup`.
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `CMS_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 
@@ -103,7 +120,9 @@ livraison, sans rien refaire de ce qui est déjà en place.
 - L'admin se charge **par étapes**, pour rester léger :
   1. l'écran de connexion : Firebase Auth et le formulaire (environ 160 Ko compressés, dont 110 Ko pour React et
      Next.js, communs à toute page Next.js) ;
-  2. une fois le propriétaire connecté, le tableau de bord et Firestore ;
+  2. une fois le propriétaire connecté, la configuration du site (le code de ses sections :
+     `app/admin/page.tsx` passe `config={() => import("@/openflow.config")}` et `siteName`), le tableau de
+     bord et Firestore ;
   3. l'éditeur visuel (Puck, texte riche, glisser-déposer), téléchargé en arrière-plan pendant que le
      propriétaire est sur le tableau de bord, puis à l'ouverture d'une page. Il vient avec les réglages « Thème »
      et « Contenu commun », qui l'utilisent.

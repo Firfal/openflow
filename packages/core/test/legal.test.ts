@@ -79,6 +79,30 @@ describe("legal pages", () => {
     ).toBe(false);
   });
 
+  it("describes the appointments when a published page takes them", () => {
+    const booking = {
+      root: { props: {} },
+      content: [
+        {
+          type: "Booking",
+          props: { id: "rdv", bookingServices: [{ name: "Coupe", duration: "30" }] },
+        },
+      ],
+    } as Data;
+    const facts = legalFacts({
+      site,
+      pages: [...pages, { slug: "rendez-vous", data: booking }],
+      integrations: { mail: "resend" },
+    });
+    expect(facts.booking).toBe(true);
+    const { privacy } = legalDocuments(facts);
+    const section = privacy.sections.find((s) => s.heading === "Prise de rendez-vous");
+    expect(section).toBeDefined();
+    expect(text({ ...privacy, sections: [section!] })).toContain("12\u00a0mois après la date");
+    expect(text(privacy)).toContain("envoi des messages et des rendez-vous par e-mail");
+    expect(legalFacts({ site, pages }).booking).toBe(false);
+  });
+
   it("writes the privacy policy from what the site does", () => {
     const { privacy } = legalDocuments(
       legalFacts({

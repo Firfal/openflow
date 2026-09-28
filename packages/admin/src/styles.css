@@ -746,6 +746,44 @@ select.of-input {
   min-width: 0;
 }
 
+/* Rendez-vous: the appointments of a day, under its title. */
+.of-bookings__day + .of-bookings__day {
+  margin-top: 24px;
+}
+
+.of-bookings__title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--of-text-2);
+}
+
+.of-booking__time {
+  flex: none;
+  min-width: 104px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.of-booking__message {
+  display: block;
+  margin-top: 4px;
+  color: var(--of-text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .of-booking {
+    flex-wrap: wrap;
+  }
+
+  .of-booking__time {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 /* A group of radio choices, one per line. */
 .of-choices {
   display: flex;
@@ -4467,4 +4505,30 @@ button.of-style-row__reset:hover {
   border-color: var(--of-accent);
   background: var(--of-accent-soft);
   color: var(--of-accent-text);
+}
+
+/* « Recherche Google » (Statistiques). */
+.of-gsc .of-stats__tiles {
+  margin: 12px 0 20px;
+}
+
+.of-gsc h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.of-gsc__todo .of-copy {
+  margin-top: 8px;
+}
+
+.of-gsc__open {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.of-gsc h2 + .of-card__lead,
+.of-gsc h2 + .of-gsc__todo {
+  margin-top: 6px;
 }

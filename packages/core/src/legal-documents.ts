@@ -1,4 +1,5 @@
 import type { Data } from "@puckeditor/core";
+import { BOOKING_RETENTION_MONTHS, bookingSectionsOf } from "./booking.js";
 import { formatDate, today } from "./fields.js";
 import { FORM_FIELDS_PROP } from "./forms.js";
 import {
@@ -49,6 +50,7 @@ export function legalFacts(input: LegalFactsInput): LegalFacts {
     stats: site.stats !== "off",
     analytics: Boolean(site.gaMeasurementId),
     forms: published.some((page) => hasForm(page.data)),
+    booking: published.some((page) => bookingSectionsOf(page.data).length > 0),
     recaptcha: Boolean(input.integrations?.recaptchaSiteKey),
     mail: input.integrations?.mail === "resend",
     ...(input.integrations?.region ? { region: input.integrations.region } : {}),
@@ -235,6 +237,8 @@ const lines = (...items: LegalText[][]): LegalBlock => ({ type: "list", items, p
 
 function privacyFr(facts: LegalFacts): LegalDocument {
   const publisher = publisherOf(facts);
+  // Forms and appointments: what visitors send us.
+  const collects = facts.forms || facts.booking;
   const country = facts.business?.country ?? "FR";
   const cloud = cloudEntity(country);
   const region = facts.region ? REGIONS[facts.region] : undefined;
@@ -266,6 +270,9 @@ function privacyFr(facts: LegalFacts): LegalDocument {
       : []),
     ...(facts.forms
       ? [["Les messages envoyés avec nos formulaires servent uniquement à vous répondre."]]
+      : []),
+    ...(facts.booking
+      ? [["Les rendez-vous pris sur le site servent uniquement à les organiser."]]
       : []),
   ];
   sections.push({ heading: "En bref", blocks: [list(...summary)] });
@@ -357,21 +364,60 @@ function privacyFr(facts: LegalFacts): LegalDocument {
     sections.push({ heading: "Formulaires de contact", blocks });
   }
 
+  if (facts.booking) {
+    const blocks: LegalBlock[] = [
+      p(
+        "Quand vous prenez rendez-vous sur le site, nous recevons votre nom et votre adresse e-mail, votre téléphone et votre message si vous les indiquez, ainsi que la prestation, le jour et l'heure choisis. Si votre navigateur indique que le rendez-vous a été préparé par votre assistant IA, la réservation le mentionne.",
+      ),
+      p(
+        "Ces données servent uniquement à organiser votre rendez-vous et à vous contacter à son sujet. Base légale : les mesures précontractuelles ou le contrat que vous demandez.",
+      ),
+      p(
+        `Elles sont conservées ${BOOKING_RETENTION_MONTHS} mois après la date du rendez-vous, puis effacées automatiquement ; nous pouvons les effacer plus tôt, à votre demande. Le site affiche les créneaux déjà pris sans aucune information sur les personnes qui les ont réservés.`,
+      ),
+    ];
+    if (facts.recaptcha && !facts.forms) {
+      blocks.push(
+        p(
+          "La prise de rendez-vous est protégée contre les robots par reCAPTCHA Enterprise (Google Cloud). Il analyse des informations techniques (adresse IP, navigateur, interactions avec la page) et peut déposer un cookie de sécurité (_GRECAPTCHA). Google agit comme sous-traitant, pour ce seul usage. Base légale : notre intérêt légitime à protéger le site contre les abus.",
+        ),
+      );
+    }
+    if (facts.mail) {
+      blocks.push(
+        p(
+          "Chaque rendez-vous nous est aussi transmis par e-mail, par l'intermédiaire du service Resend.",
+        ),
+      );
+    }
+    sections.push({ heading: "Prise de rendez-vous", blocks });
+  }
+
   const processors: LegalText[][] = [
     [
       `${cloud.name} (Google Cloud) : hébergement du site et stockage des données${
         region ? `, dans ses centres de données ${region.fr}` : ""
       }.`,
     ],
-    ...(facts.forms && facts.recaptcha
+    ...(collects && facts.recaptcha
       ? [[`${cloud.name} : protection des formulaires contre les robots (reCAPTCHA Enterprise).`]]
       : []),
     ...(facts.analytics ? [[`${gaEntity} : Google Analytics, si vous l'acceptez.`]] : []),
-    ...(facts.forms && facts.mail
-      ? [["Resend, Inc. (États-Unis) : envoi des messages par e-mail."]]
+    ...(collects && facts.mail
+      ? [
+          [
+            `Resend, Inc. (États-Unis) : envoi ${
+              facts.forms && facts.booking
+                ? "des messages et des rendez-vous"
+                : facts.booking
+                  ? "des rendez-vous"
+                  : "des messages"
+            } par e-mail.`,
+          ],
+        ]
       : []),
   ];
-  const abroad = facts.analytics || (facts.forms && facts.mail) || (region && !region.eu);
+  const abroad = facts.analytics || (collects && facts.mail) || (region && !region.eu);
   sections.push({
     heading: "Qui reçoit vos données",
     blocks: [
@@ -396,7 +442,7 @@ function privacyFr(facts: LegalFacts): LegalDocument {
           ["Votre choix sur les cookies : mémorisé 6 mois dans votre navigateur."],
         ]
       : []),
-    ...(facts.forms && facts.recaptcha
+    ...(collects && facts.recaptcha
       ? [["Cookie _GRECAPTCHA : protection des formulaires contre les robots, 6 mois."]]
       : []),
     ...(facts.stats
@@ -410,7 +456,7 @@ function privacyFr(facts: LegalFacts): LegalDocument {
   sections.push({
     heading: "Cookies",
     blocks:
-      facts.analytics || (facts.forms && facts.recaptcha)
+      facts.analytics || (collects && facts.recaptcha)
         ? [p("Ce site n'utilise que les cookies et stockages suivants :"), list(...stored)]
         : [
             p(
@@ -472,6 +518,7 @@ function privacyFr(facts: LegalFacts): LegalDocument {
 
 function privacyEn(facts: LegalFacts): LegalDocument {
   const publisher = publisherOf(facts);
+  const collects = facts.forms || facts.booking;
   const country = facts.business?.country ?? "FR";
   const cloud = cloudEntity(country);
   const region = facts.region ? REGIONS[facts.region] : undefined;
@@ -506,6 +553,9 @@ function privacyEn(facts: LegalFacts): LegalDocument {
           ? [["Google Analytics only measures your visit if you accept it."]]
           : []),
         ...(facts.forms ? [["Messages sent with our forms are only used to answer you."]] : []),
+        ...(facts.booking
+          ? [["Appointments booked on the site are only used to organise them."]]
+          : []),
       ),
     ],
   });
@@ -588,7 +638,32 @@ function privacyEn(facts: LegalFacts): LegalDocument {
     sections.push({ heading: "Contact forms", blocks });
   }
 
-  const abroad = facts.analytics || (facts.forms && facts.mail) || (region && !region.eu);
+  if (facts.booking) {
+    const blocks: LegalBlock[] = [
+      p(
+        "When you book an appointment on the site, we receive your name and e-mail address, your phone number and message if you give them, and the service, day and time you chose. If your browser reports that the appointment was prepared by your AI assistant, the booking says so.",
+      ),
+      p(
+        "This data is only used to organise your appointment and to contact you about it. Legal basis: the pre-contractual steps or the contract you ask for.",
+      ),
+      p(
+        `It is kept for ${BOOKING_RETENTION_MONTHS} months after the date of the appointment, then erased automatically; we may erase it sooner, at your request. The site shows the times already taken without any information about the people who booked them.`,
+      ),
+    ];
+    if (facts.recaptcha && !facts.forms) {
+      blocks.push(
+        p(
+          "Booking is protected against bots by reCAPTCHA Enterprise (Google Cloud). It analyses technical information (IP address, browser, interactions with the page) and may set a security cookie (_GRECAPTCHA). Google acts as a processor, for this sole purpose. Legal basis: our legitimate interest in protecting the site against abuse.",
+        ),
+      );
+    }
+    if (facts.mail) {
+      blocks.push(p("Each appointment is also sent to us by e-mail, through the Resend service."));
+    }
+    sections.push({ heading: "Appointments", blocks });
+  }
+
+  const abroad = facts.analytics || (collects && facts.mail) || (region && !region.eu);
   sections.push({
     heading: "Who receives your data",
     blocks: [
@@ -601,12 +676,22 @@ function privacyEn(facts: LegalFacts): LegalDocument {
             region ? `, in its data centres ${region.en}` : ""
           }.`,
         ],
-        ...(facts.forms && facts.recaptcha
+        ...(collects && facts.recaptcha
           ? [[`${cloud.name}: protection of the forms against bots (reCAPTCHA Enterprise).`]]
           : []),
         ...(facts.analytics ? [[`${gaEntity}: Google Analytics, if you accept it.`]] : []),
-        ...(facts.forms && facts.mail
-          ? [["Resend, Inc. (United States): sending the messages by e-mail."]]
+        ...(collects && facts.mail
+          ? [
+              [
+                `Resend, Inc. (United States): sending the ${
+                  facts.forms && facts.booking
+                    ? "messages and appointments"
+                    : facts.booking
+                      ? "appointments"
+                      : "messages"
+                } by e-mail.`,
+              ],
+            ]
           : []),
       ),
       p(
@@ -620,7 +705,7 @@ function privacyEn(facts: LegalFacts): LegalDocument {
   sections.push({
     heading: "Cookies",
     blocks:
-      facts.analytics || (facts.forms && facts.recaptcha)
+      facts.analytics || (collects && facts.recaptcha)
         ? [
             p("This site only uses the following cookies and storage:"),
             list(
@@ -632,7 +717,7 @@ function privacyEn(facts: LegalFacts): LegalDocument {
                     ["Your cookie choice: remembered for 6 months in your browser."],
                   ]
                 : []),
-              ...(facts.forms && facts.recaptcha
+              ...(collects && facts.recaptcha
                 ? [["_GRECAPTCHA cookie: protection of the forms against bots, 6 months."]]
                 : []),
               ...(facts.stats

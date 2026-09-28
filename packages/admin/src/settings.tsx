@@ -1,4 +1,11 @@
-import { LANGUAGES, MAX_LOCALES, type SiteSettings, siteLocales } from "@openflow/core";
+import {
+  LANGUAGES,
+  MAX_LOCALES,
+  type SiteSettings,
+  sanitizeVerification,
+  siteLocales,
+  verificationCode,
+} from "@openflow/core";
 import { lazy, Suspense, useState } from "react";
 import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
@@ -41,6 +48,14 @@ function SiteForm() {
     site.url && !/^https?:\/\/[^\s]+$/.test(site.url)
       ? "Adresse complète attendue, ex. https://www.monsite.fr"
       : undefined;
+  const googleError =
+    site.verification?.google && !verificationCode(site.verification.google)
+      ? "Collez la balise meta donnée par Search Console, ou son code (content=…)."
+      : undefined;
+  const bingError =
+    site.verification?.bing && !verificationCode(site.verification.bing)
+      ? "Collez la balise meta donnée par Bing, ou son code (content=…)."
+      : undefined;
   const gaId = site.gaMeasurementId?.trim().toUpperCase() ?? "";
   const gaError =
     gaId && !/^G-[A-Z0-9]{4,20}$/.test(gaId)
@@ -58,6 +73,8 @@ function SiteForm() {
             url: site.url || undefined,
             gaMeasurementId: gaId || undefined,
             locales: siteLocales(site),
+            // Only the codes of the tags are kept.
+            verification: sanitizeVerification(site.verification),
           },
         },
         user.email ?? undefined,
@@ -197,6 +214,36 @@ function SiteForm() {
           onChange={(e) => setSite({ ...site, gaMeasurementId: e.target.value })}
         />
       </FormField>
+      <FormField
+        label="Validation Google Search Console"
+        error={googleError}
+        hint="Dans Search Console : ajoutez le site (« Préfixe d'URL »), choisissez la validation par « Balise HTML » et collez-la ici. Publiez, puis cliquez sur « Valider » dans Search Console."
+      >
+        <input
+          className="of-input of-mono"
+          value={site.verification?.google ?? ""}
+          placeholder='<meta name="google-site-verification" content="…" />'
+          spellCheck={false}
+          onChange={(e) =>
+            setSite({ ...site, verification: { ...site.verification, google: e.target.value } })
+          }
+        />
+      </FormField>
+      <FormField
+        label="Validation Bing Webmaster Tools (facultatif)"
+        error={bingError}
+        hint="Bing alimente aussi Copilot et DuckDuckGo. Il peut importer le site depuis Search Console ; sinon, collez ici sa balise."
+      >
+        <input
+          className="of-input of-mono"
+          value={site.verification?.bing ?? ""}
+          placeholder='<meta name="msvalidate.01" content="…" />'
+          spellCheck={false}
+          onChange={(e) =>
+            setSite({ ...site, verification: { ...site.verification, bing: e.target.value } })
+          }
+        />
+      </FormField>
       <div>
         <h2>Robots des IA</h2>
         <p className="of-card__lead">
@@ -233,7 +280,12 @@ function SiteForm() {
         </label>
       </fieldset>
       <div className="of-row">
-        <Button variant="primary" type="submit" busy={busy} disabled={Boolean(urlError || gaError)}>
+        <Button
+          variant="primary"
+          type="submit"
+          busy={busy}
+          disabled={Boolean(urlError || gaError || googleError || bingError)}
+        >
           Enregistrer
         </Button>
       </div>

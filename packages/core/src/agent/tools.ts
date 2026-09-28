@@ -1,6 +1,7 @@
 import type { ComponentData, Data, Field, Fields } from "@puckeditor/core";
 import { z } from "zod";
 import { auditSite } from "../audit.js";
+import { type BookingDoc, bookingComponentOf, bookingSectionsOf } from "../booking.js";
 import { BUSINESS_TYPES, type BusinessInfo, businessLines, WEEKDAYS } from "../business.js";
 import { businessSchema, sanitizeBusiness } from "../business-schema.js";
 import {
@@ -42,6 +43,7 @@ import {
 import { collectEditablePaths } from "../marks.js";
 import type { MediaDoc, PageSeo, PageStatus, ReleaseStatus, SiteSettings } from "../model.js";
 import { formatScheduled, isValidPublishAt } from "../schedule.js";
+import type { SearchStatsResult } from "../search-console.js";
 import { isValidSlug, normalizeSlug, slugify, slugToPath } from "../slug.js";
 import {
   addDays,
@@ -165,6 +167,15 @@ export interface AgentBackend {
   listReleases(max: number): Promise<AgentRelease[]>;
   /** Audience counters (`cms_stats`) from this day (`YYYY-MM-DD`) on. */
   listStats(from: string): Promise<StatsDoc[]>;
+  /** Google Search Console's figures of the last `days` days (`cmsSearchStats`). */
+  searchStats(days: number): Promise<SearchStatsResult>;
+  /** Appointments starting from this instant (ISO) on, in time order. */
+  listBookings(from: string): Promise<Array<BookingDoc & { id: string }>>;
+  /**
+   * Cancels an appointment (its time is free again on the site) and returns it as it was;
+   * `undefined` when it does not exist.
+   */
+  cancelBooking(id: string): Promise<(BookingDoc & { id: string }) | undefined>;
 }
 
 export interface AgentContext {
@@ -684,6 +695,14 @@ tool({
           siteName: settings.site.name,
         }),
       },
+      booking: bookingComponentOf(ctx.schema.sections)
+        ? {
+            section: bookingComponentOf(ctx.schema.sections),
+            pages: pages
+              .filter((p) => bookingSectionsOf(p.data).length > 0)
+              .map((p) => ({ id: p.id, path: slugToPath(p.slug), status: p.status })),
+          }
+        : null,
       freeStyle: ctx.schema.styles === "free",
       lastPublication: releases[0] ?? null,
       notes: [
@@ -691,6 +710,7 @@ tool({
         "Pour modifier un texte : get_page, puis update_section avec le chemin du champ (ex. « title » ou « items[1].answer »).",
         "Collections (articles, réalisations…) : list_items, create_item ; un élément est une page (get_page, update_section, update_page, delete_page), dont la section « itemSection » porte les champs.",
         "Coordonnées, horaires et fermetures exceptionnelles de l'établissement : get_settings (« business »), puis update_business.",
+        "Rendez-vous : la section « booking.section » porte les prestations (bookingServices : nom, durée en minutes, prix) et les règles (bookingStep, bookingNotice en heures, bookingHorizon en jours, bookingBuffer) ; les créneaux suivent les horaires de l'établissement (update_business). Les rendez-vous pris : get_bookings.",
         "Mentions légales et politique de confidentialité : leur texte est écrit par OpenFlow d'après le site, dans une page qui contient la section « legal.section » (champ legalDocument : « notice » ou « privacy »). Les informations de l'éditeur (raison sociale, immatriculation…) se modifient avec update_legal : ne les inventez jamais, demandez-les au propriétaire.",
         "Langues : chaque autre langue (languages.others) a ses pages à /<langue>/. Pour traduire une page ou le contenu commun (« settings ») : get_translation, puis set_translation. set_languages ajoute une langue.",
         "Demandez confirmation au propriétaire avant publish, delete_page et remove_section.",
@@ -1810,6 +1830,87 @@ tool({
         audit.findings.length === 0
           ? "Rien à signaler."
           : "Priorité : « high », puis « medium ». Le score est indicatif (100 sans remarque).",
+    };
+  },
+});
+
+tool({
+  name: "get_search_stats",
+  title: "Recherches Google",
+  description:
+    "Ce que Google Search Console sait du site : clics, impressions, taux de clic et position moyenne sur 7, 28 (par défaut) ou 90 jours, requêtes et pages qui amènent des visiteurs depuis Google. Les données ont deux jours de retard. Si le site n'est pas relié, la réponse dit quoi faire (le propriétaire ajoute le compte de service du site dans Search Console).",
+  input: z.object({ days: z.union([z.literal(7), z.literal(28), z.literal(90)]).optional() }),
+  annotations: { readOnlyHint: true, openWorldHint: true },
+  run: async ({ days = 28 }, ctx) => {
+    const result = await ctx.backend.searchStats(days);
+    if (result.status === "ok") return result.stats;
+    if (result.status === "no-url") {
+      return {
+        connected: false,
+        todo: "Renseignez l'adresse du site (Réglages > Site et référencement), puis reliez Search Console.",
+      };
+    }
+    if (result.status === "not-connected") {
+      return {
+        connected: false,
+        todo: `Dans Google Search Console, le propriétaire ajoute le site (validation : la balise se colle dans Réglages > Site et référencement), puis ajoute l'utilisateur ${result.serviceAccount ?? "« compte de service du site » (affiché dans Statistiques)"} avec l'autorisation « Restreint ».`,
+      };
+    }
+    throw new AgentError(`Search Console n'a pas répondu : ${result.message}`);
+  },
+});
+
+tool({
+  name: "get_bookings",
+  title: "Rendez-vous",
+  description:
+    "Rendez-vous pris sur le site (section de prise de rendez-vous), dans l'ordre : jour et heure (heure du lieu), prestation, nom et coordonnées du visiteur, message. « days » : les N prochains jours (14 par défaut) ; « past » : true pour les 30 derniers jours.",
+  input: z.object({
+    days: z.number().int().min(1).max(92).optional(),
+    past: z.boolean().optional(),
+  }),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async ({ days = 14, past = false }, ctx) => {
+    const now = Date.now();
+    const from = new Date(past ? now - 30 * 86400000 : now - 3600000).toISOString();
+    const until = new Date(past ? now : now + days * 86400000).toISOString();
+    const list = (await ctx.backend.listBookings(from)).filter((b) => b.start <= until);
+    const shown = past ? list.filter((b) => b.end < new Date(now).toISOString()).reverse() : list;
+    return {
+      bookingSection: bookingComponentOf(ctx.schema.sections) ?? null,
+      count: shown.filter((b) => b.status === "confirmed").length,
+      bookings: shown.map((b) => ({
+        id: b.id,
+        date: b.date,
+        time: b.time,
+        minutes: b.duration,
+        service: b.service,
+        ...(b.price ? { price: b.price } : {}),
+        name: b.name,
+        email: b.email,
+        ...(b.phone ? { phone: b.phone } : {}),
+        ...(b.message ? { message: b.message } : {}),
+        status: b.status === "cancelled" ? "annulé" : "confirmé",
+        ...(b.agent ? { bookedByVisitorAssistant: true } : {}),
+      })),
+    };
+  },
+});
+
+tool({
+  name: "cancel_booking",
+  title: "Annuler un rendez-vous",
+  description:
+    "Annule un rendez-vous (id de get_bookings) : le créneau redevient libre sur le site. Le visiteur n'est pas prévenu automatiquement. Demandez confirmation au propriétaire, puis passez confirm: true.",
+  input: z.object({ bookingId: z.string().min(1).max(120), confirm: z.literal(true) }),
+  annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  run: async ({ bookingId }, ctx) => {
+    const booking = await ctx.backend.cancelBooking(bookingId);
+    if (!booking) throw new AgentError(`Rendez-vous « ${bookingId} » introuvable.`);
+    if (booking.status === "cancelled") throw new AgentError("Ce rendez-vous est déjà annulé.");
+    return {
+      ok: true,
+      note: `Rendez-vous de ${booking.name} annulé. Prévenez-le : ${booking.email}${booking.phone ? ` ou ${booking.phone}` : ""}.`,
     };
   },
 });

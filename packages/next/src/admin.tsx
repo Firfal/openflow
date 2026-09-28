@@ -5,13 +5,16 @@ import { type ComponentType, useEffect, useState } from "react";
 
 /**
  * Client-only admin route. `app/admin/page.tsx` must itself be a client component because the
- * config contains render functions:
+ * config contains render functions. Import the config on demand: the sections' code then loads
+ * once the owner is signed in, not on the login screen.
  *
  * ```tsx
  * "use client";
  * import { OpenFlowAdmin } from "@openflow/next/admin";
- * import config from "../../openflow.config";
- * export default function AdminPage() { return <OpenFlowAdmin config={config} />; }
+ * const loadConfig = () => import("@/openflow.config");
+ * export default function AdminPage() {
+ *   return <OpenFlowAdmin config={loadConfig} siteName="Mon entreprise" />;
+ * }
  * ```
  *
  * The admin bundle (Puck, Firebase) is loaded after mount, so it never runs during the static

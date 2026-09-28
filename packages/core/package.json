@@ -14,6 +14,10 @@
       "types": "./dist/forms.d.ts",
       "import": "./dist/forms.js"
     },
+    "./booking": {
+      "types": "./dist/booking.d.ts",
+      "import": "./dist/booking.js"
+    },
     "./stats": {
       "types": "./dist/stats.d.ts",
       "import": "./dist/stats.js"

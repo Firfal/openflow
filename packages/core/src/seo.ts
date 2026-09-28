@@ -1,3 +1,4 @@
+import { bookingPageOf } from "./booking.js";
 import { businessJsonLd, postalAddress } from "./business.js";
 import { buildCollections, type CollectionEntry, getCollectionConfig } from "./collections.js";
 import type { CollectionConfig, OpenFlowConfig } from "./config.js";
@@ -180,10 +181,14 @@ export function pageJsonLd(
   const url = absoluteUrl(site, slugToPath(page.slug));
   if (page.slug === "") {
     // The business behind the site (Réglages > Établissement): contact, address, hours, closures.
+    const booking = bookingPageOf(snapshot.pages);
     const business = businessJsonLd(site, {
       today: snapshot.createdAt.slice(0, 10),
       url,
       image: absoluteUrl(site, page.seo.ogImage || site.ogImage || "") ?? undefined,
+      ...(booking !== undefined && site.url
+        ? { bookingUrl: absoluteUrl(site, slugToPath(booking)) }
+        : {}),
     });
     out.push({
       "@context": "https://schema.org",

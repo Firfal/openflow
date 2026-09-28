@@ -18,6 +18,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { errorMessage } from "./firebase.js";
+import { SearchConsoleCard } from "./search.js";
 import { PageHead } from "./shell.js";
 import { Button, EmptyState, Spinner, StatusChip, type Tone } from "./ui.js";
 
@@ -549,6 +550,7 @@ export function StatsView() {
             <Speed vitals={summary.vitals} />
           </>
         )}
+        <SearchConsoleCard days={days} />
         <div className="of-card of-stats__privacy">
           <h2>Sans cookie, sans bandeau</h2>
           <p className="of-card__lead">

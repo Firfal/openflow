@@ -97,9 +97,20 @@ Ils trahissent une page générée. Ce sont de vrais choix quand le brief les de
   retire un accessoire (le conseil de Chanel).
 - `npx openflow check --level build` doit rester conforme.
 
-## 11. Quand un besoin n'est pas couvert
+## 11. Prise de rendez-vous
 
-Pour des tableaux de données, des graphiques, une boutique, une carte, une prise de rendez-vous, cherche
+- Partir de l'intention du visiteur : la prestation, puis le jour, puis l'heure. Montrer les créneaux
+  libres tout de suite, sans formulaire à remplir avant de voir les disponibilités.
+- Prix et durée visibles avant la réservation, jamais une surprise à la fin.
+- Choix du créneau évident, rapide et réversible (un clic change d'heure) ; un jour complet ou fermé est
+  visible mais désactivé, avec la raison pour les lecteurs d'écran.
+- Si le créneau vient d'être pris, le dire clairement et proposer les autres sans tout recommencer.
+- Après la réservation : la confirmation et seulement les actions utiles (ajouter à son agenda, prendre un
+  autre rendez-vous). Cibles tactiles d'au moins 44 px, jours sur une ligne de 7 colonnes.
+
+## 12. Quand un besoin n'est pas couvert
+
+Pour des tableaux de données, des graphiques, une boutique, une carte, cherche
 d'abord sur GitHub un skill reconnu : les dépôts ci-dessous, ou la recherche « <besoin> SKILL.md ». Lis-le,
 applique ses règles, puis ajoute ici les principes utiles avec leur source, sans copier de longs textes.
 
@@ -114,3 +125,5 @@ applique ses règles, puis ajoute ici les principes utiles avec leur source, san
 - [Les règles d'animation d'Emil Kowalski](https://github.com/emilkowalski/skills) : durées et courbes.
 - [ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) : palettes et associations de polices
   par secteur d'activité.
+- [booking-flow-ux](https://skills.lc/wassimwazzi/allcourts/wassimwazzi-allcourts-github-skills-booking-flow-ux-skill-md) :
+  parcours de réservation (intention d'abord, prix visibles, créneau réversible, reprise quand il est pris).

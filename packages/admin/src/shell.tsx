@@ -1,3 +1,4 @@
+import { bookingComponentOf } from "@openflow/core";
 import { signOut } from "firebase/auth";
 import type { ReactNode } from "react";
 import { type SettingsTab, useAdmin } from "./context.js";
@@ -169,6 +170,14 @@ export function Sidebar() {
             </span>
           )}
         </NavItem>
+        {bookingComponentOf(config.components) && (
+          <NavItem
+            icon="calendarCheck"
+            label="Rendez-vous"
+            current={route.view === "bookings"}
+            onClick={() => navigate({ view: "bookings" })}
+          />
+        )}
         <NavItem
           icon="chart"
           label="Statistiques"

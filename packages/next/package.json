@@ -17,6 +17,10 @@
       "types": "./dist/forms.d.ts",
       "import": "./dist/forms.js"
     },
+    "./booking": {
+      "types": "./dist/booking.d.ts",
+      "import": "./dist/booking.js"
+    },
     "./admin": {
       "types": "./dist/admin.d.ts",
       "import": "./dist/admin.js"

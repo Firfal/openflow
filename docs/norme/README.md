@@ -37,6 +37,7 @@ hooks renvoient automatiquement les erreurs à l'agent, qui les corrige avant de
 | [OF-303](OF-303.md) | Configuration Firebase OpenFlow modifiée ou incomplète | erreur | fast | appliquée |
 | [OF-304](OF-304.md) | Secret écrit dans le code | erreur | fast | appliquée |
 | [OF-305](OF-305.md) | Accès des IA incomplet | avertissement | fast | appliquée |
+| [OF-306](OF-306.md) | Réécriture d'un service du site absente | erreur | fast | appliquée |
 | [OF-401](OF-401.md) | Image sans attribut alt | erreur | build | appliquée |
 | [OF-402](OF-402.md) | Hiérarchie de titres incorrecte | avertissement | build | appliquée |
 | [OF-403](OF-403.md) | Titre ou description de page manquant | erreur | build | appliquée |

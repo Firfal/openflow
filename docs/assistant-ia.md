@@ -60,6 +60,8 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |
 | `audit_site` | Audit du site (ou d'une page) : ce qui empêche d'être trouvé et cité par Google et les IA (descriptions, textes des images, liens vers une page masquée ou supprimée, pages courtes ou anciennes, fiche établissement, titres en double, pages légales absentes ou non liées), avec l'outil qui corrige chaque point. L'IA propose ensuite ses corrections au propriétaire |
+| `get_search_stats` | Recherches Google (Search Console) sur 7, 28 ou 90 jours : clics, affichages, taux de clic, position moyenne, recherches et pages ; sinon, ce qu'il reste à faire pour relier Search Console |
+| `get_bookings`, `cancel_booking` | Rendez-vous pris sur le site (les N prochains jours, ou les 30 derniers) avec les coordonnées des visiteurs ; annuler un rendez-vous libère son créneau (confirmation du propriétaire, `confirm: true`) |
 | `get_stats` | Statistiques des 7, 30 ou 90 derniers jours : visites, pages vues, pages les plus lues, sources (dont les assistants IA), pages où arrivent les visiteurs envoyés par une IA, appareils, vitesse ressentie (Core Web Vitals) |
 | `publish`, `get_publication_status` | Mise en ligne et suivi |
 

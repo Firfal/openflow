@@ -103,6 +103,8 @@ export interface LegalFacts {
   analytics: boolean;
   /** At least one published page has a form. */
   forms: boolean;
+  /** At least one published page takes appointments. */
+  booking: boolean;
   /** The forms are protected by reCAPTCHA Enterprise. */
   recaptcha: boolean;
   /** The messages are e-mailed to the owner (Resend). */

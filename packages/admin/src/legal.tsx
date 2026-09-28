@@ -1,4 +1,5 @@
 import {
+  BOOKING_RETENTION_MONTHS,
   formatAddress,
   type IntegrationsDoc,
   LEGAL_DOCUMENT_PROP,
@@ -212,8 +213,21 @@ function PolicyFacts() {
       facts.forms,
       `Messages effacés automatiquement ${MESSAGE_RETENTION_YEARS} ans après leur réception.`,
     ],
-    ["Protection anti-robots (reCAPTCHA)", facts.forms && facts.recaptcha, "Google Cloud."],
-    ["Messages transmis par e-mail", facts.forms && facts.mail, "Service Resend."],
+    [
+      "Prise de rendez-vous",
+      facts.booking,
+      `Rendez-vous effacés automatiquement ${BOOKING_RETENTION_MONTHS} mois après leur date.`,
+    ],
+    [
+      "Protection anti-robots (reCAPTCHA)",
+      (facts.forms || facts.booking) && facts.recaptcha,
+      "Google Cloud.",
+    ],
+    [
+      "Messages et rendez-vous transmis par e-mail",
+      (facts.forms || facts.booking) && facts.mail,
+      "Service Resend.",
+    ],
   ];
   return (
     <section className="of-card" aria-labelledby="of-legal-facts">

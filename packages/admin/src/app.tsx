@@ -12,9 +12,17 @@ import { UiThemeContext, useUiThemeState } from "./ui-theme.js";
  */
 const OwnerApp = lazy(() => import("./owner.js").then((m) => ({ default: m.OwnerApp })));
 
+/** Imports the site's config: `() => import("@/openflow.config")`. */
+export type OpenFlowConfigLoader = () => Promise<OpenFlowConfig | { default: OpenFlowConfig }>;
+
 export interface OpenFlowAdminProps {
-  /** The site's `openflow.config.tsx` default export. */
-  config: OpenFlowConfig;
+  /**
+   * The site's `openflow.config.tsx`, or a function importing it: then the sections' code is only
+   * downloaded once the owner is signed in, and the login screen stays light.
+   */
+  config: OpenFlowConfig | OpenFlowConfigLoader;
+  /** The site's name on the login screen, when the config is loaded after sign-in. */
+  siteName?: string;
   /** Firebase connection (defaults to `/__/firebase/init.json` from Firebase Hosting). */
   firebase?: FirebaseSetup;
 }
@@ -50,10 +58,23 @@ function Blocked({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
+function AdminRoot({ config, siteName, firebase }: OpenFlowAdminProps) {
   const [services, setServices] = useState<AuthServices>();
   const [fatal, setFatal] = useState<string>();
   const [owner, setOwner] = useState<OwnerState>({ status: "loading" });
+  const [loaded, setLoaded] = useState<OpenFlowConfig | undefined>(
+    typeof config === "function" ? undefined : config,
+  );
+  const signedIn = owner.status === "checking" || owner.status === "owner";
+
+  // A config loaded on demand: fetched while the owner's rights are checked.
+  useEffect(() => {
+    if (loaded || typeof config !== "function" || !signedIn) return;
+    config().then(
+      (module) => setLoaded("components" in module ? module : module.default),
+      (error: Error) => setFatal(`Configuration du site introuvable : ${error.message}`),
+    );
+  }, [config, loaded, signedIn]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Firebase is initialized once per page load.
   useEffect(() => {
@@ -83,7 +104,7 @@ function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
   }
   if (!services || owner.status === "loading") return <Spinner />;
   if (owner.status === "signed-out")
-    return <Login services={services} siteName={config.site.name} />;
+    return <Login services={services} siteName={loaded?.site.name ?? siteName ?? "votre site"} />;
   if (owner.status === "checking") return <Spinner label="Vérification de vos droits…" />;
   if (owner.status === "denied") {
     return (
@@ -96,9 +117,10 @@ function AdminRoot({ config, firebase }: OpenFlowAdminProps) {
       </Blocked>
     );
   }
+  if (!loaded) return <Spinner label="Chargement du site…" />;
   return (
     <Suspense fallback={<Spinner label="Chargement du site…" />}>
-      <OwnerApp config={config} base={services} user={owner.user} />
+      <OwnerApp config={loaded} base={services} user={owner.user} />
     </Suspense>
   );
 }

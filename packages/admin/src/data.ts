@@ -1,5 +1,7 @@
 import {
   type AgentTokenDoc,
+  type BookingDayDoc,
+  type BookingDoc,
   type BusinessInfo,
   COLLECTIONS,
   type CollectionConfig,
@@ -32,6 +34,7 @@ import type { Data } from "@puckeditor/core";
 import {
   addDoc,
   collection,
+  deleteDoc,
   deleteField,
   doc,
   type Firestore,
@@ -41,8 +44,10 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
 import type { Services } from "./firebase.js";
@@ -56,6 +61,7 @@ export type ReleaseEntry = ReleaseDoc & { id: string };
 export type MediaEntry = MediaDoc & { id: string };
 export type AgentEntry = AgentTokenDoc & { id: string };
 export type MessageEntry = MessageDoc & { id: string };
+export type BookingEntry = BookingDoc & { id: string };
 
 const now = () => new Date().toISOString();
 export const EMPTY_PAGE_DATA: Data = { root: { props: {} }, content: [] };
@@ -454,6 +460,48 @@ export function subscribeMessages(
     (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as MessageDoc) }))),
     onError,
   );
+}
+
+/** Appointments from three months ago on, in time order (the view splits them). */
+export function subscribeBookings(
+  db: Firestore,
+  onData: (bookings: BookingEntry[]) => void,
+  onError: (e: Error) => void,
+) {
+  const since = new Date(Date.now() - 92 * 86400000).toISOString();
+  return onSnapshot(
+    query(
+      collection(db, COLLECTIONS.bookings),
+      where("start", ">=", since),
+      orderBy("start", "asc"),
+      limit(500),
+    ),
+    (snap) => onData(snap.docs.map((d) => ({ id: d.id, ...(d.data() as BookingDoc) }))),
+    onError,
+  );
+}
+
+/** Cancels an appointment: its time is free again on the site (in one transaction). */
+export async function cancelBooking(db: Firestore, booking: BookingEntry) {
+  await runTransaction(db, async (tx) => {
+    const dayRef = doc(db, COLLECTIONS.bookingDays, booking.date);
+    const day = (await tx.get(dayRef)).data() as BookingDayDoc | undefined;
+    if (day) {
+      tx.update(dayRef, { busy: (day.busy ?? []).filter((range) => range.id !== booking.id) });
+    }
+    tx.update(doc(db, COLLECTIONS.bookings, booking.id), {
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+    });
+  });
+}
+
+/** Erases an appointment and the visitor's details (a past or cancelled one, or on request). */
+export async function deleteBooking(db: Firestore, booking: BookingEntry) {
+  if (booking.status === "confirmed" && booking.end > new Date().toISOString()) {
+    await cancelBooking(db, booking);
+  }
+  await deleteDoc(doc(db, COLLECTIONS.bookings, booking.id));
 }
 
 export function subscribeRelease(

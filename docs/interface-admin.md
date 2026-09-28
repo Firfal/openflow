@@ -20,11 +20,13 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
   - **Pages**, puis une entrée par collection du site (« Actualités », « Réalisations »…), puis **Médias** ;
   - **Messages**, avec le nombre de messages non lus ;
+  - **Rendez-vous**, quand le site a une section de prise de rendez-vous ;
   - **Statistiques** ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
   - **Réglages**, qui se déplie en cinq sous-pages : Contenu commun, Thème, Site et référencement
     (identité, langue principale et **autres langues du site**, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
-    l'identifiant Google Analytics `G-…`, facultatif, et **Robots des IA** :
+    l'identifiant Google Analytics `G-…`, facultatif, les balises de validation **Google Search Console**
+    et **Bing Webmaster Tools** (la balise collée entière ou son code), et **Robots des IA** :
     autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
     **Établissement** et **Informations légales** (voir plus bas) ;
   - **Historique** ;
@@ -71,6 +73,19 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
     au lieu de 31,5 Mo »).
 
   L'original est gardé et reste utilisé tant que l'optimisation n'est pas terminée ou si elle échoue.
+- **Rendez-vous** : les rendez-vous pris sur le site, groupés par jour (« Aujourd'hui », « Demain »,
+  « Mardi 6 octobre »…).
+  - Trois filtres : **À venir** (avec leur nombre), **Passés** et **Annulés**.
+  - Chaque rendez-vous montre l'heure de début et de fin, le nom du visiteur, la prestation, son e-mail et
+    son téléphone (cliquables), le prix, son message, et s'il a été préparé par l'assistant IA du visiteur.
+  - Le menu « ⋯ » propose **Écrire à …** et **Annuler le rendez-vous** : après confirmation, le créneau
+    redevient libre sur le site (le visiteur n'est pas prévenu automatiquement : la fenêtre rappelle ses
+    coordonnées). Un rendez-vous passé ou annulé peut être **effacé** (demande du visiteur).
+  - Le bouton **Horaires d'ouverture** mène à Réglages > Établissement, dont dépendent les créneaux.
+  - Les prestations, leurs durées et prix, l'intervalle entre deux créneaux, le délai minimum, l'horizon de
+    réservation et la pause entre deux rendez-vous se règlent dans la section « Prise de rendez-vous »
+    de la page, comme n'importe quel champ. Chaque rendez-vous est effacé automatiquement 12 mois après
+    sa date.
 - **Messages** : ce que les visiteurs envoient avec les formulaires du site, le plus récent en premier.
   - Deux dossiers : **Reçus** et **Indésirables** (messages que le filtre anti-spam juge suspects, sans
     notification).
@@ -93,6 +108,11 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Vitesse ressentie par les visiteurs** (Core Web Vitals, mesurés chez les vrais visiteurs) :
     Affichage, Réactivité et Stabilité, chacun avec le verdict de Google (« Bon », « À améliorer »,
     « Lent » ou « Instable », au 75e centile) et la part des chargements rapides.
+  - **Recherche Google** (Google Search Console) : clics, affichages, taux de clic et position moyenne
+    sur la période (7, 28 ou 90 jours, avec les deux jours de retard de Google), les recherches qui
+    amènent des visiteurs et les pages trouvées. Tant que le site n'est pas relié, la carte donne les trois
+    étapes : ajouter le site dans Search Console et coller sa balise de validation dans Réglages > Site
+    et référencement, puis ajouter comme utilisateur « Restreint » le compte du site (adresse à copier).
   - En bas, « Ne pas compter mes visites sur cet appareil », pour que le propriétaire ne gonfle pas ses
     chiffres.
 - **Établissement** (Réglages) : la fiche que lisent Google, les assistants IA et le site.

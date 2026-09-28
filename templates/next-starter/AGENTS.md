@@ -26,6 +26,10 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   `@openflow/next/forms`). Les messages arrivent dans l'admin (« Messages ») via la réécriture
   `/forms/submit` de `firebase.json`. Pour un autre formulaire (devis, inscription), reprends ce modèle :
   prop `formFields`, `formId={id}` (voir `champs.md`).
+- Rendez-vous : la section `Booking` (prestations `bookingServicesField()`, règles `bookingRuleFields()`,
+  affichage `<OpenFlowBooking>` de `@openflow/next/booking`). Les créneaux suivent les horaires de la fiche
+  établissement ; les réservations passent par la réécriture `/cms/booking` de `firebase.json` et arrivent
+  dans l'admin (« Rendez-vous »). Page `rendez-vous` du contenu de départ.
 - Collections (`collections` dans la config) : des contenus de même forme, chacun avec sa page. Ici
   « Actualités » : la section `Article` (un élément, sur `/actualites/<titre>/`), la section de liste
   `ArticleList` (`getCollection(puck.metadata, "actualites")`) et le flux `app/rss.xml/`. Et

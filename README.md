@@ -17,10 +17,13 @@ ou Framer, avec un backend 100 % Firebase.**
   agents (WebMCP), mise à jour automatique quand un événement est passé
   ([docs/sites-de-demain.md](docs/sites-de-demain.md)).
 - **Statistiques sans cookie ni bandeau** (conformes CNIL), avec les visites envoyées par ChatGPT, Perplexity,
-  Claude, Gemini ou Copilot.
+  Claude, Gemini ou Copilot, et les **recherches Google** de Search Console (clics, positions, requêtes).
 - **Multilingue** : le site dans d'autres langues (`/en/`, `/de/`…), mêmes sections, textes traduits
   dans l'éditeur (chaque texte d'origine au-dessus de sa traduction) ou par l'IA du propriétaire,
   `hreflang` et sélecteur de langue.
+- **Prise de rendez-vous** sans service tiers : prestations et règles dans une section, créneaux d'après
+  les horaires de l'établissement, jamais de double réservation, rendez-vous dans l'admin et par e-mail.
+- **Publication programmée** : un article ou une page se met en ligne seul à la date et l'heure choisies.
 - **Pages légales écrites d'après le site** : la politique de confidentialité et les mentions légales disent
   exactement ce que fait le site (mesure d'audience, formulaires, Google Analytics, hébergeur…) et se
   mettent à jour à chaque publication. Le visiteur peut y arrêter le comptage de ses visites.

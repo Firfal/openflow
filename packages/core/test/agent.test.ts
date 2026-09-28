@@ -6,6 +6,7 @@ import {
   type AgentContext,
   type AgentPage,
   type AgentSettings,
+  type BookingDoc,
   buildSiteSchema,
   configFromSchema,
   defineConfig,
@@ -137,6 +138,29 @@ function memoryBackend() {
     data: { root: { props: {} }, content: [] },
   });
   const translations = new Map<string, PageTranslation>();
+  const soon = (hours: number) => new Date(Date.now() + hours * 3600000).toISOString();
+  const bookings = new Map<string, BookingDoc & { id: string }>([
+    [
+      "b1",
+      {
+        id: "b1",
+        page: "/rendez-vous/",
+        sectionId: "rdv",
+        service: "Coupe",
+        duration: 30,
+        start: soon(26),
+        end: soon(26.5),
+        date: "2026-10-06",
+        time: "09:00",
+        timeZone: "Europe/Paris",
+        name: "Léa Martin",
+        email: "lea@exemple.fr",
+        status: "confirmed",
+        createdAt: soon(-1),
+        expiresAt: new Date(),
+      },
+    ],
+  ]);
   const backend: AgentBackend = {
     listPages: async () => [...pages.values()],
     getPage: async (id) => pages.get(id),
@@ -203,8 +227,19 @@ function memoryBackend() {
     publish: async () => ({ releaseId: "r1" }),
     listReleases: async () => [{ id: "r0", status: "live", createdAt: "2026-09-01T00:00:00Z" }],
     listStats: async (from) => stats.filter((doc) => doc.day >= from),
+    searchStats: async () => ({ status: "not-connected", properties: 0 }),
+    listBookings: async (from) =>
+      [...bookings.values()]
+        .filter((b) => b.start >= from)
+        .sort((a, b) => a.start.localeCompare(b.start)),
+    cancelBooking: async (id) => {
+      const booking = bookings.get(id);
+      if (!booking) return undefined;
+      bookings.set(id, { ...booking, status: "cancelled" });
+      return structuredClone(booking);
+    },
   };
-  return { backend, pages, settings, saves };
+  return { backend, pages, settings, saves, bookings };
 }
 
 let store: ReturnType<typeof memoryBackend>;
@@ -573,6 +608,23 @@ describe("audit_site", () => {
     };
     expect(one.pagesChecked).toBe(1);
     expect(one.findings.map((f) => f.code)).not.toContain("site-url");
+  });
+});
+
+describe("bookings", () => {
+  it("lists the coming appointments and cancels one after confirmation", async () => {
+    const list = await run("get_bookings", {});
+    expect(list).toMatchObject({
+      count: 1,
+      bookings: [{ id: "b1", service: "Coupe", name: "Léa Martin", status: "confirmé" }],
+    });
+    await expect(run("cancel_booking", { bookingId: "b1" })).rejects.toThrow(/confirm/);
+    const cancelled = await run("cancel_booking", { bookingId: "b1", confirm: true });
+    expect(cancelled.note).toContain("lea@exemple.fr");
+    expect(store.bookings.get("b1")?.status).toBe("cancelled");
+    await expect(run("cancel_booking", { bookingId: "b1", confirm: true })).rejects.toThrow(
+      /déjà annulé/,
+    );
   });
 });
 

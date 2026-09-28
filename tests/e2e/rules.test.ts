@@ -74,6 +74,18 @@ beforeEach(async () => {
     await setDoc(doc(db, "cms_agent_requests/r1"), { clientId: "cmscli_a" });
     await setDoc(doc(db, "cms_agent_codes/c1"), { clientId: "cmscli_a" });
     await setDoc(doc(db, "cms_stats/2026-09-27-0"), { day: "2026-09-27", views: 3 });
+    await setDoc(doc(db, "cms_bookings/b1"), {
+      service: "Coupe",
+      start: "2026-10-06T07:00:00.000Z",
+      end: "2026-10-06T07:30:00.000Z",
+      date: "2026-10-06",
+      name: "Léa",
+      email: "lea@exemple.fr",
+      status: "confirmed",
+    });
+    await setDoc(doc(db, "cms_booking_days/2026-10-06"), {
+      busy: [{ id: "b1", start: "2026-10-06T07:00:00.000Z", end: "2026-10-06T07:30:00.000Z" }],
+    });
     await uploadBytes(ref(context.storage(), "cms/media/photo.png"), new Uint8Array([1, 2, 3]), {
       contentType: "image/png",
     });
@@ -161,6 +173,25 @@ describe("Firestore rules", () => {
     await assertFails(deleteDoc(doc(db, "cms_stats/2026-09-27-0")));
   });
 
+  it("lets the owner read and cancel appointments, never create one", async () => {
+    const db = owner().firestore();
+    await assertSucceeds(getDoc(doc(db, "cms_bookings/b1")));
+    await assertSucceeds(getDoc(doc(db, "cms_booking_days/2026-10-06")));
+    // Cancelling: the booking's status, and the day's busy times.
+    await assertSucceeds(
+      updateDoc(doc(db, "cms_bookings/b1"), {
+        status: "cancelled",
+        cancelledAt: "2026-10-01T10:00:00.000Z",
+      }),
+    );
+    await assertSucceeds(updateDoc(doc(db, "cms_booking_days/2026-10-06"), { busy: [] }));
+    await assertFails(updateDoc(doc(db, "cms_bookings/b1"), { email: "autre@exemple.fr" }));
+    await assertFails(updateDoc(doc(db, "cms_bookings/b1"), { status: "paid" }));
+    await assertFails(setDoc(doc(db, "cms_bookings/b2"), { service: "Coupe" }));
+    await assertFails(setDoc(doc(db, "cms_booking_days/2026-10-07"), { busy: [] }));
+    await assertSucceeds(deleteDoc(doc(db, "cms_bookings/b1")));
+  });
+
   for (const [who, context] of [
     ["an authenticated non-owner", intruder],
     ["an anonymous visitor", anonymous],
@@ -179,6 +210,10 @@ describe("Firestore rules", () => {
       await assertFails(getDoc(doc(db, "cms_stats/2026-09-27-0")));
       await assertFails(setDoc(doc(db, "cms_stats/2026-09-27-9"), { views: 1 }));
       await assertFails(getDoc(doc(db, "cms_system/integrations")));
+      await assertFails(getDoc(doc(db, "cms_bookings/b1")));
+      await assertFails(setDoc(doc(db, "cms_bookings/b3"), { service: "Coupe" }));
+      await assertFails(getDoc(doc(db, "cms_booking_days/2026-10-06")));
+      await assertFails(updateDoc(doc(db, "cms_booking_days/2026-10-06"), { busy: [] }));
     });
   }
 });

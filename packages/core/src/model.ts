@@ -3,6 +3,7 @@ import type { BusinessInfo } from "./business.js";
 import type { ImageVariant, VideoVariant } from "./fields.js";
 import type { PageTranslation, SettingsTranslation } from "./i18n.js";
 import type { LegalInfo } from "./legal.js";
+import type { SearchVerification } from "./search-console.js";
 
 /**
  * Firestore collections of the CMS. All are prefixed with `cms_` to avoid clashes with the site's
@@ -36,6 +37,10 @@ export const COLLECTIONS = {
   stats: "cms_stats",
   /** A page's texts in another language: `{pageId}__{locale}` (see `i18n.ts`). */
   pageTranslations: "cms_page_translations",
+  /** Appointments booked on the site (owner only; written by `cmsBooking`). */
+  bookings: "cms_bookings",
+  /** The appointments of each local day (`YYYY-MM-DD`), read and written in one transaction. */
+  bookingDays: "cms_booking_days",
 } as const;
 
 /** Well-known document ids. */
@@ -70,6 +75,8 @@ export const FUNCTION_NAMES = {
   submitForm: "cmsSubmitForm",
   /** Counts the page views of the published site (`/cms/view`, Hosting rewrite). */
   pageView: "cmsPageView",
+  booking: "cmsBooking",
+  searchStats: "cmsSearchStats",
   mcp: "cmsMcp",
 } as const;
 
@@ -202,6 +209,8 @@ export interface SiteSettings {
   legal?: LegalInfo;
   /** Other languages of the site (`en`, `de`…), each at `/<lang>/`; `lang` is the default one. */
   locales?: string[];
+  /** Codes of the Search Console and Bing Webmaster Tools tags (Réglages > Site et référencement). */
+  verification?: SearchVerification;
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */

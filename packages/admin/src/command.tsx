@@ -1,4 +1,4 @@
-import { slugToPath } from "@openflow/core";
+import { bookingComponentOf, slugToPath } from "@openflow/core";
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { useAdmin } from "./context.js";
@@ -219,6 +219,18 @@ export function CommandPalette() {
         keywords: "formulaire contact boîte de réception mail",
         run: go(() => navigate({ view: "messages" })),
       },
+      ...(bookingComponentOf(config.components)
+        ? [
+            {
+              id: "go:bookings",
+              group: "Aller à",
+              label: "Rendez-vous",
+              icon: "calendarCheck" as const,
+              keywords: "réservation agenda créneau planning",
+              run: go(() => navigate({ view: "bookings" })),
+            },
+          ]
+        : []),
       {
         id: "go:stats",
         group: "Aller à",
@@ -269,7 +281,7 @@ export function CommandPalette() {
       },
     );
     return list;
-  }, [pages, navigate, config.theme, config.collections, setTheme]);
+  }, [pages, navigate, config.theme, config.collections, config.components, setTheme]);
 
   const results = useMemo(() => {
     const words = fold(query).split(/\s+/).filter(Boolean);

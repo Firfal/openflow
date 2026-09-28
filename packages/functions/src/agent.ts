@@ -9,6 +9,8 @@ import {
   type AgentPage,
   type AgentRelease,
   type AgentTokenDoc,
+  type BookingDayDoc,
+  type BookingDoc,
   COLLECTIONS,
   configFromSchema,
   DOCS,
@@ -172,6 +174,8 @@ export interface AdminBackendOptions {
   };
   /** Public base URL of Storage files (the emulator in local runs). */
   storageBaseUrl: string;
+  /** Search Console's figures (see `search.ts`). */
+  searchStats: AgentBackend["searchStats"];
   publish: () => Promise<{ releaseId: string }>;
 }
 
@@ -185,6 +189,7 @@ export function adminBackend({
   bucket,
   storageBaseUrl,
   publish,
+  searchStats,
 }: AdminBackendOptions): AgentBackend {
   const pages = db.collection(COLLECTIONS.pages);
   const contents = db.collection(COLLECTIONS.pageContent);
@@ -371,9 +376,33 @@ export function adminBackend({
       return { id: ref.id, ...doc };
     },
     publish,
+    searchStats,
     async listStats(from) {
       const snap = await db.collection(COLLECTIONS.stats).where("day", ">=", from).get();
       return snap.docs.map((d) => d.data() as StatsDoc);
+    },
+    async listBookings(from) {
+      const snap = await db
+        .collection(COLLECTIONS.bookings)
+        .where("start", ">=", from)
+        .orderBy("start")
+        .limit(500)
+        .get();
+      return snap.docs.map((d) => ({ id: d.id, ...(d.data() as BookingDoc) }));
+    },
+    async cancelBooking(id) {
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return undefined;
+      const ref = db.collection(COLLECTIONS.bookings).doc(id);
+      return db.runTransaction(async (tx) => {
+        const booking = (await tx.get(ref)).data() as BookingDoc | undefined;
+        if (!booking) return undefined;
+        if (booking.status === "cancelled") return { id, ...booking };
+        const dayRef = db.collection(COLLECTIONS.bookingDays).doc(booking.date);
+        const day = (await tx.get(dayRef)).data() as BookingDayDoc | undefined;
+        if (day) tx.update(dayRef, { busy: (day.busy ?? []).filter((range) => range.id !== id) });
+        tx.update(ref, { status: "cancelled", cancelledAt: new Date().toISOString() });
+        return { id, ...booking };
+      });
     },
     async listReleases(max) {
       const snap = await db

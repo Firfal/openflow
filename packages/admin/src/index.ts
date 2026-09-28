@@ -3,6 +3,6 @@
 import "@fontsource-variable/inter/wght.css";
 import "./styles.css";
 
-export type { OpenFlowAdminProps } from "./app.js";
+export type { OpenFlowAdminProps, OpenFlowConfigLoader } from "./app.js";
 export { OpenFlowAdminApp } from "./app.js";
 export type { FirebaseSetup } from "./firebase.js";

@@ -1,0 +1,72 @@
+{
+  "slug": "rendez-vous",
+  "title": "Prendre rendez-vous",
+  "status": "published",
+  "seo": {
+    "title": "Prendre rendez-vous",
+    "description": "Réservez en ligne un rendez-vous au jour et à l'heure qui vous conviennent."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Hero",
+        "props": {
+          "id": "hero-rendez-vous",
+          "eyebrow": "Rendez-vous",
+          "title": "Réservez votre rendez-vous en ligne",
+          "subtitle": "Choisissez la prestation, le jour et l'heure : le créneau vous est réservé tout de suite.",
+          "primaryLabel": "",
+          "primaryLink": null,
+          "secondaryLabel": "",
+          "secondaryLink": null,
+          "image": null,
+          "layout": "centered",
+          "tone": "light"
+        }
+      },
+      {
+        "type": "Booking",
+        "props": {
+          "id": "booking-rendez-vous",
+          "title": "Nos prestations",
+          "intro": "Les créneaux proposés suivent nos horaires d'ouverture. Un imprévu ? Appelez-nous pour déplacer votre rendez-vous.",
+          "bookingServices": [
+            {
+              "name": "Premier rendez-vous",
+              "duration": "30",
+              "price": "Offert",
+              "description": "Un échange pour faire connaissance et comprendre votre besoin."
+            },
+            {
+              "name": "Rendez-vous conseil",
+              "duration": "60",
+              "price": "60 €",
+              "description": "Une heure pour étudier votre projet en détail et repartir avec un plan d'action."
+            }
+          ],
+          "bookingStep": "30",
+          "bookingNotice": "2",
+          "bookingHorizon": "30",
+          "bookingBuffer": "0",
+          "submitLabel": "Réserver ce créneau",
+          "successMessage": "C'est réservé ! Nous avons bien noté votre rendez-vous. Pour le modifier ou l'annuler, contactez-nous.",
+          "note": "Vos coordonnées servent uniquement à gérer ce rendez-vous. Elles sont effacées un an après.",
+          "bookingLabels": {
+            "service": "Prestation",
+            "minutes": "min",
+            "chooseTime": "Choisissez un jour et une heure.",
+            "name": "Nom",
+            "email": "E-mail",
+            "phone": "Téléphone",
+            "message": "Message",
+            "optional": "facultatif"
+          },
+          "tone": "muted"
+        }
+      }
+    ]
+  }
+}

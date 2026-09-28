@@ -36,6 +36,10 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
 - `cms_agent_clients`, `cms_agent_requests`, `cms_agent_codes` (connexion OAuth des IA) : aucun accès client.
 - `cms_messages` (messages des formulaires) : lecture et suppression par le propriétaire, qui ne peut
   modifier que `read` et `spam` ; création uniquement par la fonction `cmsSubmitForm`.
+- `cms_bookings` (rendez-vous) : lecture et suppression par le propriétaire, qui ne peut modifier que
+  `status` (`confirmed` ou `cancelled`) et `cancelledAt` ; création uniquement par la fonction
+  `cmsBooking`. `cms_booking_days` (créneaux pris de chaque jour) : lecture par le propriétaire, qui ne
+  peut modifier que `busy` (annulation) ; ni création ni suppression côté client.
 - `cms_rate_limits` (compteurs d'envois par visiteur) : aucun accès client.
 - `cms_stats` (compteurs d'audience) : lecture par le propriétaire ; écriture par la fonction
   `cmsPageView` uniquement.
@@ -103,6 +107,30 @@ CNIL a sanctionné l'usage de reCAPTCHA sans consentement quand Google s'en serv
 en sous-traitance, pour la seule sécurité des formulaires, l'intérêt légitime est défendable mais pas
 tranché. Un site peu exposé au spam peut s'en passer : le champ piège, le temps de saisie et la limite par
 visiteur restent actifs.
+
+## Prise de rendez-vous
+
+- `GET /cms/booking` (réécriture vers `cmsBooking`) ne donne que les créneaux pris (début et fin), sur 92
+  jours au plus, sans nom ni coordonnées.
+- `POST /cms/booking` passe les mêmes défenses que les formulaires : champ piège, temps de saisie minimal,
+  limite par visiteur (adresse IP hachée, compteur effacé après 10 minutes) et score reCAPTCHA. Une demande
+  douteuse est refusée plutôt que mise de côté : elle bloquerait un créneau.
+- La demande n'est acceptée que pour une prestation de la section **publiée**, à un créneau encore libre
+  selon ses règles, les horaires et les fermetures publiés : la fonction recalcule les créneaux dans une
+  transaction sur le document du jour, ce qui empêche deux réservations du même créneau.
+- Coordonnées vérifiées (nom, e-mail valide ; téléphone et message limités en longueur). Le propriétaire
+  est prévenu par e-mail (Resend) ou, sans service d'e-mail, par l'alerte des messages reçus.
+- Chaque rendez-vous est effacé 12 mois après sa date (TTL posé par `openflow setup`), comme l'annonce la
+  politique de confidentialité, qui décrit la prise de rendez-vous dès qu'une page publiée en propose.
+
+## Google Search Console
+
+- Les balises de validation (Google, Bing) ne sont publiées qu'une fois réduites à leur code (lettres,
+  chiffres, `-` et `_`) : rien d'autre ne peut entrer dans le `<head>` du site.
+- `cmsSearchStats` est réservée au propriétaire (claim et App Check). Elle lit Search Console en lecture
+  seule (portée `webmasters.readonly`) avec le compte de service des fonctions, qui n'a accès qu'aux
+  propriétés où le propriétaire l'a ajouté lui-même, avec l'autorisation « Restreint ». Rien n'est
+  enregistré dans Firestore.
 
 ## Mesure d'audience sans cookie
 

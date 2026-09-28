@@ -162,6 +162,40 @@ describe("AI access (OF-305)", () => {
   });
 });
 
+describe("services of the sections (OF-306)", () => {
+  const booking = `import { bookingServicesField } from "@openflow/core";
+export const Booking = { fields: { bookingServices: bookingServicesField() } };
+`;
+
+  it("asks for the booking rewrite when a section takes appointments", async () => {
+    const dir = await makeSite("services-missing", {
+      "openflow/components/Booking.tsx": booking,
+    });
+    const issues = (await checkProject(dir)).filter((i) => i.rule === "OF-306");
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.severity).toBe("error");
+    expect(issues[0]!.message).toContain("/cms/booking");
+  });
+
+  it("accepts the site once the rewrite is there, and asks nothing without such a section", async () => {
+    const dir = await makeSite("services-ok", {
+      "openflow/components/Booking.tsx": booking,
+      "firebase.json": {
+        ...FIREBASE_JSON,
+        hosting: {
+          ...FIREBASE_JSON.hosting,
+          rewrites: [
+            ...FIREBASE_JSON.hosting.rewrites,
+            { source: "/cms/booking", run: { serviceId: "cmsbooking", region: "europe-west1" } },
+          ],
+        },
+      },
+    });
+    expect(rulesOf(await checkProject(dir))).not.toContain("OF-306");
+    expect(rulesOf(await checkProject(await makeSite("services-none")))).not.toContain("OF-306");
+  });
+});
+
 describe("render checks (sentinels)", () => {
   it("reports a compliant site at 100 % editability", async () => {
     const dir = await makeSite("render-ok");

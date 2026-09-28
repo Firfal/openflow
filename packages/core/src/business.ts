@@ -303,7 +303,7 @@ export function postalAddress(b: BusinessInfo | undefined): Record<string, unkno
  */
 export function businessJsonLd(
   site: { name: string; url?: string; description?: string; business?: BusinessInfo },
-  options: { today: string; url?: string; image?: string },
+  options: { today: string; url?: string; image?: string; bookingUrl?: string },
 ): Record<string, unknown> | undefined {
   const b = site.business;
   if (!b) return undefined;
@@ -357,6 +357,23 @@ export function businessJsonLd(
     ...(b.priceRange ? { priceRange: b.priceRange } : {}),
     ...(b.areaServed ? { areaServed: b.areaServed } : {}),
     ...(b.links?.length ? { sameAs: b.links } : {}),
+    // Appointments taken on the site: Google and AI assistants can offer to book.
+    ...(options.bookingUrl
+      ? {
+          potentialAction: {
+            "@type": "ReserveAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: options.bookingUrl,
+              actionPlatform: [
+                "http://schema.org/DesktopWebPlatform",
+                "http://schema.org/MobileWebPlatform",
+              ],
+            },
+            result: { "@type": "Reservation", name: "Rendez-vous" },
+          },
+        }
+      : {}),
   };
 }
 

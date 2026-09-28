@@ -32,6 +32,37 @@ export {
 } from "./agent/tools.js";
 export type { AuditFinding, AuditPage, AuditSeverity, SiteAudit } from "./audit.js";
 export { auditSite } from "./audit.js";
+export type {
+  BookingDayDoc,
+  BookingDoc,
+  BookingLabels,
+  BookingRequest,
+  BookingRules,
+  BookingService,
+  BusyRange,
+  SlotContext,
+} from "./booking.js";
+export {
+  addLocalDays,
+  BOOKING_LABEL_DEFAULTS,
+  BOOKING_RETENTION_MONTHS,
+  BOOKING_RULE_DEFAULTS,
+  BOOKING_SERVICES_PROP,
+  bookingComponentOf,
+  bookingDays,
+  bookingIcs,
+  bookingLabelsField,
+  bookingPageOf,
+  bookingRuleFields,
+  bookingRulesOf,
+  bookingSectionsOf,
+  bookingServicesField,
+  bookingTimeZone,
+  daySlots,
+  localDateTime,
+  validateBookingContact,
+  zonedTime,
+} from "./booking.js";
 export {
   BUSINESS_TYPES,
   type BusinessInfo,
@@ -243,6 +274,20 @@ export {
   isValidPublishAt,
   SCHEDULE_STEP_MINUTES,
 } from "./schedule.js";
+export type {
+  SearchProperty,
+  SearchRow,
+  SearchStats,
+  SearchStatsResult,
+  SearchVerification,
+} from "./search-console.js";
+export {
+  sanitizeVerification,
+  searchPropertyOf,
+  searchQuery,
+  summarizeSearch,
+  verificationCode,
+} from "./search-console.js";
 export type { Seed, SeedPage, SeedSettings } from "./seed.js";
 export { PAGE_ID, resolveSeedSettings, seedPageSchema, seedSettingsSchema } from "./seed.js";
 export {

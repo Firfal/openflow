@@ -113,9 +113,60 @@ async function checkAiAccess(siteDir: string, site: HostingConfig | undefined): 
   return issues;
 }
 
+/** The site's services behind a rewrite, and what in the sections uses them. */
+const SERVICES = [
+  {
+    source: "/forms/submit",
+    serviceId: "cmssubmitform",
+    uses: /\b(formFieldsField|OpenFlowForm)\b/,
+    what: "les formulaires",
+  },
+  {
+    source: "/cms/booking",
+    serviceId: "cmsbooking",
+    uses: /\b(bookingServicesField|OpenFlowBooking)\b/,
+    what: "la prise de rendez-vous",
+  },
+];
+
+async function sourcesOf(dir: string): Promise<string> {
+  if (!existsSync(dir)) return "";
+  const parts: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) parts.push(await sourcesOf(full));
+    else if (/\.(tsx?|jsx?)$/.test(entry.name)) parts.push(await readFile(full, "utf8"));
+  }
+  return parts.join("\n");
+}
+
+/** OF-306: the rewrites the forms and the appointments of the sections are sent to. */
+async function checkServices(siteDir: string, site: HostingConfig | undefined): Promise<Issue[]> {
+  if (!site) return [];
+  const code = await sourcesOf(path.join(siteDir, "openflow"));
+  const issues: Issue[] = [];
+  for (const service of SERVICES) {
+    if (!service.uses.test(code)) continue;
+    const found = site.rewrites?.some(
+      (rewrite) =>
+        rewrite.source === service.source && rewrite.run?.serviceId === service.serviceId,
+    );
+    if (!found) {
+      issues.push(
+        issue(
+          "OF-306",
+          "firebase.json",
+          `Réécriture ${service.source} vers ${service.serviceId} absente : ${service.what} du site ne peuvent rien envoyer.`,
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
 /**
- * Project-level checks (level `fast`): OF-301 (next.config, middleware), OF-303 (Firebase) and
- * OF-305 (AI access).
+ * Project-level checks (level `fast`): OF-301 (next.config, middleware), OF-303 (Firebase),
+ * OF-305 (AI access) and OF-306 (services of the sections).
  */
 export async function checkProject(siteDir: string): Promise<Issue[]> {
   const issues: Issue[] = [];
@@ -190,6 +241,7 @@ export async function checkProject(siteDir: string): Promise<Issue[]> {
           : [];
       const site = hostings.find((entry) => entry.public === "out");
       issues.push(...(await checkAiAccess(siteDir, site)));
+      issues.push(...(await checkServices(siteDir, site)));
       if (!site) {
         issues.push(
           issue("OF-303", "firebase.json", 'Aucune configuration hosting avec `"public": "out"`.'),

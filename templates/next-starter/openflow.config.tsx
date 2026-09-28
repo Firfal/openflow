@@ -1,6 +1,7 @@
 import { defineConfig } from "@openflow/core";
 import { Article } from "./openflow/components/Article";
 import { ArticleList } from "./openflow/components/ArticleList";
+import { Booking } from "./openflow/components/Booking";
 import { CallToAction } from "./openflow/components/CallToAction";
 import { ContactForm } from "./openflow/components/ContactForm";
 import { Event } from "./openflow/components/Event";
@@ -30,7 +31,7 @@ export default defineConfig({
       title: "Contenu",
       components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList", "EventList"],
     },
-    conversion: { title: "Conversion", components: ["CallToAction", "ContactForm"] },
+    conversion: { title: "Conversion", components: ["CallToAction", "ContactForm", "Booking"] },
     legal: { title: "Pages légales", components: ["Legal"] },
   },
   components: {
@@ -42,6 +43,7 @@ export default defineConfig({
     ArticleList,
     CallToAction,
     ContactForm,
+    Booking,
     Article,
     EventList,
     Event,

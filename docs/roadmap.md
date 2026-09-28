@@ -30,6 +30,15 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
    `update_legal`) : **réalisées**.
 10. Publication programmée (une page ou un article mis en ligne seul à la date et l'heure choisies, sans
     publier les autres brouillons ; paramètre `publishAt` des outils IA) : **réalisée**.
+11. Prise de rendez-vous native (prestations et règles dans une section, créneaux d'après les horaires de
+    l'établissement, réservation sans double réservation, vue « Rendez-vous », e-mail au propriétaire,
+    `ReserveAction` pour Google et les IA, préparation par l'assistant IA du visiteur, politique de
+    confidentialité et effacement après 12 mois, outils `get_bookings` et `cancel_booking`) :
+    **réalisée**. Suite possible : confirmation par e-mail au visiteur (domaine d'envoi vérifié),
+    synchronisation avec Google Agenda, plusieurs agendas (collaborateurs).
+12. Google Search Console relié (balises de validation Google et Bing, recherches, clics, positions et
+    pages dans « Statistiques », outil `get_search_stats`) : **réalisé**. Suite possible : alertes de
+    Search Console (pages non indexées) dans l'audit, envoi du plan du site.
 
 ## Détails de conception des phases suivantes
 

@@ -505,8 +505,23 @@ function sampleMetadata(config: OpenFlowConfig, section: string): OpenFlowMetada
       };
     }
   }
-  return { page, collections, legal: sampleLegal(tokens) };
+  return { page, collections, legal: sampleLegal(tokens), site: SAMPLE_SITE };
 }
+
+/** The site sections receive: a business open every day, so booking sections show their form. */
+const SAMPLE_SITE = {
+  name: "Site",
+  lang: "fr",
+  business: {
+    country: "FR",
+    hours: Object.fromEntries(
+      ["mo", "tu", "we", "th", "fr", "sa", "su"].map((day) => [
+        day,
+        [{ opens: "09:00", closes: "18:00" }],
+      ]),
+    ),
+  },
+};
 
 /** Legal documents whose texts are tokens (they are written by OpenFlow, not by the section). */
 function sampleLegal(tokens: Sentinels): LegalDocuments {

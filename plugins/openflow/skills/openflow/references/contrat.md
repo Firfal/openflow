@@ -282,6 +282,49 @@ render: ({ legalDocument, extra, puck }) => {
 - Liez les deux pages depuis le pied de page, par un champ de liens des réglages : l'audit signale une page
   légale qu'aucun menu ne relie.
 
+## Prise de rendez-vous
+
+Une section de rendez-vous porte les prestations et les règles ; les créneaux suivent les horaires et les
+fermetures de la fiche établissement (Réglages > Établissement). Les rendez-vous arrivent dans l'admin
+(« Rendez-vous ») par la réécriture `/cms/booking` de `firebase.json` (règle OF-306).
+
+```tsx
+import {
+  BOOKING_LABEL_DEFAULTS, BOOKING_RULE_DEFAULTS, bookingLabelsField, bookingRuleFields,
+  bookingRulesOf, bookingServicesField, pageLang,
+} from "@openflow/core";
+import { OpenFlowBooking } from "@openflow/next/booking";
+
+fields: {
+  bookingServices: bookingServicesField(),   // nom, durée, prix, description
+  ...bookingRuleFields(),                    // bookingStep, bookingNotice, bookingHorizon, bookingBuffer
+  submitLabel: { type: "text", label: "Bouton de réservation", metadata: { openflowInline: false } },
+  successMessage: { type: "textarea", label: "Message après la réservation", metadata: { openflowInline: false } },
+  bookingLabels: bookingLabelsField(),       // libellés du formulaire, traduisibles
+},
+render: ({ id, submitLabel, successMessage, bookingLabels, puck, ...props }) => (
+  <OpenFlowBooking
+    sectionId={id}
+    rules={bookingRulesOf(props)}
+    business={puck?.metadata?.site?.business}
+    submitLabel={submitLabel}
+    successMessage={successMessage}
+    labels={bookingLabels}
+    lang={pageLang(puck?.metadata)}
+    editing={puck?.isEditing}
+    classNames={{ root: "…", day: "… aria-pressed:bg-accent", time: "…", button: "…" }}
+  />
+),
+```
+
+- Le nom de prop `bookingServices` désigne la section de rendez-vous : `cmsBooking` y lit les règles
+  publiées, la politique de confidentialité et les données structurées (`ReserveAction`) la détectent.
+- Les jours et les heures n'apparaissent qu'une fois la page chargée (ils dépendent de l'heure du
+  visiteur) : `classNames.placeholder` réserve leur place sans texte. Les états (`aria-pressed`,
+  `disabled`, `data-status`) se stylent avec les variantes Tailwind.
+- Le reste des textes (jours, erreurs, confirmation) est fourni par `@openflow/next` en français et en
+  anglais.
+
 ## Style libre et thème
 
 Le propriétaire peut modifier le style de chaque section et de chaque élément (bloc « Style » du

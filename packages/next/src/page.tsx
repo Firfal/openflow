@@ -89,6 +89,17 @@ export function buildMetadata(
       images: image ? [{ url: image }] : undefined,
     },
     robots: page.seo.noindex ? { index: false, follow: true } : undefined,
+    // Search Console and Bing Webmaster Tools check the home page's tags.
+    ...(page.slug === "" && site.verification
+      ? {
+          verification: {
+            ...(site.verification.google ? { google: site.verification.google } : {}),
+            ...(site.verification.bing
+              ? { other: { "msvalidate.01": site.verification.bing } }
+              : {}),
+          },
+        }
+      : {}),
   };
 }
 

@@ -4,6 +4,7 @@ import { businessSchema, sanitizeBusiness } from "./business-schema.js";
 import { localizedSlug, type PageTranslation, siteLocales } from "./i18n.js";
 import { sanitizeLegal } from "./legal.js";
 import type { IntegrationsDoc, PageDoc, SettingsDoc, SiteSettings } from "./model.js";
+import { sanitizeVerification } from "./search-console.js";
 import { isValidSlug, slugToPath } from "./slug.js";
 import { sanitizePageStyles, sanitizeTheme } from "./style.js";
 import { ensureIds, resolvePageLinks } from "./walk.js";
@@ -63,6 +64,10 @@ export const siteSettingsSchema = z.object({
     .optional()
     .catch(undefined),
   locales: z.array(z.string()).optional().catch(undefined),
+  verification: z
+    .object({ google: z.string().optional(), bing: z.string().optional() })
+    .optional()
+    .catch(undefined),
 });
 
 const texts = z.record(z.string(), z.string());
@@ -233,6 +238,9 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
   else delete site.legal;
   if (locales.length > 0) site.locales = locales;
   else delete site.locales;
+  const verification = sanitizeVerification(input.settings.site.verification);
+  if (verification) site.verification = verification;
+  else delete site.verification;
   const settingsTranslations: NonNullable<Snapshot["settingsTranslations"]> = {};
   for (const locale of locales) {
     const translation = input.settings.translations?.[locale];

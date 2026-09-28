@@ -2,6 +2,7 @@ import type { OpenFlowConfig, SettingsDoc } from "@openflow/core";
 import type { User } from "firebase/auth";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AssistantView } from "./assistant.js";
+import { BookingsView } from "./bookings.js";
 import { CollectionView } from "./collection.js";
 import { CommandPalette } from "./command.js";
 import { ConnectView } from "./connect.js";
@@ -92,6 +93,7 @@ function Shell() {
         {route.view === "media" && <MediaView />}
         {route.view === "assistant" && <AssistantView />}
         {route.view === "messages" && <MessagesView />}
+        {route.view === "bookings" && <BookingsView />}
         {route.view === "stats" && <StatsView />}
         {route.view === "settings" && <SettingsView tab={route.tab ?? "global"} />}
         {route.view === "history" && <HistoryView />}

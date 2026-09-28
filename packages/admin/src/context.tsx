@@ -16,6 +16,7 @@ export type Route =
   | { view: "media" }
   | { view: "assistant" }
   | { view: "messages" }
+  | { view: "bookings" }
   | { view: "stats" }
   /** Consent screen of an AI assistant connecting with OAuth (`cmsMcp` sends the owner here). */
   | { view: "connect"; request: string }
@@ -85,7 +86,13 @@ function readRoute(): Route {
       ? { view, tab: tab as SettingsTab }
       : { view };
   }
-  if (view === "history" || view === "media" || view === "messages" || view === "stats") {
+  if (
+    view === "history" ||
+    view === "media" ||
+    view === "messages" ||
+    view === "bookings" ||
+    view === "stats"
+  ) {
     return { view };
   }
   return { view: "pages" };

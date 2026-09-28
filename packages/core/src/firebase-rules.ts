@@ -65,6 +65,20 @@ match /cms_rate_limits/{visitorId} {
 match /cms_stats/{dayId} {
   allow read: if cmsIsOwner();
   allow write: if false;
+}
+match /cms_bookings/{bookingId} {
+  allow read, delete: if cmsIsOwner();
+  allow update: if cmsIsOwner()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelledAt'])
+    && request.resource.data.status in ['confirmed', 'cancelled'];
+  allow create: if false;
+}
+match /cms_booking_days/{day} {
+  allow read: if cmsIsOwner();
+  allow update: if cmsIsOwner()
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['busy'])
+    && request.resource.data.busy is list;
+  allow create, delete: if false;
 }`;
 
 export const STORAGE_RULES_BLOCK = `function cmsIsOwner() {

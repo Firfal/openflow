@@ -4,6 +4,7 @@ import {
   AgentError,
   COLLECTIONS,
   configFromSchema,
+  DOCS,
   FUNCTION_NAMES,
   handleMcpMessage,
   type MessageDoc,
@@ -16,6 +17,8 @@ import {
   publishedPaths,
   REFRESH_AUTHOR,
   type ReleaseDoc,
+  type SearchStatsResult,
+  type SettingsDoc,
   type SiteSchema,
   type Snapshot,
   SnapshotError,
@@ -40,6 +43,7 @@ import {
   tokenFromRequest,
   verifyAgentToken,
 } from "./agent.js";
+import { type BookingBody, bookingEmail, handleBooking, handleBusy } from "./booking.js";
 import {
   type Builder,
   type CloudBuildEvent,
@@ -81,6 +85,7 @@ import {
   tokenRequestParams,
 } from "./oauth.js";
 import { publishScheduled } from "./schedule.js";
+import { searchStats } from "./search.js";
 import { parseBeacon, recordPageView } from "./stats.js";
 
 if (getApps().length === 0) {
@@ -542,6 +547,7 @@ export const cmsMcp = onRequest(
         db,
         bucket,
         storageBaseUrl: storageBaseUrl(),
+        searchStats: loadSearchStats,
         publish: async () => {
           try {
             return await publishSite(`${AGENT_AUTHOR} (${key.doc.label})`);
@@ -721,6 +727,48 @@ export const cmsOptimizeMedia = onObjectFinalized(
 );
 
 const google = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/cloud-platform"] });
+const searchAuth = new GoogleAuth({
+  scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
+});
+
+const searchCache = new Map<number, { at: number; value: SearchStatsResult }>();
+
+/** Search Console's figures of the last `days` days, kept 30 minutes per instance. */
+async function loadSearchStats(days: number): Promise<SearchStatsResult> {
+  // The emulators cannot reach Google: the owner sees how to connect.
+  if (emulator) return { status: "not-connected", properties: 0 };
+  const cached = searchCache.get(days);
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.value;
+  const settings = (
+    await getFirestore().collection(COLLECTIONS.site).doc(DOCS.settings).get()
+  ).data() as SettingsDoc | undefined;
+  const value = await searchStats(
+    {
+      siteUrl: settings?.site?.url,
+      today: statsDay(new Date()),
+      serviceAccount: async () => (await searchAuth.getCredentials()).client_email ?? undefined,
+      request: async <T>(url: string, body?: unknown) => {
+        const client = await searchAuth.getClient();
+        const response = await client.request<T>({
+          url,
+          method: body ? "POST" : "GET",
+          ...(body ? { data: body } : {}),
+        });
+        return response.data;
+      },
+    },
+    days,
+  );
+  if (value.status === "ok") searchCache.set(days, { at: Date.now(), value });
+  return value;
+}
+
+/** « Recherche Google » in Statistiques (owner only). */
+export const cmsSearchStats = onCall({ region, enforceAppCheck }, async (request) => {
+  assertOwner(request);
+  const asked = Number((request.data as { days?: unknown } | undefined)?.days);
+  return loadSearchStats([7, 28, 90].includes(asked) ? asked : 28);
+});
 
 let liveCache: { releaseId: string; snapshot: Snapshot } | undefined;
 
@@ -784,26 +832,33 @@ async function mailKey(): Promise<string | undefined> {
   return key;
 }
 
-/** E-mails a new message to the owner with Resend, when `openflow mail` configured it. */
-async function notifyOwner(message: MessageDoc): Promise<boolean> {
+/** E-mails the owner with Resend, when `openflow mail` configured it. */
+async function mailOwner(
+  write: (adminUrl: string) => { subject: string; text: string; html: string },
+  replyTo: string | undefined,
+): Promise<boolean> {
   const key = emulator ? undefined : await mailKey();
   if (!key) return false;
   const owners = parseOwners(ownerEmail.value());
   if (owners.length === 0) return false;
-  const email = messageEmail(message, adminUrl(await loadSiteSchema(getFirestore())));
+  const email = write(adminUrl(await loadSiteSchema(getFirestore())));
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: process.env.CMS_MAIL_FROM || "Site web <onboarding@resend.dev>",
       to: owners,
-      ...(message.email ? { reply_to: message.email } : {}),
+      ...(replyTo ? { reply_to: replyTo } : {}),
       ...email,
     }),
   });
   if (!response.ok) logger.warn("OpenFlow e-mail not sent", { status: response.status });
   return response.ok;
 }
+
+/** A new message of a form, e-mailed to the owner. */
+const notifyOwner = (message: MessageDoc) =>
+  mailOwner((url) => messageEmail(message, url), message.email);
 
 /**
  * Forms of the published site: `POST /forms/submit` (Hosting rewrite), checked against the
@@ -845,6 +900,58 @@ export const cmsSubmitForm = onRequest(
     } catch (error) {
       logger.error("OpenFlow form failed", { error: String(error) });
       res.status(500).json({ ok: false, error: "Envoi impossible pour le moment : réessayez." });
+    }
+  },
+);
+
+/**
+ * Appointments of the published site: `GET /cms/booking` gives the times taken, `POST` books one
+ * (see `booking.ts`). The owner reads them in the admin (« Rendez-vous ») and by e-mail.
+ */
+export const cmsBooking = onRequest(
+  { region, memory: "256MiB", maxInstances: 5, invoker: "public", cors: false },
+  async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Cache-Control", "no-store");
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+    const db = getFirestore();
+    try {
+      if (req.method === "GET") {
+        const result = await handleBusy(req.query as Record<string, unknown>, { db, liveSnapshot });
+        res.status(result.status).json(result.body);
+        return;
+      }
+      if (req.method !== "POST") {
+        res.set("Allow", "GET, POST, OPTIONS").status(405).json({ ok: false });
+        return;
+      }
+      if (JSON.stringify(req.body ?? {}).length > MAX_BODY_BYTES) {
+        res.status(413).json({ ok: false, error: "Demande trop longue." });
+        return;
+      }
+      const ip =
+        String(req.headers["x-forwarded-for"] ?? req.ip ?? "")
+          .split(",")[0]
+          ?.trim() ?? "";
+      const result = await handleBooking((req.body ?? {}) as BookingBody, ip, {
+        db,
+        liveSnapshot,
+        recaptchaScore: emulator ? undefined : recaptchaScore,
+        notify: (booking) => mailOwner((url) => bookingEmail(booking, url), booking.email),
+        log: (message, data) => logger.info(message, data),
+        salt: projectId(),
+      });
+      res.status(result.status).json(result.body);
+    } catch (error) {
+      logger.error("OpenFlow booking failed", { error: String(error) });
+      res
+        .status(500)
+        .json({ ok: false, error: "Réservation impossible pour le moment : réessayez." });
     }
   },
 );
