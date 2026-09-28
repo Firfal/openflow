@@ -1,4 +1,11 @@
-import { type AuditFinding, FUNCTION_NAMES, publishedAt, statsDay } from "@openflow/core";
+import {
+  type AuditFinding,
+  FUNCTION_NAMES,
+  formatScheduled,
+  pageChanged,
+  publishedAt,
+  statsDay,
+} from "@openflow/core";
 import { useCallback, useEffect, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { type Route, useAdmin } from "./context.js";
@@ -37,7 +44,11 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
 
   const lastLive = releases.find((release) => release.status === "live");
-  const changedPages = pages.filter((page) => !lastLive || page.updatedAt > publishedAt(lastLive));
+  // Scheduled pages go online on their own, at their time: this publication leaves them hidden.
+  const scheduledPages = pages
+    .filter((page) => page.publishAt)
+    .sort((a, b) => (a.publishAt as string).localeCompare(b.publishAt as string));
+  const changedPages = pages.filter((page) => !page.publishAt && pageChanged(page, releases));
   const settingsChanged = Boolean(
     lastLive && settings?.updatedAt && settings.updatedAt > publishedAt(lastLive),
   );
@@ -251,6 +262,26 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                   propose-moi des corrections ».
                 </p>
               </details>
+            )}
+            {scheduledPages.length > 0 && (
+              <div>
+                <p className="of-field__label" style={{ marginBottom: 8 }}>
+                  Mise en ligne programmée (restent masquées d'ici là)
+                </p>
+                <ul className="of-changes">
+                  {scheduledPages.map((page) => (
+                    <li key={page.id}>
+                      <Icon name="clock" />
+                      <div className="of-list__main">
+                        <strong>{page.title}</strong>
+                        <span className="of-subtle">
+                          le {formatScheduled(page.publishAt as string)}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {changed > 0 ? (
               <div>

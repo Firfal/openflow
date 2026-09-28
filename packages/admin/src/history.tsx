@@ -19,7 +19,8 @@ const STATUS: Record<
 };
 
 export function HistoryView() {
-  const { releases, services, notify } = useAdmin();
+  const { releases, pages, services, notify } = useAdmin();
+  const titleOf = (id: string) => pages.find((page) => page.id === id)?.title ?? id;
   const [restoring, setRestoring] = useState<ReleaseEntry | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -77,9 +78,11 @@ export function HistoryView() {
                           {release.pageCount} page{release.pageCount > 1 ? "s" : ""}
                         </span>
                         <span>
-                          {release.contentAt
-                            ? `${release.createdBy} : dates passées retirées, contenu du ${formatDate(release.contentAt)}`
-                            : `par ${release.createdBy}`}
+                          {release.scheduledPages?.length
+                            ? `${release.createdBy} : ${release.scheduledPages.map((id) => `« ${titleOf(id)} »`).join(", ")}`
+                            : release.contentAt
+                              ? `${release.createdBy} : dates passées retirées, contenu du ${formatDate(release.contentAt)}`
+                              : `par ${release.createdBy}`}
                         </span>
                         {release.restoredAt && (
                           <span>restaurée le {formatDate(release.restoredAt)}</span>

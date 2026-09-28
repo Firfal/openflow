@@ -36,11 +36,17 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 - **Pages** :
   - un bandeau dit si le site en ligne est à jour ;
   - tant qu'aucune IA n'est connectée, une carte propose « Connecter Claude ou ChatGPT » (elle se masque) ;
-  - chaque page affiche **un seul statut** : Masquée, Jamais publiée, Modifications non publiées ou En ligne ;
+  - chaque page affiche **un seul statut** : Masquée, Programmée le …, Mise en ligne…, Jamais publiée,
+    Modifications non publiées ou En ligne ;
   - le bouton « Modifier » ouvre l'éditeur ;
   - le menu « ⋯ » propose Paramètres et référencement, Dupliquer, Voir en ligne et Supprimer ;
   - les paramètres d'une page montrent un **aperçu du résultat Google** et le nombre de caractères du titre et
-    de la description.
+    de la description ;
+  - la **visibilité** d'une page se choisit dans ses paramètres : « Visible sur le site » (à la prochaine
+    publication), « Masquée », ou « Mise en ligne programmée » avec une date et une heure (au quart
+    d'heure). Une page programmée reste masquée, puis se met en ligne toute seule dans le quart d'heure,
+    sans publier les autres modifications. Elle ne compte pas dans les modifications à publier ; la
+    fenêtre « Publier le site » la rappelle, avec sa date.
 - **Collections** (une vue par collection, par exemple « Actualités ») : ses éléments, du plus récent au
   plus ancien (ou par titre), avec leur image, leur date, leur adresse et **un seul statut**, comme les
   pages.
@@ -49,7 +55,8 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
     terminé et le tarif ; les prochains viennent en premier. Sa fenêtre de création demande la « Date de
     l'événement ».
   - « Nouvel article » (le libellé vient de la collection) demande le titre, l'adresse (sous celle de la
-    collection, ex. `/actualites/…`), la date de publication et la visibilité, puis ouvre l'éditeur.
+    collection, ex. `/actualites/…`), la date de publication et la visibilité (dont la mise en ligne
+    programmée), puis ouvre l'éditeur.
   - « Modifier » ouvre l'élément dans l'éditeur, comme une page ; le menu « ⋯ » propose Paramètres et
     référencement, Dupliquer (en élément masqué), Voir en ligne et Supprimer.
   - Les éléments n'apparaissent ni dans la liste des pages ni dans le panneau « Pages » de l'éditeur ; le
@@ -125,7 +132,8 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 - **Messages** : l'en-tête rappelle que chaque message est effacé automatiquement 3 ans après sa réception.
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic. Une
   « Mise à jour automatique » y apparaît quand le site s'est reconstruit seul (voir plus bas) ; elle ne
-  publie aucun brouillon.
+  publie aucun brouillon. Une « Publication programmée » y apparaît quand une page s'est mise en ligne
+  à son heure.
 - **Assistant IA** : brancher une IA qui modifie le site par la discussion
   ([assistant-ia.md](assistant-ia.md)). La page contient :
   - l'adresse du site pour l'IA, `https://<domaine>/mcp` ;

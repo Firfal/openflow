@@ -228,12 +228,21 @@ export {
   OWNER_CLAIM,
   PAGE_SIZE_WARNING_BYTES,
   PUBLICATION_FAILED_LOG,
+  pageChanged,
+  pageOnlineAt,
   publicStorageUrl,
   publishedAt,
   REFRESH_AUTHOR,
+  SCHEDULE_AUTHOR,
   STORAGE_PATHS,
 } from "./model.js";
 export { outdatedSince } from "./refresh.js";
+export {
+  duePages,
+  formatScheduled,
+  isValidPublishAt,
+  SCHEDULE_STEP_MINUTES,
+} from "./schedule.js";
 export type { Seed, SeedPage, SeedSettings } from "./seed.js";
 export { PAGE_ID, resolveSeedSettings, seedPageSchema, seedSettingsSchema } from "./seed.js";
 export {
@@ -259,8 +268,9 @@ export {
   slugToParams,
   slugToPath,
 } from "./slug.js";
-export type { Snapshot, SnapshotInput, SnapshotPage } from "./snapshot.js";
+export type { ScheduledPage, Snapshot, SnapshotInput, SnapshotPage } from "./snapshot.js";
 export {
+  addPagesToSnapshot,
   createSnapshot,
   findPage,
   pageDataSchema,

@@ -13,6 +13,7 @@ const ADMIN = `http://localhost:${PORT}/admin/`;
 const OWNER = "proprietaire@exemple.fr";
 const NEW_TITLE = "Titre modifié en ligne par le propriétaire";
 const ITEM_TITLE = "Portes ouvertes du samedi 4 octobre";
+const SCHEDULED_TITLE = "Soldes de janvier";
 const SCREENSHOTS = path.join(import.meta.dirname, "screenshots");
 
 let server: ChildProcess;
@@ -369,6 +370,46 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("schedules an article: hidden until its time, then online on its own", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) return;
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    await page
+      .getByRole("navigation", { name: "Navigation" })
+      .getByRole("button", { name: "Actualités", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Nouvel article" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Nouvel article" });
+    await dialog.getByLabel("Titre", { exact: true }).fill(SCHEDULED_TITLE);
+    await dialog.getByRole("radio", { name: /Mise en ligne programmée/ }).check();
+    const when = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+    when.setHours(9, 0, 0, 0);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    await dialog
+      .getByLabel("Date et heure de mise en ligne")
+      .fill(`${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}T09:00`);
+    await dialog.screenshot({ path: path.join(SCREENSHOTS, "18-schedule.png") });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await dialog.screenshot({ path: path.join(SCREENSHOTS, "18-schedule-dark.png") });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "18-schedule-mobile-dark.png") });
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "18-schedule-mobile.png") });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await dialog.getByRole("button", { name: "Créer et modifier" }).click();
+    await page.frameLocator("#preview-frame").locator("h1").waitFor({ timeout: 120_000 });
+    await page.getByRole("button", { name: "Retour à « Actualités »" }).click();
+    const row = page
+      .getByRole("list", { name: "Actualités" })
+      .locator("li", { hasText: SCHEDULED_TITLE });
+    await row.getByText(/^Programmé le/).waitFor();
+    await page.screenshot({ path: path.join(SCREENSHOTS, "18-schedule-list.png") });
+    const doc = (
+      await db.collection("cms_pages").where("slug", "==", "actualites/soldes-de-janvier").get()
+    ).docs[0]?.data();
+    expect(doc).toMatchObject({ status: "draft", publishAt: when.toISOString() });
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("fills the business profile: hours and an exceptional closure", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: "Réglages" }).click();
@@ -516,6 +557,13 @@ describe("admin OpenFlow (émulateurs)", () => {
       .getByRole("list", { name: "Conseils" })
       .getByText("L'adresse du site n'est pas renseignée.")
       .waitFor();
+    if (existsSync(path.join(site, "openflow", "seed", "pages", "actualites.json"))) {
+      // The scheduled article stays hidden: it goes online on its own, at its time.
+      await page
+        .getByRole("dialog", { name: "Publier le site" })
+        .getByText(SCHEDULED_TITLE)
+        .waitFor();
+    }
     await page.getByRole("button", { name: "Mettre en ligne" }).click();
     const release = await waitFor(
       async () => {
@@ -555,6 +603,8 @@ describe("admin OpenFlow (émulateurs)", () => {
       expect(item).toContain('property="og:type" content="article"');
       expect(html.indexOf(ITEM_TITLE)).toBeLessThan(html.indexOf("Nous ouvrons un second atelier"));
       expect(readFileSync(path.join(site, "out", "rss.xml"), "utf8")).toContain(ITEM_TITLE);
+      expect(existsSync(path.join(site, "out", "actualites", "soldes-de-janvier"))).toBe(false);
+      expect(html).not.toContain(SCHEDULED_TITLE);
       expect(readFileSync(path.join(site, "out", "llms.txt"), "utf8")).toContain("## Actualités");
       // Events: their day, time, place and price for Google and AI assistants.
       const event = readFileSync(

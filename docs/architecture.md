@@ -10,7 +10,7 @@ Projet Firebase du client (plan Blaze)
 ├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
 ├─ Cloud Functions   → cmsClaimOwner, cmsPublish, cmsOnBuildStatus, cmsRestoreRelease,
 │                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm, cmsPageView,
-│                      cmsDailyRefresh
+│                      cmsDailyRefresh, cmsScheduledPublish
 ├─ Cloud Build       → reconstruit le site à chaque « Publier »
 └─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
                        reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
@@ -84,6 +84,15 @@ livraison, sans rien refaire de ce qui est déjà en place.
   passé depuis ; si oui, il reconstruit la version en ligne telle quelle (son snapshot redaté, jamais les
   brouillons), pour que l'agenda et les données structurées restent justes. La publication garde la date
   de son contenu (`contentAt`) : les modifications du propriétaire restent « non publiées ».
+- **Publication programmée** : une page (ou un élément de collection) peut porter une heure de mise en
+  ligne (`publishAt`) ; elle reste masquée jusque-là. Tous les quarts d'heure, `cmsScheduledPublish`
+  prend les pages dont l'heure est venue et les ajoute au snapshot en ligne telles qu'elles sont
+  (`addPagesToSnapshot` : leurs liens, les listes des collections et le plan du site les incluent), puis
+  lance le build. Rien d'autre ne change : les autres brouillons du propriétaire restent des brouillons.
+  La publication porte la date du contenu des autres pages (`contentAt`) et la liste des pages ajoutées
+  (`scheduledPages`), d'où l'admin tire le statut de chaque page. Si une publication est en cours, la
+  page attend le quart d'heure suivant ; si le build ne peut pas démarrer, elle devient visible et partira
+  avec la prochaine publication (une alerte signale l'échec).
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `CMS_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 

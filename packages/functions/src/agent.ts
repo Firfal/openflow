@@ -26,7 +26,7 @@ import {
   translationId,
 } from "@openflow/core";
 import { imageDimensions } from "@openflow/core/node";
-import type { Firestore } from "firebase-admin/firestore";
+import { FieldValue, type Firestore } from "firebase-admin/firestore";
 
 /** Prefix of OpenFlow assistant keys (recognisable in logs and secret scanners). */
 export const AGENT_TOKEN_PREFIX = "cmsk_";
@@ -199,6 +199,7 @@ export function adminBackend({
     data: doc.data,
     updatedAt: doc.updatedAt,
     ...(doc.collection ? { collection: doc.collection } : {}),
+    ...(doc.publishAt ? { publishAt: doc.publishAt } : {}),
   });
   return {
     async listPages() {
@@ -231,8 +232,16 @@ export function adminBackend({
       });
       await batch.commit();
     },
-    async savePageMeta(id, meta) {
-      await pages.doc(id).update({ ...JSON.parse(JSON.stringify(meta)), ...stamp() });
+    async savePageMeta(id, { publishAt, ...meta }) {
+      await pages.doc(id).update({
+        ...JSON.parse(JSON.stringify(meta)),
+        ...(publishAt === null
+          ? { publishAt: FieldValue.delete() }
+          : publishAt
+            ? { publishAt }
+            : {}),
+        ...stamp(),
+      });
     },
     async createPage(id, page) {
       const { data, ...meta } = JSON.parse(JSON.stringify(page)) as Omit<PageDoc, "updatedAt">;

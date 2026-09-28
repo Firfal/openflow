@@ -23,7 +23,7 @@ import {
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
 import { type CallableRequest, HttpsError, onCall, onRequest } from "firebase-functions/https";
@@ -50,6 +50,7 @@ import {
   markLive,
   notifyIndexNow,
   ownerDecision,
+  pagesFromFirestore,
   parseOwners,
   recordSiteFacts,
   releaseHostingVersion,
@@ -79,6 +80,7 @@ import {
   startAuthorization,
   tokenRequestParams,
 } from "./oauth.js";
+import { publishScheduled } from "./schedule.js";
 import { parseBeacon, recordPageView } from "./stats.js";
 
 if (getApps().length === 0) {
@@ -974,6 +976,92 @@ export const cmsDailyRefresh = onSchedule(
         releaseId: ref.id,
         reason: `Mise à jour automatique : ${(error as Error).message}`,
       });
+    }
+  },
+);
+
+/**
+ * Every quarter of an hour, the pages whose scheduled time has come (« Mise en ligne programmée »)
+ * are added to the online site as they are, and only them: the owner's other drafts stay drafts
+ * (see `schedule.ts`). With the emulators, the local build is used.
+ */
+export const cmsScheduledPublish = onSchedule(
+  { schedule: "*/15 * * * *", timeZone: "Europe/Paris", region, retryCount: 0 },
+  async () => {
+    const db = getFirestore();
+    const pages = db.collection(COLLECTIONS.pages);
+    const bucket = getStorage().bucket();
+    const result = await publishScheduled(
+      {
+        scheduledPages: async () =>
+          (await pages.where("publishAt", ">", "").get()).docs.map((doc) => ({
+            id: doc.id,
+            publishAt: doc.get("publishAt") as string | undefined,
+          })),
+        running: async () => Boolean(await runningRelease(db)),
+        liveRelease: async () =>
+          (
+            await db.collection(COLLECTIONS.releases).where("status", "==", "live").limit(1).get()
+          ).docs[0]?.data() as ReleaseDoc | undefined,
+        loadSnapshot: async (file) => {
+          const [content] = await bucket.file(file).download();
+          return parseSnapshot(JSON.parse(content.toString("utf8")));
+        },
+        loadPages: (ids) => pagesFromFirestore(db, ids),
+        newReleaseId: () => db.collection(COLLECTIONS.releases).doc().id,
+        release: async (id, snapshot, release) => {
+          const ref = db.collection(COLLECTIONS.releases).doc(id);
+          const file = snapshotPath(id);
+          await bucket
+            .file(file)
+            .save(JSON.stringify(snapshot), { contentType: "application/json", resumable: false });
+          await ref.set({ ...release, snapshotPath: file } satisfies ReleaseDoc);
+          try {
+            if (release.builder === "cloud-build" && !release.sourcePath)
+              throw new Error("le code du site en ligne est introuvable");
+            const started =
+              release.builder === "cloud-build"
+                ? await startCloudBuild({
+                    projectId: projectId(),
+                    bucket: bucket.name,
+                    sourcePath: release.sourcePath as string,
+                    snapshotPath: file,
+                    releaseId: id,
+                    hostingTarget: process.env.CMS_HOSTING_TARGET || undefined,
+                    serviceAccount: process.env.CMS_BUILD_SERVICE_ACCOUNT || undefined,
+                  })
+                : await startLocalBuild(
+                    process.env.CMS_LOCAL_SITE_DIR || path.resolve(process.cwd(), ".."),
+                    snapshot,
+                    id,
+                  );
+            await ref.update({ status: "building", ...started });
+          } catch (error) {
+            await ref.update({
+              status: "failed",
+              error: (error as Error).message,
+              finishedAt: new Date().toISOString(),
+            });
+            throw error;
+          }
+        },
+        markPublished: async (ids) => {
+          const batch = db.batch();
+          for (const id of ids) {
+            batch.update(pages.doc(id), { status: "published", publishAt: FieldValue.delete() });
+          }
+          await batch.commit();
+        },
+      },
+      new Date().toISOString(),
+    );
+    if (result.done === "failed") {
+      logger.error(PUBLICATION_FAILED_LOG, {
+        reason: `Publication programmée : ${result.error}`,
+        pages: result.pages,
+      });
+    } else if (result.done !== "nothing") {
+      logger.info("OpenFlow scheduled publication", result);
     }
   },
 );

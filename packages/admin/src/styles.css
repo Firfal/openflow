@@ -762,6 +762,16 @@ select.of-input {
   margin-top: 2px;
 }
 
+/* A field belonging to the choice above it (aligned with its text). */
+.of-choices__detail {
+  padding-left: 26px;
+}
+
+.of-choices > legend.of-field__label {
+  margin-bottom: 2px;
+  padding: 0;
+}
+
 /* Two fields side by side (one column on phones). */
 .of-grid-2 {
   display: grid;

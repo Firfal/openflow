@@ -32,6 +32,7 @@ import type { Data } from "@puckeditor/core";
 import {
   addDoc,
   collection,
+  deleteField,
   doc,
   type Firestore,
   getDoc,
@@ -103,14 +104,21 @@ export async function getAllPages(db: Firestore): Promise<FullPage[]> {
 
 export async function createPage(
   db: Firestore,
-  input: Pick<PageDoc, "title" | "slug" | "status" | "seo">,
+  input: Pick<PageDoc, "title" | "slug" | "status" | "seo" | "publishAt">,
   by?: string,
   data: Data = EMPTY_PAGE_DATA,
 ): Promise<string> {
   const base = slugify(input.title) || "page";
   let id = base;
   for (let n = 2; (await getDoc(doc(db, COLLECTIONS.pages, id))).exists(); n++) id = `${base}-${n}`;
-  await writePage(db, id, { ...input, data, updatedAt: now(), updatedBy: by });
+  const { publishAt, ...meta } = input;
+  await writePage(db, id, {
+    ...meta,
+    ...(publishAt ? { publishAt } : {}),
+    data,
+    updatedAt: now(),
+    updatedBy: by,
+  });
   return id;
 }
 
@@ -160,13 +168,24 @@ export async function writePage(db: Firestore, id: string, page: PageDoc) {
   await batch.commit();
 }
 
+/** Changes a page's settings; `publishAt: null` cancels its scheduled publication. */
 export async function updatePageMeta(
   db: Firestore,
   id: string,
-  meta: Partial<Pick<PageDoc, "title" | "slug" | "status" | "seo">>,
+  {
+    publishAt,
+    ...meta
+  }: Partial<Pick<PageDoc, "title" | "slug" | "status" | "seo">> & {
+    publishAt?: string | null;
+  },
   by?: string,
 ) {
-  await updateDoc(doc(db, COLLECTIONS.pages, id), { ...meta, updatedAt: now(), updatedBy: by });
+  await updateDoc(doc(db, COLLECTIONS.pages, id), {
+    ...meta,
+    ...(publishAt === null ? { publishAt: deleteField() } : publishAt ? { publishAt } : {}),
+    updatedAt: now(),
+    updatedBy: by,
+  });
 }
 
 export class PageTooLargeError extends Error {}
@@ -205,7 +224,7 @@ export async function createItem(
   db: Firestore,
   config: OpenFlowConfig,
   name: string,
-  input: Pick<PageDoc, "title" | "slug" | "status" | "seo"> & { date?: string },
+  input: Pick<PageDoc, "title" | "slug" | "status" | "seo" | "publishAt"> & { date?: string },
   by?: string,
 ): Promise<string> {
   const collection = config.collections?.[name] as CollectionConfig;
@@ -225,6 +244,7 @@ export async function createItem(
     seo: input.seo,
     collection: name,
     summary: meta.summary,
+    ...(input.publishAt ? { publishAt: input.publishAt } : {}),
     data,
     updatedAt: now(),
     updatedBy: by,

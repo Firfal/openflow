@@ -50,8 +50,8 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `update_section` | Modifie des champs par chemin : `title`, `items[1].answer`, `image`… |
 | `add_section`, `duplicate_section`, `move_section`, `remove_section` | Composition de la page |
 | `set_style` | Style libre d'une section ou d'un élément, pour tous les écrans, la tablette ou le mobile |
-| `create_page`, `update_page`, `delete_page` | Pages : titre, adresse, statut, référencement. Un élément de collection se modifie ou se supprime avec ces outils ; son titre et son adresse restent liés à sa collection |
-| `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut) |
+| `create_page`, `update_page`, `delete_page` | Pages : titre, adresse, statut, référencement, mise en ligne programmée (`publishAt`, date et heure ISO avec fuseau ; `null` l'annule). Un élément de collection se modifie ou se supprime avec ces outils ; son titre et son adresse restent liés à sa collection |
+| `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut, ou programmé avec `publishAt`) |
 | `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) et fiche établissement (lecture) |
 | `update_business` | Fiche établissement : coordonnées, horaires, fermetures exceptionnelles (« nous sommes fermés du 10 au 20 août ») |
 | `set_languages` | Langues du site en plus de la langue principale (chacune à `/<langue>/`) |

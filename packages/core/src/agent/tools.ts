@@ -41,6 +41,7 @@ import {
 } from "../legal.js";
 import { collectEditablePaths } from "../marks.js";
 import type { MediaDoc, PageSeo, PageStatus, ReleaseStatus, SiteSettings } from "../model.js";
+import { formatScheduled, isValidPublishAt } from "../schedule.js";
 import { isValidSlug, normalizeSlug, slugify, slugToPath } from "../slug.js";
 import {
   addDays,
@@ -91,7 +92,14 @@ export interface AgentPage {
   updatedAt?: string;
   /** Items of a collection (article, project…): the collection's name. */
   collection?: string;
+  /** Scheduled publication (ISO time, UTC): the page goes online on its own then. */
+  publishAt?: string;
 }
+
+/** A change of a page's settings; `publishAt: null` cancels its scheduled publication. */
+export type PageMetaPatch = Partial<Pick<AgentPage, "title" | "slug" | "status" | "seo">> & {
+  publishAt?: string | null;
+};
 
 /** What a save of an item's content also updates on its page: title and list values. */
 export interface ItemMetaPatch {
@@ -130,10 +138,7 @@ export interface AgentBackend {
   getPage(id: string): Promise<AgentPage | undefined>;
   /** Saves a page's content; for an item, `meta` updates its title and summary in the same write. */
   savePageData(id: string, data: Data, meta?: ItemMetaPatch): Promise<void>;
-  savePageMeta(
-    id: string,
-    meta: Partial<Pick<AgentPage, "title" | "slug" | "status" | "seo">>,
-  ): Promise<void>;
+  savePageMeta(id: string, meta: PageMetaPatch): Promise<void>;
   /** Creates a page (or an item) with this id (the caller made it unique) and returns it. */
   createPage(
     id: string,
@@ -540,6 +545,33 @@ const seoInput = z
   })
   .optional();
 
+const publishAtInput = z
+  .string()
+  .optional()
+  .describe(
+    "Mise en ligne programmée : date et heure ISO 8601 avec le fuseau, ex. « 2026-10-01T09:00:00+02:00 ». La page reste masquée jusque-là, puis s'ajoute seule au site en ligne (dans le quart d'heure), sans publier les autres brouillons.",
+  );
+
+/** A scheduled time given to a tool, checked and written in UTC. */
+function scheduledTime(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  if (!isValidPublishAt(value)) {
+    throw new AgentError(
+      `Mise en ligne programmée invalide « ${value} » : une date et une heure à venir (moins d'un an), avec le fuseau, ex. 2026-10-01T09:00:00+02:00.`,
+    );
+  }
+  return new Date(value).toISOString();
+}
+
+function scheduledReply(publishAt: string | undefined) {
+  return publishAt
+    ? {
+        publishAt,
+        note: `Masquée jusqu'au ${formatScheduled(publishAt, "Europe/Paris")} (heure de Paris), puis mise en ligne seule, sans publier les autres modifications.`,
+      }
+    : {};
+}
+
 // ---------------------------------------------------------------------------------------------
 // Tools
 
@@ -573,6 +605,7 @@ tool({
           title: p.title,
           path: slugToPath(p.slug),
           status: p.status,
+          ...(p.publishAt ? { publishAt: p.publishAt } : {}),
           sections: p.data.content.map((item) => item.type),
           updatedAt: p.updatedAt,
         })),
@@ -603,6 +636,9 @@ tool({
             date: entry.date,
             ...(entry.price ? { price: entry.price } : {}),
             status: items.find((p) => p.id === entry.id)?.status,
+            ...(items.find((p) => p.id === entry.id)?.publishAt
+              ? { publishAt: items.find((p) => p.id === entry.id)?.publishAt }
+              : {}),
           })),
         };
       }),
@@ -699,6 +735,7 @@ tool({
       title: page.title,
       path: slugToPath(page.slug),
       status: page.status,
+      ...(page.publishAt ? { publishAt: page.publishAt } : {}),
       ...(page.collection ? { collection: page.collection } : {}),
       seo: page.seo,
       sections: data.content.map((item) => sectionSummary(ctx, item)),
@@ -919,7 +956,7 @@ tool({
   name: "create_page",
   title: "Créer une page",
   description:
-    "Crée une page, vide ou avec des sections. Statut « draft » par défaut (absente du site) ; « published » l'ajoute au site à la prochaine publication.",
+    "Crée une page, vide ou avec des sections. Statut « draft » par défaut (absente du site) ; « published » l'ajoute au site à la prochaine publication ; « publishAt » la met en ligne seule à une date et une heure.",
   input: z.object({
     title: z.string().min(1),
     path: z
@@ -931,9 +968,12 @@ tool({
       .array(z.object({ type: z.string(), values: z.record(z.string(), z.unknown()).optional() }))
       .optional(),
     seo: seoInput,
+    publishAt: publishAtInput,
   }),
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  run: async ({ title, path, status, sections, seo }, ctx) => {
+  run: async ({ title, path, status: asked, sections, seo, publishAt: at }, ctx) => {
+    const publishAt = scheduledTime(at);
+    const status = publishAt ? "draft" : asked;
     const slug = normalizeSlug(path ?? title);
     for (const [name, collection] of Object.entries(ctx.config.collections ?? {})) {
       if (slug.startsWith(`${collection.path}/`)) {
@@ -961,8 +1001,15 @@ tool({
     const data: Data = { root: { props: {} }, content };
     check(data, ctx.config, { slug });
     const id = await uniquePageId(ctx, slugify(title) || slug.split("/").pop() || "page");
-    await ctx.backend.createPage(id, { slug, title, status, seo: seo ?? {}, data });
-    return { ok: true, pageId: id, path: slugToPath(slug), status };
+    await ctx.backend.createPage(id, {
+      slug,
+      title,
+      status,
+      seo: seo ?? {},
+      data,
+      ...(publishAt ? { publishAt } : {}),
+    });
+    return { ok: true, pageId: id, path: slugToPath(slug), status, ...scheduledReply(publishAt) };
   },
 });
 
@@ -1012,6 +1059,7 @@ tool({
         title: entry.title,
         path: entry.href,
         status: byId.get(entry.id)?.status,
+        ...(byId.get(entry.id)?.publishAt ? { publishAt: byId.get(entry.id)?.publishAt } : {}),
         date: entry.date,
         description: entry.description,
         fields: entry.fields,
@@ -1025,7 +1073,7 @@ tool({
   name: "create_item",
   title: "Ajouter un élément à une collection",
   description:
-    "Crée un élément d'une collection (un article, une réalisation…) avec sa page : « values » remplit les champs de sa section (voir list_section_types pour « itemSection »). Statut « draft » par défaut (absent du site).",
+    "Crée un élément d'une collection (un article, une réalisation…) avec sa page : « values » remplit les champs de sa section (voir list_section_types pour « itemSection »). Statut « draft » par défaut (absent du site) ; « publishAt » le met en ligne seul à une date et une heure.",
   input: z.object({
     collection: collectionRef,
     title: z.string().min(1),
@@ -1045,10 +1093,16 @@ tool({
       .describe("Dernière partie de l'adresse (déduite du titre par défaut)."),
     status: z.enum(["draft", "published"]).default("draft"),
     seo: seoInput,
+    publishAt: publishAtInput,
   }),
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  run: async ({ collection: name, title, values, date, path, status, seo }, ctx) => {
+  run: async (
+    { collection: name, title, values, date, path, status: asked, seo, publishAt: at },
+    ctx,
+  ) => {
     const collection = requireCollection(ctx, name);
+    const publishAt = scheduledTime(at);
+    const status = publishAt ? "draft" : asked;
     if (date !== undefined && !isValidDate(date))
       throw new AgentError(`Date invalide « ${date} » : AAAA-MM-JJ attendu.`);
     const slug = path
@@ -1080,8 +1134,16 @@ tool({
       data,
       collection: name,
       summary: meta.summary,
+      ...(publishAt ? { publishAt } : {}),
     });
-    return { ok: true, pageId: id, path: slugToPath(slug), status, warnings };
+    return {
+      ok: true,
+      pageId: id,
+      path: slugToPath(slug),
+      status,
+      ...scheduledReply(publishAt),
+      warnings,
+    };
   },
 });
 
@@ -1089,13 +1151,14 @@ tool({
   name: "update_page",
   title: "Modifier une page",
   description:
-    "Change le titre, l'adresse, le statut (published / draft) ou le référencement d'une page.",
+    "Change le titre, l'adresse, le statut (published / draft), le référencement ou la mise en ligne programmée (« publishAt », null pour l'annuler) d'une page.",
   input: z.object({
     pageId: pageRef,
     title: z.string().min(1).optional(),
     path: z.string().optional(),
     status: z.enum(["draft", "published"]).optional(),
     seo: seoInput,
+    publishAt: publishAtInput.nullable(),
   }),
   annotations: {
     readOnlyHint: false,
@@ -1103,10 +1166,10 @@ tool({
     idempotentHint: true,
     openWorldHint: false,
   },
-  run: async ({ pageId, title, path, status, seo }, ctx) => {
+  run: async ({ pageId, title, path, status, seo, publishAt }, ctx) => {
     const page = await findPage(ctx, pageId);
     const collection = getCollectionConfig(ctx.config, page.collection);
-    const meta: Partial<Pick<AgentPage, "title" | "slug" | "status" | "seo">> = {};
+    const meta: PageMetaPatch = {};
     if (title !== undefined) meta.title = title;
     if (path !== undefined) {
       if (page.slug === "" && normalizeSlug(path) !== "")
@@ -1123,9 +1186,23 @@ tool({
     }
     if (status !== undefined) meta.status = status;
     if (seo !== undefined) meta.seo = { ...page.seo, ...seo };
+    if (publishAt) {
+      // Hidden until its time, then online on its own.
+      meta.publishAt = scheduledTime(publishAt);
+      meta.status = "draft";
+    } else if (page.publishAt && (publishAt === null || status !== undefined)) {
+      // A visibility chosen by hand replaces the scheduled one.
+      meta.publishAt = null;
+    }
     if (Object.keys(meta).length === 0) throw new AgentError("Aucune modification demandée.");
     await ctx.backend.savePageMeta(page.id, meta);
-    return { ok: true, pageId: page.id, path: slugToPath(meta.slug ?? page.slug) };
+    return {
+      ok: true,
+      pageId: page.id,
+      path: slugToPath(meta.slug ?? page.slug),
+      status: meta.status ?? page.status,
+      ...scheduledReply(meta.publishAt === null ? undefined : (meta.publishAt ?? page.publishAt)),
+    };
   },
 });
 

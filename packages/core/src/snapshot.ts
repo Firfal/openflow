@@ -321,3 +321,47 @@ export function parseSnapshot(value: unknown): Snapshot {
 export function findPage(snapshot: Snapshot, slug: string): SnapshotPage | undefined {
   return snapshot.pages.find((page) => page.slug === slug);
 }
+
+/** A page added to the online site by a scheduled publication, as it is at that time. */
+export type ScheduledPage = Pick<PageDoc, "slug" | "title" | "seo" | "data" | "collection"> & {
+  id: string;
+  updatedAt?: string;
+  translations?: Record<string, PageTranslation>;
+};
+
+/**
+ * Scheduled publication: the online site with pages added (or replaced) as they are now: a new snapshot built from the
+ * online one, its links and lists (collections) including the new pages.
+ */
+export function addPagesToSnapshot(
+  snapshot: Snapshot,
+  pages: ScheduledPage[],
+  release: { releaseId: string; createdAt: string },
+): Snapshot {
+  const added = new Set(pages.map((page) => page.id));
+  const settingsTranslations = Object.fromEntries(
+    Object.entries(snapshot.settingsTranslations ?? {}).map(([locale, translation]) => [
+      locale,
+      { ...translation, values: translation.values ?? {} },
+    ]),
+  );
+  return createSnapshot({
+    releaseId: release.releaseId,
+    createdAt: release.createdAt,
+    integrations: snapshot.integrations,
+    settings: {
+      site: snapshot.site,
+      values: snapshot.settings,
+      theme: snapshot.theme,
+      ...(Object.keys(settingsTranslations).length > 0
+        ? { translations: settingsTranslations }
+        : {}),
+    },
+    pages: [
+      ...snapshot.pages
+        .filter((page) => !added.has(page.id))
+        .map((page) => ({ ...page, status: "published" as const })),
+      ...pages.map((page) => ({ ...page, status: "published" as const })),
+    ],
+  });
+}

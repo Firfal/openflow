@@ -165,7 +165,7 @@ export function CollectionView({ name }: { name: string }) {
             ) : (
               <ul className="of-list" aria-label={collection.label}>
                 {shown.map(({ page, entry }) => {
-                  const status = pageStatus(page, lastLive);
+                  const status = pageStatus(page, releases);
                   const open = () => navigate({ view: "editor", pageId: page.id });
                   const image = entry.image?.src;
                   return (
@@ -280,5 +280,6 @@ export function CollectionView({ name }: { name: string }) {
 
 /** Page statuses are feminine (« Masquée ») ; items are named without gender. */
 function itemStatusLabel(label: string): string {
+  if (label.startsWith("Programmée")) return label.replace("Programmée", "Programmé");
   return label === "Masquée" ? "Masqué" : label === "Jamais publiée" ? "Jamais publié" : label;
 }

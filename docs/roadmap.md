@@ -28,6 +28,8 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
 9. Pages légales écrites d'après le site (politique de confidentialité et mentions légales à jour à chaque
    publication, bouton d'opposition à la mesure d'audience, messages effacés après 3 ans, outil
    `update_legal`) : **réalisées**.
+10. Publication programmée (une page ou un article mis en ligne seul à la date et l'heure choisies, sans
+    publier les autres brouillons ; paramètre `publishAt` des outils IA) : **réalisée**.
 
 ## Détails de conception des phases suivantes
 

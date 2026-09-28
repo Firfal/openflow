@@ -19,6 +19,7 @@ import {
   type PageTranslationDoc,
   type ReleaseDoc,
   type ReleaseStatus,
+  type ScheduledPage,
   type SettingsDoc,
   type Snapshot,
   type SourceDoc,
@@ -173,18 +174,54 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
       ...(translations.has(doc.id) ? { translations: translations.get(doc.id) } : {}),
     })),
   });
-  // Optimized copies of the library's images and videos (srcset, <source>).
-  const library = new Map<string, MediaDoc>();
-  for (const doc of (await db.collection(COLLECTIONS.media).get()).docs) {
-    const media = doc.data() as MediaDoc;
-    if (media.variants?.length) library.set(media.path, media);
-  }
+  const library = await mediaLibrary(db);
   if (library.size === 0) return snapshot;
   return {
     ...snapshot,
     settings: withVariants(snapshot.settings, library),
     pages: snapshot.pages.map((page) => ({ ...page, data: withVariants(page.data, library) })),
   };
+}
+
+/** Optimized copies of the library's images and videos (srcset, <source>), by file path. */
+async function mediaLibrary(db: Firestore): Promise<Map<string, MediaDoc>> {
+  const library = new Map<string, MediaDoc>();
+  for (const doc of (await db.collection(COLLECTIONS.media).get()).docs) {
+    const media = doc.data() as MediaDoc;
+    if (media.variants?.length) library.set(media.path, media);
+  }
+  return library;
+}
+
+/** Some pages as they are now (content, translations, optimized media), for a scheduled publication. */
+export async function pagesFromFirestore(db: Firestore, ids: string[]): Promise<ScheduledPage[]> {
+  const library = await mediaLibrary(db);
+  const pages: ScheduledPage[] = [];
+  for (const id of ids) {
+    const [meta, content, translated] = await Promise.all([
+      db.collection(COLLECTIONS.pages).doc(id).get(),
+      db.collection(COLLECTIONS.pageContent).doc(id).get(),
+      db.collection(COLLECTIONS.pageTranslations).where("page", "==", id).get(),
+    ]);
+    if (!meta.exists) continue;
+    const page = joinPage(meta.data() as PageMetaDoc, content.data() as PageContentDoc | undefined);
+    const translations: Record<string, PageTranslation> = {};
+    for (const doc of translated.docs) {
+      const { locale, title, slug, seo, values } = doc.data() as PageTranslationDoc;
+      if (locale) translations[locale] = { title, slug, seo, values: values ?? {} };
+    }
+    pages.push({
+      id,
+      slug: page.slug,
+      title: page.title,
+      seo: page.seo ?? {},
+      data: library.size > 0 ? withVariants(page.data, library) : page.data,
+      updatedAt: page.updatedAt,
+      ...(page.collection ? { collection: page.collection } : {}),
+      ...(Object.keys(translations).length > 0 ? { translations } : {}),
+    });
+  }
+  return pages;
 }
 
 export async function getSource(db: Firestore): Promise<SourceDoc | undefined> {

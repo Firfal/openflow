@@ -149,6 +149,12 @@ export interface PageDoc {
    * copied at each save so the admin lists items without loading their content.
    */
   summary?: Record<string, unknown>;
+  /**
+   * Scheduled publication (ISO time): the page stays hidden (`draft`) until then, then goes
+   * online on its own, added to the online site as it is (`cmsScheduledPublish`): the owner's
+   * other drafts stay drafts.
+   */
+  publishAt?: string;
 }
 
 /** `cms_pages/{id}`: the page without its content. `updatedAt` also moves when the content changes. */
@@ -248,6 +254,8 @@ export interface ReleaseDoc {
    * closure is over). When that content was published; the owner's drafts are compared to it.
    */
   contentAt?: string;
+  /** Scheduled publication: the pages it added to the online site (the rest is unchanged). */
+  scheduledPages?: string[];
 }
 
 /** `createdBy` of the daily refreshes (the site rebuilt, its content unchanged). */
@@ -256,6 +264,41 @@ export const REFRESH_AUTHOR = "Mise à jour automatique";
 /** When the content of a release was published (a refresh keeps the date of its content). */
 export function publishedAt(release: Pick<ReleaseDoc, "createdAt" | "contentAt">): string {
   return release.contentAt ?? release.createdAt;
+}
+
+/** `createdBy` of the scheduled publications (pages added to the online site on their own). */
+export const SCHEDULE_AUTHOR = "Publication programmée";
+
+type ReleaseTimes = Pick<ReleaseDoc, "status" | "createdAt" | "contentAt" | "scheduledPages">;
+
+/**
+ * When the content of a page online was taken: the last publication's, or later when a scheduled
+ * publication put the page online on its own since. `undefined` before the first publication.
+ */
+export function pageOnlineAt(pageId: string, releases: ReleaseTimes[]): string | undefined {
+  const live = releases.find((release) => release.status === "live");
+  if (!live) return undefined;
+  let at = publishedAt(live);
+  for (const release of releases) {
+    if (
+      (release.status === "live" || release.status === "superseded") &&
+      release.createdAt > at &&
+      release.createdAt <= live.createdAt &&
+      release.scheduledPages?.includes(pageId)
+    ) {
+      at = release.createdAt;
+    }
+  }
+  return at;
+}
+
+/** True when a page changed since its content went online (or the site was never published). */
+export function pageChanged(
+  page: Pick<PageDoc, "updatedAt"> & { id: string },
+  releases: ReleaseTimes[],
+): boolean {
+  const at = pageOnlineAt(page.id, releases);
+  return !at || page.updatedAt > at;
 }
 
 /** `cms_system/source` — last uploaded site source archive (written by `openflow deploy`). */

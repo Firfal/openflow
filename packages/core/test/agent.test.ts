@@ -144,8 +144,11 @@ function memoryBackend() {
       saves.push(id);
       pages.set(id, { ...(pages.get(id) as AgentPage), data });
     },
-    savePageMeta: async (id, meta) => {
-      pages.set(id, { ...(pages.get(id) as AgentPage), ...meta });
+    savePageMeta: async (id, { publishAt, ...meta }) => {
+      const page: AgentPage = { ...(pages.get(id) as AgentPage), ...meta };
+      if (publishAt) page.publishAt = publishAt;
+      else if (publishAt === null) delete page.publishAt;
+      pages.set(id, page);
     },
     createPage: async (id, page) => {
       pages.set(id, { id, ...page });
@@ -377,6 +380,39 @@ describe("agent tools", () => {
     await run("delete_page", { pageId: "nos-tarifs", confirm: true });
     expect(store.pages.has("nos-tarifs")).toBe(false);
     await expect(run("delete_page", { pageId: "/", confirm: true })).rejects.toThrow(/accueil/);
+  });
+
+  it("schedules a page: hidden until its time, then online on its own", async () => {
+    const at = new Date(Date.now() + 3 * 24 * 3600 * 1000);
+    at.setUTCMinutes(0, 0, 0);
+    const created = await run("create_page", {
+      title: "Promo d'hiver",
+      status: "published",
+      publishAt: at.toISOString().replace(".000Z", "+00:00"),
+    });
+    expect(created).toMatchObject({ status: "draft", publishAt: at.toISOString() });
+    expect(created.note).toMatch(/^Masquée jusqu'au \w+ \d/);
+    expect(store.pages.get(created.pageId)).toMatchObject({
+      status: "draft",
+      publishAt: at.toISOString(),
+    });
+    expect((await run("get_page", { pageId: created.pageId })).publishAt).toBe(at.toISOString());
+    await expect(
+      run("update_page", { pageId: created.pageId, publishAt: "2020-01-01T09:00:00Z" }),
+    ).rejects.toThrow(/à venir/);
+    await expect(
+      run("update_page", { pageId: created.pageId, publishAt: "2030-01-01T09:00" }),
+    ).rejects.toThrow(/fuseau/);
+    // Made visible by hand: the schedule is cancelled.
+    const visible = await run("update_page", { pageId: created.pageId, status: "published" });
+    expect(visible).toEqual({
+      ok: true,
+      pageId: created.pageId,
+      path: "/promo-dhiver/",
+      status: "published",
+    });
+    expect(store.pages.get(created.pageId)?.publishAt).toBeUndefined();
+    await run("delete_page", { pageId: created.pageId, confirm: true });
   });
 
   it("edits settings and theme tokens", async () => {

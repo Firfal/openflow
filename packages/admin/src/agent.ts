@@ -67,6 +67,7 @@ function toAgentPage(page: FullPage): AgentPage {
     data,
     updatedAt: page.updatedAt,
     ...(page.collection ? { collection: page.collection } : {}),
+    ...(page.publishAt ? { publishAt: page.publishAt } : {}),
   };
 }
 

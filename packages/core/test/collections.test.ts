@@ -315,8 +315,8 @@ function memoryBackend() {
         ...(meta ? { summary: meta.summary } : {}),
       });
     },
-    savePageMeta: async (id, meta) => {
-      pages.set(id, { ...pages.get(id)!, ...meta });
+    savePageMeta: async (id, { publishAt, ...meta }) => {
+      pages.set(id, { ...pages.get(id)!, ...meta, ...(publishAt ? { publishAt } : {}) });
     },
     createPage: async (id, page) => {
       pages.set(id, { id, ...page });

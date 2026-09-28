@@ -1,11 +1,16 @@
 import {
   collectionEntry,
+  formatScheduled,
+  formatTime,
+  isValidPublishAt,
   isValidSlug,
   languageName,
   normalizeSlug,
   type PageSeo,
   type PageStatus,
+  pageChanged,
   publishedAt,
+  SCHEDULE_STEP_MINUTES,
   siteLocales,
   slugify,
   slugToPath,
@@ -30,11 +35,15 @@ import { Icon } from "./icons.js";
 import { PageHead, useSiteUrl } from "./shell.js";
 import { Button, Dialog, EmptyState, FormField, Menu, MOD_KEY, StatusChip, timeAgo } from "./ui.js";
 
+type Visibility = PageStatus | "scheduled";
+
 interface PageForm {
   title: string;
   /** The address, after the collection's path for an item. */
   slug: string;
-  status: PageStatus;
+  visibility: Visibility;
+  /** Scheduled time, as the owner's clock shows it (`datetime-local`: `2026-10-01T09:00`). */
+  publishAt: string;
   seo: PageSeo;
   /** Publication date of a new item (collections with a `dateField`). */
   date: string;
@@ -109,7 +118,8 @@ function PageDialogInner({
         ? existing.slug.slice(prefix.length)
         : (existing.slug.split("/").pop() ?? "")
       : "",
-    status: existing?.status ?? "published",
+    visibility: existing?.publishAt ? "scheduled" : (existing?.status ?? "published"),
+    publishAt: existing?.publishAt ? localTime(existing.publishAt) : "",
     seo: existing?.seo ?? {},
     date: today(),
   });
@@ -126,7 +136,13 @@ function PageDialogInner({
         : duplicate
           ? `Déjà utilisée par « ${duplicate.title} »`
           : undefined;
-  const canSave = form.title.trim() && !slugError;
+  const scheduled = form.visibility === "scheduled";
+  const publishAt = scheduled && form.publishAt ? new Date(form.publishAt).toISOString() : "";
+  const publishAtError =
+    scheduled && !isValidPublishAt(publishAt)
+      ? "Choisissez une date et une heure à venir (moins d'un an)."
+      : undefined;
+  const canSave = form.title.trim() && !slugError && !publishAtError;
   // No error before the owner has typed anything (the address follows the title).
   const showSlugError = slugTouched || form.title.trim() !== "";
 
@@ -134,7 +150,17 @@ function PageDialogInner({
     setBusy(true);
     try {
       const title = form.title.trim();
-      const meta = { title, slug, status: form.status, seo: form.seo };
+      const status: PageStatus = form.visibility === "published" ? "published" : "draft";
+      const meta: Pick<PageEntry, "title" | "slug" | "status" | "seo"> & {
+        publishAt?: string | null;
+      } = {
+        title,
+        slug,
+        status,
+        seo: form.seo,
+        // A visibility chosen by hand replaces the scheduled one.
+        ...(scheduled ? { publishAt } : existing?.publishAt ? { publishAt: null } : {}),
+      };
       const by = user.email ?? undefined;
       if (existing) {
         // An item's title is its section's title field: both change together.
@@ -147,8 +173,18 @@ function PageDialogInner({
       } else {
         const id =
           name && collection
-            ? await createItem(services.db, config, name, { ...meta, date: form.date }, by)
-            : await createPage(services.db, meta, by);
+            ? await createItem(
+                services.db,
+                config,
+                name,
+                { ...meta, publishAt: meta.publishAt ?? undefined, date: form.date },
+                by,
+              )
+            : await createPage(
+                services.db,
+                { ...meta, publishAt: meta.publishAt ?? undefined },
+                by,
+              );
         onClose();
         navigate({ view: "editor", pageId: id });
       }
@@ -243,16 +279,68 @@ function PageDialogInner({
           />
         </FormField>
       )}
-      <label className="of-checkbox">
-        <input
-          type="checkbox"
-          checked={form.status === "published"}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, status: e.target.checked ? "published" : "draft" }))
-          }
-        />
-        Visible sur le site (à la prochaine publication)
-      </label>
+      <fieldset className="of-choices">
+        <legend className="of-field__label">Visibilité</legend>
+        <label className="of-checkbox">
+          <input
+            type="radio"
+            name="visibility"
+            checked={form.visibility === "published"}
+            onChange={() => setForm((f) => ({ ...f, visibility: "published" }))}
+          />
+          <span>
+            Visible sur le site
+            <span className="of-field__hint">À la prochaine publication.</span>
+          </span>
+        </label>
+        <label className="of-checkbox">
+          <input
+            type="radio"
+            name="visibility"
+            checked={form.visibility === "draft"}
+            onChange={() => setForm((f) => ({ ...f, visibility: "draft" }))}
+          />
+          <span>
+            Masquée
+            <span className="of-field__hint">N'apparaît pas sur le site.</span>
+          </span>
+        </label>
+        <label className="of-checkbox">
+          <input
+            type="radio"
+            name="visibility"
+            checked={scheduled}
+            onChange={() =>
+              setForm((f) => ({
+                ...f,
+                visibility: "scheduled",
+                publishAt: f.publishAt || localTime(tomorrowAtNine()),
+              }))
+            }
+          />
+          <span>
+            Mise en ligne programmée
+            <span className="of-field__hint">
+              Masquée jusqu'à la date choisie, puis mise en ligne toute seule (dans le quart
+              d'heure), sans publier vos autres modifications.
+            </span>
+          </span>
+        </label>
+        {scheduled && (
+          <div className="of-choices__detail">
+            <FormField label="Date et heure de mise en ligne" error={publishAtError}>
+              <input
+                className="of-input"
+                type="datetime-local"
+                step={SCHEDULE_STEP_MINUTES * 60}
+                min={localTime(new Date().toISOString())}
+                value={form.publishAt}
+                onChange={(e) => setForm((f) => ({ ...f, publishAt: e.target.value }))}
+              />
+            </FormField>
+          </div>
+        )}
+      </fieldset>
       <fieldset className="of-fieldset">
         <legend>Référencement (Google)</legend>
         <SearchPreview
@@ -303,19 +391,52 @@ function PageDialogInner({
   );
 }
 
+/** An ISO time as the owner's clock shows it, for `datetime-local` (`2026-10-01T09:00`). */
+function localTime(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function tomorrowAtNine(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(9, 0, 0, 0);
+  return date.toISOString();
+}
+
 /** Publication state of a page, as one status (Webflow's CMS vocabulary, simplified). */
-export function pageStatus(page: PageEntry, lastLive: ReleaseEntry | undefined) {
+export function pageStatus(page: PageEntry, releases: ReleaseEntry[]) {
+  if (page.publishAt) {
+    return {
+      tone: "blue" as const,
+      label: `Programmée le ${shortTime(page.publishAt)}`,
+      title: `Mise en ligne toute seule le ${formatScheduled(page.publishAt)}`,
+    };
+  }
   if (page.status !== "published") {
     return { tone: "grey" as const, label: "Masquée", title: "N'apparaît pas sur le site" };
   }
-  if (!lastLive) {
+  if (
+    releases.some(
+      (r) =>
+        (r.status === "queued" || r.status === "building") && r.scheduledPages?.includes(page.id),
+    )
+  ) {
+    return {
+      tone: "blue" as const,
+      label: "Mise en ligne…",
+      title: "Publication programmée en cours",
+    };
+  }
+  if (!releases.some((release) => release.status === "live")) {
     return {
       tone: "orange" as const,
       label: "Jamais publiée",
       title: "Publiez pour la mettre en ligne",
     };
   }
-  if (page.updatedAt > publishedAt(lastLive)) {
+  if (pageChanged(page, releases)) {
     return {
       tone: "orange" as const,
       label: "Modifications non publiées",
@@ -325,13 +446,25 @@ export function pageStatus(page: PageEntry, lastLive: ReleaseEntry | undefined) 
   return { tone: "green" as const, label: "En ligne", title: "À jour sur le site" };
 }
 
+/** « 1 oct. à 9 h » (the year when it is not this one). */
+function shortTime(iso: string): string {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    ...(date.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}),
+  }).format(date);
+  return `${day} à ${formatTime(`${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`)}`;
+}
+
 /** Is the live site up to date? (last publication, pending changes). */
 function SiteStatus() {
   const { pages, releases, settings } = useAdmin();
   const siteUrl = useSiteUrl();
   const lastLive = releases.find((release) => release.status === "live");
   const running = releases.find((r) => r.status === "queued" || r.status === "building");
-  const changedAll = pages.filter((page) => !lastLive || page.updatedAt > publishedAt(lastLive));
+  // A scheduled page goes online on its own: nothing to publish for it.
+  const changedAll = pages.filter((page) => !page.publishAt && pageChanged(page, releases));
   const changed = changedAll.filter((page) => !page.collection).length;
   const changedItems = changedAll.length - changed;
   const settingsChanged = Boolean(
@@ -507,7 +640,7 @@ export function PagesView() {
         ) : (
           <ul className="of-list" aria-label="Pages du site">
             {sorted.map((page) => {
-              const status = pageStatus(page, lastLive);
+              const status = pageStatus(page, releases);
               const path = slugToPath(page.slug);
               const open = () => navigate({ view: "editor", pageId: page.id });
               return (
