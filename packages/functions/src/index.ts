@@ -3,18 +3,23 @@ import {
   AGENT_AUTHOR,
   AgentError,
   COLLECTIONS,
+  configFromSchema,
   FUNCTION_NAMES,
   handleMcpMessage,
   type MessageDoc,
   OWNER_CLAIM,
+  outdatedSince,
   PUBLICATION_FAILED_LOG,
   parseSnapshot,
   publicStorageUrl,
+  publishedAt,
+  REFRESH_AUTHOR,
   type ReleaseDoc,
   type SiteSchema,
   type Snapshot,
   SnapshotError,
   slugToPath,
+  statsDay,
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -24,6 +29,7 @@ import { logger } from "firebase-functions";
 import { type CallableRequest, HttpsError, onCall, onRequest } from "firebase-functions/https";
 import { defineString } from "firebase-functions/params";
 import { onMessagePublished } from "firebase-functions/pubsub";
+import { onSchedule } from "firebase-functions/scheduler";
 import { onObjectFinalized } from "firebase-functions/storage";
 import { GoogleAuth } from "google-auth-library";
 import {
@@ -893,5 +899,75 @@ export const cmsPageView = onRequest(
       logger.warn("OpenFlow page view not counted", { error: String(error) });
     }
     res.status(204).end();
+  },
+);
+
+/**
+ * Every morning, the online site catches up with the calendar: when an event of the agenda or an
+ * exceptional closure is over since the last build, the online version is rebuilt as it is (its
+ * snapshot re-dated, never the owner's drafts). Nothing happens on the other days.
+ */
+export const cmsDailyRefresh = onSchedule(
+  { schedule: "every day 04:20", timeZone: "Europe/Paris", region, retryCount: 0 },
+  async () => {
+    if (emulator) return;
+    const db = getFirestore();
+    const live = (
+      await db.collection(COLLECTIONS.releases).where("status", "==", "live").limit(1).get()
+    ).docs[0];
+    const release = live?.data() as ReleaseDoc | undefined;
+    if (!release?.snapshotPath || release.builder !== "cloud-build" || !release.sourcePath) return;
+    if (await runningRelease(db)) return;
+    const schema = await loadSiteSchema(db);
+    if (!schema) return;
+    const bucket = getStorage().bucket();
+    const [content] = await bucket.file(release.snapshotPath).download();
+    const snapshot = parseSnapshot(JSON.parse(content.toString("utf8")));
+    const reasons = outdatedSince(snapshot, configFromSchema(schema), {
+      from: statsDay(new Date(snapshot.createdAt)),
+      to: statsDay(new Date()),
+    });
+    if (reasons.length === 0) return;
+
+    const ref = db.collection(COLLECTIONS.releases).doc();
+    const createdAt = new Date().toISOString();
+    const file = snapshotPath(ref.id);
+    await bucket.file(file).save(JSON.stringify({ ...snapshot, releaseId: ref.id, createdAt }), {
+      contentType: "application/json",
+      resumable: false,
+    });
+    await ref.set({
+      status: "queued",
+      createdAt,
+      createdBy: REFRESH_AUTHOR,
+      snapshotPath: file,
+      sourcePath: release.sourcePath,
+      builder: "cloud-build",
+      pageCount: snapshot.pages.length,
+      contentAt: publishedAt(release),
+    } satisfies ReleaseDoc);
+    try {
+      const started = await startCloudBuild({
+        projectId: projectId(),
+        bucket: bucket.name,
+        sourcePath: release.sourcePath,
+        snapshotPath: file,
+        releaseId: ref.id,
+        hostingTarget: process.env.CMS_HOSTING_TARGET || undefined,
+        serviceAccount: process.env.CMS_BUILD_SERVICE_ACCOUNT || undefined,
+      });
+      await ref.update({ status: "building", ...started });
+      logger.info("OpenFlow daily refresh", { releaseId: ref.id, reasons });
+    } catch (error) {
+      await ref.update({
+        status: "failed",
+        error: (error as Error).message,
+        finishedAt: new Date().toISOString(),
+      });
+      logger.error(PUBLICATION_FAILED_LOG, {
+        releaseId: ref.id,
+        reason: `Mise à jour automatique : ${(error as Error).message}`,
+      });
+    }
   },
 );

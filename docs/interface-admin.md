@@ -94,7 +94,9 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Présence en ligne : la fiche Google et les réseaux sociaux, un lien par ligne.
   - En bas, « Ce que liront Google et les assistants IA » montre le résultat, et **Enregistrer la fiche**
     l'enregistre (en ligne à la prochaine publication).
-- **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic.
+- **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic. Une
+  « Mise à jour automatique » y apparaît quand le site s'est reconstruit seul (voir plus bas) ; elle ne
+  publie aucun brouillon.
 - **Assistant IA** : brancher une IA qui modifie le site par la discussion
   ([assistant-ia.md](assistant-ia.md)). La page contient :
   - l'adresse du site pour l'IA, `https://<domaine>/mcp` ;

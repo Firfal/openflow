@@ -167,8 +167,11 @@ export {
   PAGE_SIZE_WARNING_BYTES,
   PUBLICATION_FAILED_LOG,
   publicStorageUrl,
+  publishedAt,
+  REFRESH_AUTHOR,
   STORAGE_PATHS,
 } from "./model.js";
+export { outdatedSince } from "./refresh.js";
 export type { Seed, SeedPage, SeedSettings } from "./seed.js";
 export { PAGE_ID, resolveSeedSettings, seedPageSchema, seedSettingsSchema } from "./seed.js";
 export {

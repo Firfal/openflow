@@ -1,4 +1,4 @@
-import { type AuditFinding, FUNCTION_NAMES, statsDay } from "@openflow/core";
+import { type AuditFinding, FUNCTION_NAMES, publishedAt, statsDay } from "@openflow/core";
 import { useCallback, useEffect, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { type Route, useAdmin } from "./context.js";
@@ -37,9 +37,9 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
 
   const lastLive = releases.find((release) => release.status === "live");
-  const changedPages = pages.filter((page) => !lastLive || page.updatedAt > lastLive.createdAt);
+  const changedPages = pages.filter((page) => !lastLive || page.updatedAt > publishedAt(lastLive));
   const settingsChanged = Boolean(
-    lastLive && settings?.updatedAt && settings.updatedAt > lastLive.createdAt,
+    lastLive && settings?.updatedAt && settings.updatedAt > publishedAt(lastLive),
   );
   const changed = changedPages.length + (settingsChanged ? 1 : 0);
   const running = active && (active.status === "queued" || active.status === "building");
@@ -209,6 +209,48 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                 ? `Les ${visible} pages visibles seront mises en ligne telles qu'elles apparaissent dans l'éditeur.`
                 : "La page visible sera mise en ligne telle qu'elle apparaît dans l'éditeur."}
             </p>
+            {advice.length > 0 && (
+              <details className="of-disclosure of-advice">
+                <summary>
+                  <Icon name="sparkles" />
+                  <span className="of-disclosure__title">
+                    {advice.length} conseil{advice.length > 1 ? "s" : ""} pour être mieux trouvé par
+                    Google et les assistants IA
+                  </span>
+                  <Icon name="chevronDown" className="of-disclosure__chevron" />
+                </summary>
+                <ul className="of-changes" aria-label="Conseils">
+                  {advice.slice(0, 8).map((finding, index) => {
+                    const target = adviceTarget(finding);
+                    return (
+                      <li key={`${finding.code}-${index}`}>
+                        <Icon name={finding.severity === "high" ? "circleAlert" : "info"} />
+                        <div className="of-list__main">
+                          <strong>{finding.page?.title ?? "Site"}</strong>
+                          <span className="of-subtle">{finding.message}</span>
+                        </div>
+                        {target && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setConfirming(false);
+                              navigate(target);
+                            }}
+                          >
+                            Voir
+                          </Button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="of-subtle of-advice__tip">
+                  Votre assistant IA peut s'en charger : demandez-lui « Fais l'audit du site et
+                  propose-moi des corrections ».
+                </p>
+              </details>
+            )}
             {changed > 0 ? (
               <div>
                 <p className="of-field__label" style={{ marginBottom: 8 }}>
@@ -255,48 +297,6 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                 <Icon name="circleCheck" className="of-icon--first-line" />
                 <span>Rien n'a changé depuis la dernière publication : le site est à jour.</span>
               </p>
-            )}
-            {advice.length > 0 && (
-              <details className="of-disclosure of-advice">
-                <summary>
-                  <Icon name="sparkles" />
-                  <span className="of-disclosure__title">
-                    {advice.length} conseil{advice.length > 1 ? "s" : ""} pour être mieux trouvé par
-                    Google et les assistants IA
-                  </span>
-                  <Icon name="chevronDown" className="of-disclosure__chevron" />
-                </summary>
-                <ul className="of-changes" aria-label="Conseils">
-                  {advice.slice(0, 8).map((finding, index) => {
-                    const target = adviceTarget(finding);
-                    return (
-                      <li key={`${finding.code}-${index}`}>
-                        <Icon name={finding.severity === "high" ? "circleAlert" : "info"} />
-                        <div className="of-list__main">
-                          <strong>{finding.page?.title ?? "Site"}</strong>
-                          <span className="of-subtle">{finding.message}</span>
-                        </div>
-                        {target && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setConfirming(false);
-                              navigate(target);
-                            }}
-                          >
-                            Voir
-                          </Button>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-                <p className="of-subtle of-advice__tip">
-                  Votre assistant IA peut s'en charger : demandez-lui « Fais l'audit du site et
-                  propose-moi des corrections ».
-                </p>
-              </details>
             )}
             <p className="of-subtle" style={{ fontSize: 13 }}>
               La mise en ligne prend généralement 2 à 4 minutes. Chaque version reste restaurable

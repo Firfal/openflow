@@ -4,6 +4,7 @@ import {
   normalizeSlug,
   type PageSeo,
   type PageStatus,
+  publishedAt,
   slugify,
   slugToPath,
   today,
@@ -123,6 +124,8 @@ function PageDialogInner({
           ? `Déjà utilisée par « ${duplicate.title} »`
           : undefined;
   const canSave = form.title.trim() && !slugError;
+  // No error before the owner has typed anything (the address follows the title).
+  const showSlugError = slugTouched || form.title.trim() !== "";
 
   const save = async () => {
     setBusy(true);
@@ -194,11 +197,13 @@ function PageDialogInner({
       </FormField>
       <FormField
         label="Adresse"
-        error={slugError}
+        error={showSlugError ? slugError : undefined}
         hint={
           isHome
             ? "La page d'accueil est toujours à la racine du site."
-            : `Le site affichera cette page à ${slugToPath(slug)}`
+            : form.slug
+              ? `Le site affichera cette page à ${slugToPath(slug)}`
+              : "Elle se remplit avec le titre."
         }
       >
         <div className="of-prefixed">
@@ -307,7 +312,7 @@ export function pageStatus(page: PageEntry, lastLive: ReleaseEntry | undefined) 
       title: "Publiez pour la mettre en ligne",
     };
   }
-  if (page.updatedAt > lastLive.createdAt) {
+  if (page.updatedAt > publishedAt(lastLive)) {
     return {
       tone: "orange" as const,
       label: "Modifications non publiées",
@@ -323,11 +328,11 @@ function SiteStatus() {
   const siteUrl = useSiteUrl();
   const lastLive = releases.find((release) => release.status === "live");
   const running = releases.find((r) => r.status === "queued" || r.status === "building");
-  const changedAll = pages.filter((page) => !lastLive || page.updatedAt > lastLive.createdAt);
+  const changedAll = pages.filter((page) => !lastLive || page.updatedAt > publishedAt(lastLive));
   const changed = changedAll.filter((page) => !page.collection).length;
   const changedItems = changedAll.length - changed;
   const settingsChanged = Boolean(
-    lastLive && settings?.updatedAt && settings.updatedAt > lastLive.createdAt,
+    lastLive && settings?.updatedAt && settings.updatedAt > publishedAt(lastLive),
   );
   const host = siteUrl.replace(/^https?:\/\//, "");
   let text: string;
@@ -349,10 +354,10 @@ function SiteStatus() {
     ].filter(Boolean);
     const list =
       parts.length > 1 ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}` : parts[0];
-    text = `${list} depuis la dernière publication (${timeAgo(lastLive.createdAt)}).`;
+    text = `${list} depuis la dernière publication (${timeAgo(publishedAt(lastLive))}).`;
     tone = "orange";
   } else {
-    text = `Tout est en ligne. Dernière publication ${timeAgo(lastLive.createdAt)}.`;
+    text = `Tout est en ligne. Dernière publication ${timeAgo(publishedAt(lastLive))}.`;
     tone = "green";
   }
   return (

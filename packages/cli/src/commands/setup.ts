@@ -31,6 +31,7 @@ export const REQUIRED_SERVICES = [
   "cloudfunctions",
   "run",
   "cloudbuild",
+  "cloudscheduler",
   "artifactregistry",
   "eventarc",
   "pubsub",

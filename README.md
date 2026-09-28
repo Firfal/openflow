@@ -10,7 +10,14 @@ ou Framer, avec un backend 100 % Firebase.**
   les listes du site se mettent à jour seules, avec données structurées pour Google et flux RSS.
 - Il peut aussi **brancher son IA** (Claude, ChatGPT, Cursor…) sur son site et le modifier en discutant avec
   elle : il colle `https://son-site/mcp` dans son assistant, se connecte et clique sur « Autoriser »
-  ([docs/assistant-ia.md](docs/assistant-ia.md)). Le site publié expose aussi `llms.txt` aux IA qui le lisent.
+  ([docs/assistant-ia.md](docs/assistant-ia.md)). Son IA peut aussi auditer le site et lire ses statistiques.
+- Le site est fait pour être **trouvé et cité par Google et les assistants IA** : fiche établissement
+  (horaires, fermetures), données structurées (`LocalBusiness`, `Article`, `Event`, `Service`, `Product`),
+  `llms.txt`, IndexNow à chaque publication, choix des robots d'entraînement, formulaires déclarés aux
+  agents (WebMCP), mise à jour automatique quand un événement est passé
+  ([docs/sites-de-demain.md](docs/sites-de-demain.md)).
+- **Statistiques sans cookie ni bandeau** (conformes CNIL), avec les visites envoyées par ChatGPT, Perplexity,
+  Claude, Gemini ou Copilot.
 - Le site est publié en **HTML statique** sur Firebase Hosting : rapide, bien référencé, à coût quasi nul.
 - Tout vit **dans le projet Firebase du site** : Hosting, Firestore, Auth, Storage, Functions et Cloud Build.
 - Le code produit par l'IA est contrôlé par une **norme vérifiable (OFS)**. Claude Code reçoit un retour

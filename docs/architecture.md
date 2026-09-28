@@ -9,7 +9,8 @@ Projet Firebase du client (plan Blaze)
 ├─ Firestore         → brouillons des pages, réglages, historique des publications, messages
 ├─ Cloud Storage     → médias (et leurs copies optimisées), archives du code source, snapshots publiés
 ├─ Cloud Functions   → cmsClaimOwner, cmsPublish, cmsOnBuildStatus, cmsRestoreRelease,
-│                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm, cmsPageView
+│                      cmsMcp, cmsAgentConsent, cmsOptimizeMedia, cmsSubmitForm, cmsPageView,
+│                      cmsDailyRefresh
 ├─ Cloud Build       → reconstruit le site à chaque « Publier »
 └─ Surveillance      → sauvegarde quotidienne de Firestore, alertes (publication en échec, message reçu),
                        reCAPTCHA Enterprise (formulaires), Secret Manager (clé d'envoi d'e-mails)
@@ -70,6 +71,11 @@ livraison, sans rien refaire de ce qui est déjà en place.
   [securite.md](securite.md#mesure-daudience-sans-cookie)).
 - **Google Analytics** (facultatif) : si le propriétaire a saisi un identifiant, `createOpenFlowLayout`
   ajoute `<OpenFlowAnalytics>`, qui ne charge rien avant l'accord du visiteur.
+- **Mise à jour automatique** : un site statique affiche le jour de son build. Chaque matin (4 h 20, heure
+  de Paris), `cmsDailyRefresh` regarde si un événement de l'agenda ou une fermeture exceptionnelle est
+  passé depuis ; si oui, il reconstruit la version en ligne telle quelle (son snapshot redaté, jamais les
+  brouillons), pour que l'agenda et les données structurées restent justes. La publication garde la date
+  de son contenu (`contentAt`) : les modifications du propriétaire restent « non publiées ».
 - **Le build ne lit jamais Firestore** : il lit le fichier désigné par `CMS_SNAPSHOT`. En local, il
   utilise `openflow/.snapshot.json` ou, à défaut, le contenu de départ.
 

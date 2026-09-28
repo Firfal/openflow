@@ -221,6 +221,19 @@ export interface ReleaseDoc {
   pageCount: number;
   /** Set when this release was re-activated through "Restaurer". */
   restoredAt?: string;
+  /**
+   * Daily refresh (`cmsDailyRefresh`): the online content rebuilt on a later day (an event or a
+   * closure is over). When that content was published; the owner's drafts are compared to it.
+   */
+  contentAt?: string;
+}
+
+/** `createdBy` of the daily refreshes (the site rebuilt, its content unchanged). */
+export const REFRESH_AUTHOR = "Mise à jour automatique";
+
+/** When the content of a release was published (a refresh keeps the date of its content). */
+export function publishedAt(release: Pick<ReleaseDoc, "createdAt" | "contentAt">): string {
+  return release.contentAt ?? release.createdAt;
 }
 
 /** `cms_system/source` — last uploaded site source archive (written by `openflow deploy`). */

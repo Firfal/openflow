@@ -76,7 +76,11 @@ export function HistoryView() {
                         <span>
                           {release.pageCount} page{release.pageCount > 1 ? "s" : ""}
                         </span>
-                        <span>par {release.createdBy}</span>
+                        <span>
+                          {release.contentAt
+                            ? `${release.createdBy} : dates passées retirées, contenu du ${formatDate(release.contentAt)}`
+                            : `par ${release.createdBy}`}
+                        </span>
                         {release.restoredAt && (
                           <span>restaurée le {formatDate(release.restoredAt)}</span>
                         )}
