@@ -1,6 +1,7 @@
 import type { Data } from "@puckeditor/core";
 import type { BusinessInfo } from "./business.js";
 import type { ImageVariant, VideoVariant } from "./fields.js";
+import type { LegalInfo } from "./legal.js";
 
 /**
  * Firestore collections of the CMS. All are prefixed with `cms_` to avoid clashes with the site's
@@ -180,6 +181,8 @@ export interface SiteSettings {
   aiTraining?: "allow" | "block";
   /** `off` stops the audience measurement without cookies (Statistiques). On by default. */
   stats?: "on" | "off";
+  /** The publisher (Réglages > Informations légales), for the legal notice and privacy policy. */
+  legal?: LegalInfo;
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */
@@ -191,6 +194,10 @@ export interface IntegrationsDoc {
    * Bing, Copilot, Yandex, Seznam… are told about the changed pages at each publication.
    */
   indexNowKey?: string;
+  /** `resend` once `openflow mail` is set up: the forms' messages are e-mailed to the owner. */
+  mail?: "resend";
+  /** Google Cloud region of the site's data (Firestore, Storage, functions), set by setup. */
+  region?: string;
 }
 
 /** `cms_site/settings`. */

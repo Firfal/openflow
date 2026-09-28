@@ -111,6 +111,10 @@ describe("form submissions", () => {
       read: false,
       score: 0.9,
     });
+    // Erased by Firestore three years later (TTL), as the privacy policy says.
+    const years = ((saved as { expiresAt: Date }).expiresAt.getTime() - Date.now()) / 31557600000;
+    expect(years).toBeGreaterThan(2.99);
+    expect(years).toBeLessThan(3.01);
     expect(mailed).toHaveLength(1);
   });
 

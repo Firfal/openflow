@@ -4254,3 +4254,53 @@ button.of-style-row__reset:hover {
     text-align: left;
   }
 }
+
+/* ───────────────────────── Informations légales ───────────────────────── */
+
+.of-legal-pages {
+  margin-top: 4px;
+}
+
+.of-legal-pages .of-list__item:first-child {
+  border-top: 0;
+}
+
+.of-legal-gaps {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1 1 320px;
+  min-width: 0;
+  margin: 0;
+  color: var(--of-text-2);
+  font-size: 13px;
+}
+
+.of-legal-gaps .of-chip {
+  flex: none;
+}
+
+.of-facts {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.of-facts li {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.of-facts .of-chip {
+  justify-self: start;
+}
+
+.of-facts strong {
+  display: block;
+  font-weight: 500;
+}

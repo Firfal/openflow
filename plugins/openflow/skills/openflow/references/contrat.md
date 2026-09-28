@@ -240,6 +240,34 @@ de liste les affichent toutes seules, triés.
 Ne renomme jamais une collection, son `path` ni sa section une fois le site livré (OF-202) : les
 éléments du propriétaire en dépendent.
 
+## Pages légales (politique de confidentialité, mentions légales)
+
+OpenFlow écrit leur texte d'après ce que fait le site (formulaires publiés, mesure d'audience, Google
+Analytics, reCAPTCHA, e-mails, région des données) et les informations de l'éditeur (Réglages >
+Informations légales). Une section les met en page :
+
+```tsx
+import { getLegalDocument, legalDocumentField, statsOptOutProps, consentButtonProps } from "@openflow/core";
+
+fields: {
+  legalDocument: legalDocumentField({ label: "Document" }),       // « privacy » ou « notice »
+  extra: { type: "richtext", label: "Informations complémentaires (facultatif)" },
+},
+render: ({ legalDocument, extra, puck }) => {
+  const document = getLegalDocument(puck.metadata, legalDocument); // titre, chapeau, sections
+  …
+}
+```
+
+- Chaque section du document a un titre (`heading`) et des blocs : `p` (texte et liens), `list` (`plain` :
+  sans puces, pour une adresse), `stats-optout` (le bouton du visiteur pour arrêter le comptage :
+  `<p {...status}>` et `<button {...button}>` avec `statsOptOutProps(block)`) et `consent` (rouvre le
+  bandeau des cookies : `<button {...consentButtonProps()}>`).
+- Le texte ne passe pas par des champs : c'est voulu (il suit le site), et la norme le sait. La section porte
+  le `h1` de sa page (une page légale n'a pas d'en-tête Hero).
+- Liez les deux pages depuis le pied de page, par un champ de liens des réglages : l'audit signale une page
+  légale qu'aucun menu ne relie.
+
 ## Style libre et thème
 
 Le propriétaire peut modifier le style de chaque section et de chaque élément (bloc « Style » du

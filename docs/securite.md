@@ -91,6 +91,17 @@ formulaire **de la page publiée** : les champs inconnus sont refusés, les cham
 Le propriétaire est prévenu de chaque message par e-mail, via Resend, dont la clé est dans Secret Manager
 (`openflow mail`). Sans clé, c'est l'alerte Cloud Monitoring « Site : nouveau message » qui le prévient.
 
+Chaque message porte une date d'effacement (`expiresAt`, **3 ans** après sa réception) : la politique TTL
+de Firestore installée par `openflow setup` le supprime alors, comme l'annonce la politique de
+confidentialité. Le propriétaire peut l'effacer plus tôt depuis « Messages ».
+
+reCAPTCHA Enterprise agit depuis le 2 avril 2026 comme **sous-traitant** de Google Cloud : le propriétaire
+du site est seul responsable du traitement, et les pages ne renvoient plus aux conditions de Google. La
+CNIL a sanctionné l'usage de reCAPTCHA sans consentement quand Google s'en servait aussi pour lui-même ;
+en sous-traitance, pour la seule sécurité des formulaires, l'intérêt légitime est défendable mais pas
+tranché. Un site peu exposé au spam peut s'en passer : le champ piège, le temps de saisie et la limite par
+visiteur restent actifs.
+
 ## Mesure d'audience sans cookie
 
 Les statistiques suivent les conditions de la CNIL pour une mesure d'audience **exemptée de consentement**
@@ -112,7 +123,38 @@ Les statistiques suivent les conditions de la CNIL pour une mesure d'audience **
 - **Robuste** : une adresse qui n'est pas une page publiée compte comme « autre », la liste des sites
   d'origine est limitée à 100 par jour, une balise pèse au plus 2 Ko, et la fonction répond toujours 204.
 
-La politique de confidentialité du site doit mentionner cette mesure (finalité, durée de conservation).
+La politique de confidentialité, écrite par OpenFlow (voir plus bas), décrit cette mesure et contient le
+bouton « Ne plus compter mes visites », qui arrête le comptage sur l'appareil du visiteur (droit
+d'opposition).
+
+## Pages légales (politique de confidentialité, mentions légales)
+
+Leur texte est **écrit par OpenFlow d'après ce que fait réellement le site** (`legalDocuments` de
+`@openflow/core`), à chaque publication : un site qui active Google Analytics ou ajoute un formulaire voit
+sa politique changer d'elle-même. La section « Page légale » (`legalDocument` : `privacy` ou `notice`) le
+met en page ; le propriétaire peut y ajouter ses propres paragraphes.
+
+- **Politique de confidentialité** (RGPD, art. 13) : responsable du traitement ; consultation du site
+  (journal d'accès de Firebase Hosting, 60 jours) ; mesure d'audience sans cookie (25 mois, opposition) ;
+  Google Analytics s'il est actif (consentement, cookies 13 mois, choix gardé 6 mois, bouton pour rouvrir
+  le bandeau) ; formulaires s'il y en a sur une page publiée (3 ans, limite anti-abus, reCAPTCHA, e-mail via
+  Resend) ; destinataires et transferts hors de l'Union (clauses contractuelles types, Data Privacy
+  Framework) ; cookies ; droits et autorité de contrôle (CNIL, ou celle du pays de l'établissement).
+- **Mentions légales** (LCEN, art. 6) : éditeur (raison sociale, forme et capital, adresse, immatriculation,
+  TVA, téléphone, e-mail, directeur de la publication), hébergeur, médiateur de la consommation s'il est
+  renseigné, propriété intellectuelle.
+- **Hébergeur** : l'entité de Google qui facture le client, selon le pays de l'établissement
+  ([Google Cloud](https://cloud.google.com/terms/google-entity)) : Google Cloud France SARL (8 rue de
+  Londres, 75009 Paris) pour la France, Google Cloud EMEA Limited (Dublin) pour le reste de l'Europe, du
+  Moyen-Orient et de l'Afrique.
+- **Faits utilisés** : réglages du site (`site.legal`, `site.business`, `stats`, `gaMeasurementId`), pages
+  publiées (formulaires, pages légales), et `cms_system/integrations` (`recaptchaSiteKey`, `mail`,
+  `region`), que `cmsPublish` tient à jour à chaque publication.
+- **Contrôles** : l'audit du site (`audit_site`, conseils de publication) signale une page légale absente,
+  non liée depuis le menu ou le bas de page, ou des informations d'éditeur incomplètes.
+
+OpenFlow n'est pas un conseil juridique : le propriétaire relit ses pages, et complète les cas qu'OpenFlow
+ne connaît pas (newsletter, prise de rendez-vous, paiement…) dans le champ « Informations complémentaires ».
 
 ## Sauvegardes et alertes
 
@@ -127,7 +169,8 @@ La politique de confidentialité du site doit mentionner cette mesure (finalité
 Google Analytics 4 n'est chargé qu'après l'accord du visiteur, comme l'exige la CNIL. Aucun cookie n'est
 posé avant. « Refuser » est aussi visible qu'« Accepter », le choix est gardé 6 mois et le bouton
 « Cookies » permet d'en changer ; un refus efface les cookies `_ga`. Le mode Consent de Google est réglé
-pour ne jamais autoriser la publicité.
+pour ne jamais autoriser la publicité, et les cookies durent **13 mois** au plus (`cookie_expires`, au lieu
+des 2 ans par défaut de Google), comme le recommande la CNIL.
 
 ## App Check
 

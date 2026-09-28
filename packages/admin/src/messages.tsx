@@ -1,4 +1,4 @@
-import { COLLECTIONS } from "@openflow/core";
+import { COLLECTIONS, MESSAGE_RETENTION_YEARS } from "@openflow/core";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useState } from "react";
 import { useAdmin } from "./context.js";
@@ -67,7 +67,7 @@ export function MessagesView() {
     <>
       <PageHead
         title="Messages"
-        description="Ce que les visiteurs vous envoient avec les formulaires du site."
+        description={`Ce que les visiteurs vous envoient avec les formulaires du site. Chaque message est effacé automatiquement ${MESSAGE_RETENTION_YEARS} ans après sa réception, comme l'annonce votre politique de confidentialité.`}
       />
       <section className="of-view">
         <fieldset className="of-segmented of-messages__boxes">

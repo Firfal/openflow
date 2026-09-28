@@ -33,6 +33,9 @@ match /cms_releases/{releaseId} {
 match /cms_system/{docId} {
   allow read, write: if false;
 }
+match /cms_system/integrations {
+  allow read: if cmsIsOwner();
+}
 match /cms_agent_tokens/{tokenId} {
   allow read, delete: if cmsIsOwner();
   allow create, update: if false;

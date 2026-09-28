@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import type { AgentEntry, MessageEntry, PageEntry, ReleaseEntry } from "./data.js";
 import type { Services } from "./firebase.js";
 
-export type SettingsTab = "global" | "theme" | "site" | "business";
+export type SettingsTab = "global" | "theme" | "site" | "business" | "legal";
 
 export type Route =
   | { view: "pages" }
@@ -20,7 +20,7 @@ export type Route =
   | { view: "connect"; request: string }
   | { view: "history" };
 
-const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "business"];
+const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "business", "legal"];
 
 export interface Notice {
   id: number;

@@ -6,6 +6,7 @@ import {
   dateField,
   defineConfig,
   imageField,
+  legalDocumentField,
   linkField,
 } from "../src/index.js";
 
@@ -25,6 +26,12 @@ const config = defineConfig({
         },
       },
       defaultProps: { title: "Bienvenue", text: "", image: null, cta: null, cards: [] },
+      render: () => null as never,
+    },
+    Legal: {
+      label: "Page légale",
+      fields: { legalDocument: legalDocumentField(), extra: { type: "richtext" } },
+      defaultProps: { legalDocument: "privacy", extra: "" },
       render: () => null as never,
     },
     Article: {
@@ -70,6 +77,25 @@ const page = (partial: Partial<AuditPage> & Pick<AuditPage, "id" | "slug">): Aud
   ...partial,
 });
 
+const legalData = (kind: "privacy" | "notice"): Data =>
+  ({
+    root: { props: {} },
+    content: [{ type: "Legal", props: { id: `legal-${kind}`, legalDocument: kind, extra: "" } }],
+  }) as Data;
+
+const legalPages = [
+  page({ id: "confidentialite", slug: "confidentialite", data: legalData("privacy") }),
+  page({ id: "mentions", slug: "mentions-legales", data: legalData("notice") }),
+];
+
+/** The footer links to both legal pages. */
+const footer = {
+  legalLinks: [
+    { label: "Mentions légales", link: { kind: "page", pageId: "mentions", href: "/m/" } },
+    { label: "Confidentialité", link: { kind: "page", pageId: "confidentialite", href: "/c/" } },
+  ],
+};
+
 const completeSite = {
   name: "Boulangerie",
   lang: "fr",
@@ -83,19 +109,30 @@ const completeSite = {
     hours: { tu: [{ opens: "08:00", closes: "19:00" }] },
     links: ["https://g.page/boulangerie"],
   },
+  legal: {
+    publisher: "SARL Boulangerie du Four",
+    registration: "RCS Lyon 123 456 789",
+    director: "Marie Martin",
+    privacyEmail: "donnees@boulangerie.fr",
+  },
 };
 
 describe("auditSite", () => {
   it("finds nothing on a complete site", () => {
     const audit = auditSite({
       config,
-      pages: [page({ id: "accueil", slug: "" }), page({ id: "contact", slug: "contact" })],
+      pages: [
+        page({ id: "accueil", slug: "" }),
+        page({ id: "contact", slug: "contact" }),
+        ...legalPages,
+      ],
       site: completeSite,
       today: "2026-09-28",
+      settings: footer,
     });
     expect(audit.findings).toEqual([]);
     expect(audit.score).toBe(100);
-    expect(audit.pagesChecked).toBe(2);
+    expect(audit.pagesChecked).toBe(4);
   });
 
   it("names what is missing, most important first, with how to fix it", () => {
@@ -143,9 +180,11 @@ describe("auditSite", () => {
       today: "2026-09-28",
     });
     const codes = audit.findings.map((f) => f.code);
-    expect(codes.slice(0, 4)).toEqual([
+    expect(codes.slice(0, 6)).toEqual([
       "site-url",
       "business-missing",
+      "legal-privacy",
+      "legal-notice",
       "page-description",
       "link-broken",
     ]);
@@ -170,7 +209,7 @@ describe("auditSite", () => {
       '"image": { "src": "https://cdn/x/pain.webp?alt=media", "alt": "…" }',
     );
     expect(audit.findings.find((f) => f.code === "link-broken")?.message).toContain("page masquée");
-    expect(audit.counts.high).toBe(4);
+    expect(audit.counts.high).toBe(6);
     expect(audit.score).toBeLessThan(60);
   });
 
@@ -180,6 +219,7 @@ describe("auditSite", () => {
       pages: [
         page({ id: "a", slug: "a", title: "Nos pains" }),
         page({ id: "b", slug: "b", title: "Nos pains" }),
+        ...legalPages,
       ],
       site: { ...completeSite, business: { type: "Bakery", city: "Lyon" } },
       today: "2026-09-28",
@@ -189,6 +229,32 @@ describe("auditSite", () => {
       "business-hours",
       "duplicate-title",
       "business-links",
+    ]);
+  });
+
+  it("asks for the legal pages, linked from every page, and the publisher's details", () => {
+    const missing = auditSite({
+      config,
+      pages: [page({ id: "accueil", slug: "" })],
+      site: { ...completeSite, legal: undefined },
+      today: "2026-09-28",
+    });
+    const privacy = missing.findings.find((f) => f.code === "legal-privacy");
+    expect(privacy?.severity).toBe("high");
+    expect(privacy?.fix).toContain('add_section « Legal » avec legalDocument: "privacy"');
+    expect(missing.findings.find((f) => f.code === "legal-info")?.message).toBe(
+      "Informations légales incomplètes : nom ou raison sociale, numéro d'immatriculation (SIREN, RCS…), directeur de la publication, e-mail pour les données personnelles.",
+    );
+
+    const unlinked = auditSite({
+      config,
+      pages: [page({ id: "accueil", slug: "" }), ...legalPages],
+      site: completeSite,
+      today: "2026-09-28",
+      settings: { legalLinks: [footer.legalLinks[0]] },
+    });
+    expect(unlinked.findings.map((f) => [f.code, f.page?.id])).toEqual([
+      ["legal-link", "confidentialite"],
     ]);
   });
 

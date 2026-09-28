@@ -52,6 +52,16 @@
         "link": { "kind": "url", "href": "https://www.instagram.com/", "newTab": true }
       }
     ],
-    "legalText": "Tous droits réservés."
+    "legalText": "Tous droits réservés.",
+    "legalLinks": [
+      {
+        "label": "Mentions légales",
+        "link": { "kind": "page", "pageId": "mentions-legales", "href": "/mentions-legales/" }
+      },
+      {
+        "label": "Politique de confidentialité",
+        "link": { "kind": "page", "pageId": "confidentialite", "href": "/confidentialite/" }
+      }
+    ]
   }
 }

@@ -155,4 +155,6 @@ export interface MessageDoc {
   score?: number;
   /** Sent by the AI assistant of the visitor's browser (WebMCP), as the browser reported it. */
   agent?: boolean;
+  /** Erased by Firestore after this date (TTL, `MESSAGE_RETENTION_YEARS` after it arrived). */
+  expiresAt?: Date | { toDate(): Date };
 }

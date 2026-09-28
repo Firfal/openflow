@@ -203,6 +203,15 @@ export function CommandPalette() {
         run: go(() => navigate({ view: "settings", tab: "business" })),
       },
       {
+        id: "go:legal",
+        group: "Aller à",
+        label: "Réglages : informations légales (mentions, confidentialité)",
+        icon: "shieldCheck",
+        keywords:
+          "mentions légales politique de confidentialité rgpd cnil siret données personnelles cookies",
+        run: go(() => navigate({ view: "settings", tab: "legal" })),
+      },
+      {
         id: "go:messages",
         group: "Aller à",
         label: "Messages reçus",

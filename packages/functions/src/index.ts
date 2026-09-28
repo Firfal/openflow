@@ -51,6 +51,7 @@ import {
   notifyIndexNow,
   ownerDecision,
   parseOwners,
+  recordSiteFacts,
   releaseHostingVersion,
   releaseStatusFromBuild,
   runningRelease,
@@ -179,6 +180,10 @@ async function publishSite(by: string): Promise<{ releaseId: string }> {
   const releaseRef = db.collection(COLLECTIONS.releases).doc();
   // IndexNow key, published with the site (announces the changed pages to Bing, Copilot…).
   await ensureIndexNowKey(db).catch((error) => logger.warn("IndexNow key not created", error));
+  // What the legal pages say: the data's region, and whether the messages are e-mailed.
+  await recordSiteFacts(db, { region, mail: !emulator && Boolean(await mailKey()) }).catch(
+    (error) => logger.warn("Site facts not recorded", error),
+  );
   let snapshot: Awaited<ReturnType<typeof snapshotFromFirestore>>;
   try {
     snapshot = await snapshotFromFirestore(db, releaseRef.id);

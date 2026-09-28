@@ -11,7 +11,8 @@ import { useEffect, useRef } from "react";
  * `createOpenFlowLayout` unless the owner turned the measurement off.
  *
  * Nothing is sent when the visitor asked not to be followed (« Ne pas suivre », Global Privacy
- * Control), for automated browsers, and on the owner's devices (`cms-stats-optout`).
+ * Control), for automated browsers, and on devices where the visitor (the privacy policy's switch)
+ * or the owner (Statistiques) stopped the counting (`cms-stats-optout`).
  */
 
 function endpoint(): string {
@@ -22,18 +23,60 @@ function endpoint(): string {
   return STATS_PATH;
 }
 
-function refused(): boolean {
-  // `next dev` without the emulators has no function to count the views.
-  if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_CMS_EMULATORS !== "1") {
-    return true;
-  }
+/** The browser asks not to be followed (Do Not Track, Global Privacy Control). */
+function doNotTrack(): boolean {
   const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
-  if (nav.webdriver || nav.globalPrivacyControl || nav.doNotTrack === "1") return true;
+  return Boolean(nav.globalPrivacyControl) || nav.doNotTrack === "1";
+}
+
+function optedOut(): boolean {
   try {
     return window.localStorage.getItem(STATS_OPT_OUT_KEY) === "1";
   } catch {
     return false;
   }
+}
+
+function refused(): boolean {
+  // `next dev` without the emulators has no function to count the views.
+  if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_CMS_EMULATORS !== "1") {
+    return true;
+  }
+  return navigator.webdriver || doNotTrack() || optedOut();
+}
+
+/**
+ * The visitor's switch of the privacy policy (`statsOptOutProps` of `@openflow/core`): its status
+ * and button take the texts matching the visitor's choice.
+ */
+function showOptOut() {
+  const blocked = doNotTrack();
+  const excluded = optedOut();
+  for (const status of document.querySelectorAll<HTMLElement>("[data-of-stats-status]")) {
+    const text = blocked
+      ? status.dataset.refused
+      : excluded
+        ? status.dataset.excluded
+        : status.dataset.counted;
+    if (text && status.textContent !== text) status.textContent = text;
+  }
+  for (const button of document.querySelectorAll<HTMLElement>("[data-of-stats-optout]")) {
+    button.hidden = blocked;
+    const text = excluded ? button.dataset.resume : button.dataset.stop;
+    if (text && button.textContent !== text) button.textContent = text;
+  }
+}
+
+function toggleOptOut(event: MouseEvent) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest("[data-of-stats-optout]")) return;
+  try {
+    if (optedOut()) window.localStorage.removeItem(STATS_OPT_OUT_KEY);
+    else window.localStorage.setItem(STATS_OPT_OUT_KEY, "1");
+  } catch {
+    // Blocked storage: the choice cannot be kept.
+  }
+  showOptOut();
 }
 
 /** A reload or a move in the history is not a new visit. */
@@ -115,7 +158,8 @@ function watchVitals(path: string) {
   addEventListener("keydown", onInput, { once: true, capture: true });
   let sent = false;
   const flush = () => {
-    if (sent || (!lcp && !interacted)) return;
+    // Nothing once the visitor stopped the counting (privacy policy) while on the page.
+    if (sent || optedOut() || (!lcp && !interacted)) return;
     sent = true;
     send({
       p: path,
@@ -137,6 +181,16 @@ export function OpenFlowStats() {
   const pathname = usePathname();
   const first = useRef(true);
   const last = useRef<string>(undefined);
+
+  useEffect(() => {
+    document.addEventListener("click", toggleOptOut);
+    return () => document.removeEventListener("click", toggleOptOut);
+  }, []);
+
+  // The switch of the privacy policy, on each page shown.
+  useEffect(() => {
+    if (pathname) showOptOut();
+  }, [pathname]);
 
   useEffect(() => {
     // Once per address (React runs effects twice in development).

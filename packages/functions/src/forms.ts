@@ -4,6 +4,7 @@ import {
   FORM_FIELDS_PROP,
   FORM_SUBMISSION_LOG,
   type FormFieldDef,
+  MESSAGE_RETENTION_YEARS,
   type MessageDoc,
   type Snapshot,
   slugToPath,
@@ -149,6 +150,9 @@ export async function handleSubmission(
         : 0;
   }
   const spam = score !== undefined && score < SPAM_SCORE;
+  // Erased by Firestore after the retention period (TTL on `expiresAt`, see the privacy policy).
+  const expiresAt = new Date();
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + MESSAGE_RETENTION_YEARS);
   const message: MessageDoc = {
     formId,
     page: form.page,
@@ -160,6 +164,7 @@ export async function handleSubmission(
     ...(spam ? { spam: true } : {}),
     ...(score !== undefined ? { score } : {}),
     ...(body.agent === true ? { agent: true } : {}),
+    expiresAt,
   };
   await deps.db.collection(COLLECTIONS.messages).add(message);
   if (!spam) {

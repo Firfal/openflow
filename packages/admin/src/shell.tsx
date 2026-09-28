@@ -75,6 +75,7 @@ const SETTINGS: Array<[SettingsTab, string]> = [
   ["theme", "Thème"],
   ["site", "Site et référencement"],
   ["business", "Établissement"],
+  ["legal", "Informations légales"],
 ];
 
 function NavItem({

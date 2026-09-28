@@ -5,6 +5,7 @@ import { Comparison } from "./openflow/components/Comparison";
 import { Faq } from "./openflow/components/Faq";
 import { GetStarted } from "./openflow/components/GetStarted";
 import { HeroEditor } from "./openflow/components/HeroEditor";
+import { Legal } from "./openflow/components/Legal";
 import { Showcase } from "./openflow/components/Showcase";
 import { StandardTerminal } from "./openflow/components/StandardTerminal";
 import { Steps } from "./openflow/components/Steps";
@@ -27,6 +28,7 @@ export default defineConfig({
     story: { title: "Présentation", components: ["Steps", "Showcase", "StandardTerminal"] },
     tech: { title: "Technique", components: ["Architecture", "Comparison", "GetStarted"] },
     closing: { title: "Fin de page", components: ["Faq", "ClosingCta"] },
+    legal: { title: "Pages légales", components: ["Legal"] },
   },
   components: {
     HeroEditor,
@@ -38,6 +40,7 @@ export default defineConfig({
     GetStarted,
     Faq,
     ClosingCta,
+    Legal,
   },
   settings: {
     fields: settingsFields,

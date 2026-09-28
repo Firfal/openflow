@@ -23,7 +23,7 @@ import {
   STORAGE_PATHS,
 } from "@openflow/core";
 import type { Auth } from "firebase-admin/auth";
-import type { Firestore } from "firebase-admin/firestore";
+import { FieldValue, type Firestore } from "firebase-admin/firestore";
 import { GoogleAuth } from "google-auth-library";
 import { withVariants } from "./media.js";
 
@@ -410,6 +410,21 @@ export async function ensureWebApp(
 // IndexNow (Bing, Copilot, Yandex, Seznam…): changed pages are announced at each publication.
 
 const INDEXNOW_KEY = /^[a-f0-9]{32}$/;
+
+/**
+ * Public facts the legal pages are written from (where the data lives, whether the messages are
+ * e-mailed), kept up to date at each publication so the admin shows the same pages.
+ */
+export async function recordSiteFacts(
+  db: Firestore,
+  facts: { region: string; mail: boolean },
+): Promise<void> {
+  const ref = db.collection(COLLECTIONS.system).doc(DOCS.integrations);
+  const current = ((await ref.get()).data() as IntegrationsDoc | undefined) ?? {};
+  const mail = facts.mail ? "resend" : undefined;
+  if (current.region === facts.region && current.mail === mail) return;
+  await ref.set({ region: facts.region, mail: mail ?? FieldValue.delete() }, { merge: true });
+}
 
 /** The site's IndexNow key, made once (it is public: the site serves it at `/indexnow.txt`). */
 export async function ensureIndexNowKey(db: Firestore): Promise<string> {

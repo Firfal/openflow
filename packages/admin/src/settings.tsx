@@ -4,6 +4,7 @@ import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
 import { saveSettings } from "./data.js";
 import { errorMessage } from "./firebase.js";
+import { LegalForm } from "./legal.js";
 import { PageHead } from "./shell.js";
 import { Button, FormField, Spinner } from "./ui.js";
 
@@ -208,6 +209,7 @@ const TAB_TITLES: Record<SettingsTab, string> = {
   theme: "Thème",
   site: "Site et référencement",
   business: "Établissement",
+  legal: "Informations légales",
 };
 
 /** Réglages: one view per tab of the sidebar (the tab lives in the address). */
@@ -222,6 +224,19 @@ export function SettingsView({ tab }: { tab: SettingsTab }) {
         />
         <div className="of-view of-view--narrow">
           <BusinessForm />
+        </div>
+      </>
+    );
+  }
+  if (tab === "legal") {
+    return (
+      <>
+        <PageHead
+          title={TAB_TITLES[tab]}
+          description="Mentions légales et politique de confidentialité, écrites d'après votre site."
+        />
+        <div className="of-view of-view--narrow">
+          <LegalForm />
         </div>
       </>
     );

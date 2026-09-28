@@ -521,11 +521,17 @@ export async function setup(site: string, options: SetupOptions): Promise<void> 
     });
   }
 
-  // Removed by Firestore once expired (TTL): the forms' flood counters (10 min) and the audience
-  // counters (25 months, CNIL).
+  // Where the site's data lives, for its privacy policy (also refreshed at each publication).
+  await send(client, `${integrationsUrl}?updateMask.fieldPaths=region`, "PATCH", {
+    fields: { region: { stringValue: region } },
+  }).catch(() => undefined);
+
+  // Removed by Firestore once expired (TTL): the forms' flood counters (10 min), the audience
+  // counters (25 months, CNIL) and the forms' messages (3 years, privacy policy).
   for (const [group, label] of [
     [COLLECTIONS.rateLimits, "des compteurs anti-spam"],
     [COLLECTIONS.stats, "des statistiques après 25 mois"],
+    [COLLECTIONS.messages, "des messages après 3 ans"],
   ] as const) {
     const ttlUrl = `${firestoreApi}/(default)/collectionGroups/${group}/fields/expiresAt`;
     const ttl = await get<{ ttlConfig?: { state?: string } }>(client, ttlUrl).catch(

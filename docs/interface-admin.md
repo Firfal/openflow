@@ -22,11 +22,11 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Messages**, avec le nombre de messages non lus ;
   - **Statistiques** ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
-  - **Réglages**, qui se déplie en quatre sous-pages : Contenu commun, Thème, Site et référencement
+  - **Réglages**, qui se déplie en cinq sous-pages : Contenu commun, Thème, Site et référencement
     (identité, langue, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
     l'identifiant Google Analytics `G-…`, facultatif, et **Robots des IA** :
     autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
-    **Établissement** (voir plus bas) ;
+    **Établissement** et **Informations légales** (voir plus bas) ;
   - **Historique** ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
@@ -97,6 +97,21 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Présence en ligne : la fiche Google et les réseaux sociaux, un lien par ligne.
   - En bas, « Ce que liront Google et les assistants IA » montre le résultat, et **Enregistrer la fiche**
     l'enregistre (en ligne à la prochaine publication).
+- **Informations légales** (Réglages) : les pages que la loi demande, écrites par OpenFlow.
+  - « Vos pages légales » : les mentions légales et la politique de confidentialité, avec leur adresse et
+    leur statut (« Visible », « Masquée »), ou « Créer la page » quand elle manque. Leur texte s'écrit d'après
+    le site et se met à jour à chaque publication.
+  - « Éditeur du site » : raison sociale, forme juridique et capital, immatriculation, TVA, directeur de la
+    publication, adresse du siège (si elle diffère de celle de l'établissement).
+  - « Données personnelles et litiges » : l'e-mail où écrire pour ses données (celui de l'établissement par
+    défaut), le médiateur de la consommation.
+  - Ce qui manque encore est listé à côté de **Enregistrer**.
+  - « Ce que dit votre politique de confidentialité » : mesure d'audience, Google Analytics, formulaires,
+    reCAPTCHA, envoi des messages par e-mail, oui ou non, d'après le site lui-même.
+  - Dans l'éditeur, la section « Page légale » affiche le texte tel qu'il sera publié ; le panneau propose le
+    choix du document et un champ « Informations complémentaires » pour ce qu'OpenFlow ne connaît pas
+    (newsletter, prise de rendez-vous…).
+- **Messages** : l'en-tête rappelle que chaque message est effacé automatiquement 3 ans après sa réception.
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic. Une
   « Mise à jour automatique » y apparaît quand le site s'est reconstruit seul (voir plus bas) ; elle ne
   publie aucun brouillon.

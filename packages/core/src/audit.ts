@@ -3,6 +3,7 @@ import { businessJsonLd } from "./business.js";
 import { collectionEntry } from "./collections.js";
 import type { OpenFlowConfig } from "./config.js";
 import { getOpenFlowFieldKind, type ImageValue, type LinkValue } from "./fields.js";
+import { legalComponentOf, legalGaps, legalSectionsOf } from "./legal.js";
 import { pageText } from "./llms.js";
 import type { PageSeo, PageStatus, SiteSettings } from "./model.js";
 import { slugToPath } from "./slug.js";
@@ -97,6 +98,16 @@ function valuesOf(
   return out;
 }
 
+/** Pages linked from the common content (menu, footer): `{ kind: "page", pageId }` values. */
+function linkedPageIds(value: unknown, found = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) for (const item of value) linkedPageIds(item, found);
+  else if (isPageLink(value)) found.add(value.pageId);
+  else if (value && typeof value === "object") {
+    for (const item of Object.values(value)) linkedPageIds(item, found);
+  }
+  return found;
+}
+
 const words = (text: string) => text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 
 /** Audits the published pages (or one page) and the site's profile. */
@@ -108,6 +119,8 @@ export function auditSite(input: {
   today: string;
   /** Only this page (its id); the site-wide checks are skipped. */
   pageId?: string;
+  /** Values of the common content (menu, footer): the legal pages must be linked from there. */
+  settings?: Record<string, unknown>;
 }): SiteAudit {
   const { config, site } = input;
   const findings: AuditFinding[] = [];
@@ -181,6 +194,57 @@ export function auditSite(input: {
     }
   }
 
+  if (!input.pageId) {
+    // Legal pages: required for a professional site, and written by OpenFlow from the site itself.
+    const legal = legalComponentOf(config.components);
+    const shown = new Set(published.flatMap((page) => legalSectionsOf(page.data)));
+    const create = (kind: "privacy" | "notice", title: string) =>
+      legal
+        ? `Réglages > Informations légales : « Créer la page ». Ou create_page (« ${title} »), puis add_section « ${legal} » avec legalDocument: "${kind}", et publish. Le texte s'écrit tout seul d'après le site.`
+        : "Le site n'a pas de section « Informations légales » : demandez-la à la personne qui a créé le site.";
+    if (!shown.has("privacy")) {
+      add({
+        code: "legal-privacy",
+        severity: "high",
+        message:
+          "Pas de politique de confidentialité en ligne : elle est obligatoire dès qu'un site traite des données personnelles (visites, formulaires).",
+        fix: create("privacy", "Politique de confidentialité"),
+      });
+    }
+    if (!shown.has("notice")) {
+      add({
+        code: "legal-notice",
+        severity: "high",
+        message:
+          "Pas de mentions légales en ligne : elles sont obligatoires pour un site professionnel (éditeur, hébergeur).",
+        fix: create("notice", "Mentions légales"),
+      });
+    }
+    if (input.settings) {
+      const linked = linkedPageIds(input.settings);
+      for (const page of published) {
+        const kinds = legalSectionsOf(page.data);
+        if (kinds.length === 0 || linked.has(page.id)) continue;
+        add({
+          code: "legal-link",
+          severity: "medium",
+          page: { id: page.id, title: page.title, path: slugToPath(page.slug) },
+          message: `La page « ${page.title} » n'est liée ni depuis le menu ni depuis le bas de page : les visiteurs ne la trouvent pas.`,
+          fix: "Réglages > Contenu commun : ajoutez un lien vers cette page en bas de page (ou update_settings sur le champ de liens du pied de page).",
+        });
+      }
+    }
+    const gaps = legalGaps({ legal: site.legal, business: site.business, siteName: site.name });
+    if (gaps.length > 0) {
+      add({
+        code: "legal-info",
+        severity: "medium",
+        message: `Informations légales incomplètes : ${gaps.join(", ")}.`,
+        fix: "Réglages > Informations légales, ou update_legal (publisher, registration, director, privacyEmail…).",
+      });
+    }
+  }
+
   const titles = new Map<string, AuditPage[]>();
   const descriptions = new Map<string, AuditPage[]>();
   for (const page of audited) {
@@ -232,7 +296,8 @@ export function auditSite(input: {
 
     const data = applyDefaults(page.data, config);
     const text = pageText(data, config, site.lang);
-    if (indexed && words(text) < 80) {
+    // A legal page's text is written by OpenFlow, outside the page's fields.
+    if (indexed && words(text) < 80 && legalSectionsOf(page.data).length === 0) {
       add({
         code: "page-thin",
         severity: "low",

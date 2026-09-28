@@ -19,6 +19,7 @@ export interface SiteSettingsValues {
   mapLabel: string;
   socialLinks: Array<{ label: string; link: LinkValue | null }>;
   legalText: string;
+  legalLinks: Array<{ label: string; link: LinkValue | null }>;
 }
 
 const linkItem: Fields<{ label: string; link: LinkValue | null }> = {
@@ -60,6 +61,13 @@ export const settingsFields: Fields<SiteSettingsValues> = {
     getItemSummary: (item) => item.label || "Lien",
   },
   legalText: { type: "text", label: "Mention en bas de page" },
+  legalLinks: {
+    type: "array",
+    label: "Liens en bas de page (mentions légales, confidentialité)",
+    arrayFields: linkItem,
+    defaultItemProps: { label: "Mentions légales", link: null },
+    getItemSummary: (item) => item.label || "Lien",
+  },
 };
 
 export const settingsDefaults: SiteSettingsValues = {
@@ -73,6 +81,7 @@ export const settingsDefaults: SiteSettingsValues = {
   mapLabel: "Voir le plan",
   socialLinks: [],
   legalText: "Tous droits réservés.",
+  legalLinks: [],
 };
 
 export type SiteSettings = SettingsConfig<SiteSettingsValues>;

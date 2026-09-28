@@ -8,6 +8,7 @@ import { EventList } from "./openflow/components/EventList";
 import { Faq } from "./openflow/components/Faq";
 import { Features } from "./openflow/components/Features";
 import { Hero } from "./openflow/components/Hero";
+import { Legal } from "./openflow/components/Legal";
 import { Testimonials } from "./openflow/components/Testimonials";
 import { TextImage } from "./openflow/components/TextImage";
 import { SiteLayout } from "./openflow/layout/SiteLayout";
@@ -30,6 +31,7 @@ export default defineConfig({
       components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList", "EventList"],
     },
     conversion: { title: "Conversion", components: ["CallToAction", "ContactForm"] },
+    legal: { title: "Pages légales", components: ["Legal"] },
   },
   components: {
     Hero,
@@ -43,6 +45,7 @@ export default defineConfig({
     Article,
     EventList,
     Event,
+    Legal,
   },
   // News items: each one has its page at /actualites/<titre>/, written in the admin
   // (menu « Actualités »); « Liste d'actualités » shows the latest ones. Same for events.

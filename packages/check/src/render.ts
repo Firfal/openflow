@@ -4,6 +4,8 @@ import {
   type CollectionEntry,
   getOpenFlowFieldKind,
   type Issue,
+  type LegalDocument,
+  type LegalDocuments,
   type OpenFlowConfig,
   type OpenFlowMetadata,
   prepareRenderConfig,
@@ -503,7 +505,37 @@ function sampleMetadata(config: OpenFlowConfig, section: string): OpenFlowMetada
       };
     }
   }
-  return { page, collections };
+  return { page, collections, legal: sampleLegal(tokens) };
+}
+
+/** Legal documents whose texts are tokens (they are written by OpenFlow, not by the section). */
+function sampleLegal(tokens: Sentinels): LegalDocuments {
+  const text = () => tokens.next(ANY);
+  const document = (kind: LegalDocument["kind"]): LegalDocument => ({
+    kind,
+    title: text(),
+    lead: text(),
+    sections: [
+      {
+        heading: text(),
+        blocks: [
+          { type: "p", text: [text(), { text: text(), href: "mailto:contact@exemple.fr" }] },
+          { type: "list", items: [[text()], [text(), { text: text(), href: "/page/" }]] },
+          {
+            type: "stats-optout",
+            counted: text(),
+            excluded: text(),
+            refused: text(),
+            stop: text(),
+            resume: text(),
+          },
+          { type: "consent", label: text() },
+        ],
+      },
+      { heading: text(), blocks: [{ type: "p", text: [text()] }] },
+    ],
+  });
+  return { privacy: document("privacy"), notice: document("notice") };
 }
 
 const ANY: SentinelInfo = { path: "", fieldType: "text", contentEditable: false, required: false };

@@ -16,6 +16,13 @@ import {
 } from "../collections.js";
 import type { OpenFlowConfig } from "../config.js";
 import { getOpenFlowFieldKind, isSafeHref, isValidDate, today } from "../fields.js";
+import {
+  LEGAL_LIMITS,
+  type LegalInfo,
+  legalComponentOf,
+  legalGaps,
+  sanitizeLegal,
+} from "../legal.js";
 import { collectEditablePaths } from "../marks.js";
 import type { MediaDoc, PageSeo, PageStatus, ReleaseStatus, SiteSettings } from "../model.js";
 import { isValidSlug, normalizeSlug, slugify, slugToPath } from "../slug.js";
@@ -120,6 +127,8 @@ export interface AgentBackend {
   saveTheme(theme: Record<string, string>): Promise<void>;
   /** Replaces the business profile (`site.business`); `null` removes it. */
   saveBusiness(business: BusinessInfo | null): Promise<void>;
+  /** Replaces the publisher's legal information (`site.legal`); `null` removes it. */
+  saveLegal(legal: LegalInfo | null): Promise<void>;
   listMedia(): Promise<AgentMedia[]>;
   /** Copies a public image or video into the media library. */
   importMedia(url: string, alt?: string): Promise<AgentMedia>;
@@ -603,6 +612,14 @@ tool({
       business: settings.site.business
         ? businessLines(settings.site, today()).map((l) => l.replace(/^\s*- /, ""))
         : null,
+      legal: {
+        section: legalComponentOf(ctx.schema.sections) ?? null,
+        missing: legalGaps({
+          legal: settings.site.legal,
+          business: settings.site.business,
+          siteName: settings.site.name,
+        }),
+      },
       freeStyle: ctx.schema.styles === "free",
       lastPublication: releases[0] ?? null,
       notes: [
@@ -610,6 +627,7 @@ tool({
         "Pour modifier un texte : get_page, puis update_section avec le chemin du champ (ex. « title » ou « items[1].answer »).",
         "Collections (articles, réalisations…) : list_items, create_item ; un élément est une page (get_page, update_section, update_page, delete_page), dont la section « itemSection » porte les champs.",
         "Coordonnées, horaires et fermetures exceptionnelles de l'établissement : get_settings (« business »), puis update_business.",
+        "Mentions légales et politique de confidentialité : leur texte est écrit par OpenFlow d'après le site, dans une page qui contient la section « legal.section » (champ legalDocument : « notice » ou « privacy »). Les informations de l'éditeur (raison sociale, immatriculation…) se modifient avec update_legal : ne les inventez jamais, demandez-les au propriétaire.",
         "Demandez confirmation au propriétaire avant publish, delete_page et remove_section.",
       ],
     };
@@ -1110,6 +1128,7 @@ tool({
       fields: describeFields(ctx.schema.settings?.fields),
       values: { ...(ctx.schema.settings?.defaults ?? {}), ...settings.values },
       business: settings.site.business ?? null,
+      legal: settings.site.legal ?? null,
     };
   },
 });
@@ -1196,6 +1215,74 @@ tool({
       business,
       summary: business ? businessLines({ ...settings.site, business }, today()) : [],
       note: "Enregistré en brouillon : en ligne à la prochaine publication.",
+    };
+  },
+});
+
+const legalText = (key: keyof LegalInfo, describe: string) =>
+  z.string().max(LEGAL_LIMITS[key]).nullable().optional().describe(describe);
+
+tool({
+  name: "update_legal",
+  title: "Modifier les informations légales",
+  description:
+    "Éditeur du site, pour les mentions légales et la politique de confidentialité (leur texte est écrit par OpenFlow d'après le site). Seuls les champs donnés changent ; null en efface un. N'inventez jamais ces informations : demandez-les au propriétaire. Téléphone, e-mail et adresse de l'établissement viennent de la fiche (update_business).",
+  input: z.object({
+    publisher: legalText(
+      "publisher",
+      "Raison sociale, ou nom et prénom d'un entrepreneur individuel.",
+    ),
+    legalForm: legalText(
+      "legalForm",
+      "« SARL au capital de 10 000 € », « Entrepreneur individuel ».",
+    ),
+    registration: legalText(
+      "registration",
+      "« RCS Lyon 123 456 789 », « SIREN 123 456 789 (RNE) ».",
+    ),
+    vat: legalText("vat", "Numéro de TVA intracommunautaire."),
+    address: legalText("address", "Adresse du siège, si elle diffère de celle de l'établissement."),
+    director: legalText("director", "Directeur de la publication (une personne)."),
+    privacyEmail: legalText(
+      "privacyEmail",
+      "E-mail pour les questions sur les données personnelles (celui de l'établissement sinon).",
+    ),
+    mediator: legalText(
+      "mediator",
+      "Médiateur de la consommation : nom et site (obligatoire pour vendre à des particuliers en France).",
+    ),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  run: async (changes, ctx) => {
+    const settings = await ctx.backend.getSettings();
+    const next: Record<string, unknown> = { ...(settings.site.legal ?? {}) };
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) continue;
+      if (value === null || value.trim() === "") delete next[key];
+      else next[key] = value;
+    }
+    if (
+      typeof next.privacyEmail === "string" &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.privacyEmail)
+    ) {
+      throw new AgentError("privacyEmail : adresse e-mail attendue.");
+    }
+    const legal = sanitizeLegal(next) ?? null;
+    await ctx.backend.saveLegal(legal);
+    return {
+      ok: true,
+      legal,
+      missing: legalGaps({
+        legal: legal ?? undefined,
+        business: settings.site.business,
+        siteName: settings.site.name,
+      }),
+      note: "Enregistré en brouillon : les pages légales seront à jour à la prochaine publication.",
     };
   },
 });
@@ -1361,6 +1448,7 @@ tool({
       site: settings.site,
       today: statsDay(new Date()),
       pageId: page?.id,
+      settings: settings.values,
     });
     return {
       ...audit,

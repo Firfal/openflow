@@ -25,6 +25,9 @@ Détail et sources : [sites-de-demain.md](sites-de-demain.md).
 7. Collections typées : événements, prestations et produits (`kind`), avec leurs données structurées
    (`Event`, `Service`, `Product` et `Offer`) ; agenda d'exemple dans le modèle de départ : **réalisées**.
 8. Outils d'audit dans le MCP (`audit_site`, conseils dans la fenêtre de publication) : **réalisés**.
+9. Pages légales écrites d'après le site (politique de confidentialité et mentions légales à jour à chaque
+   publication, bouton d'opposition à la mesure d'audience, messages effacés après 3 ans, outil
+   `update_legal`) : **réalisées**.
 
 ## Détails de conception des phases suivantes
 

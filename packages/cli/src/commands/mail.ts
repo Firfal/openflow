@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
+import { COLLECTIONS, DOCS } from "@openflow/core";
 import { GoogleAuth } from "google-auth-library";
 import { defaultProject } from "../firebase.js";
 import { CliError, log } from "../util.js";
@@ -122,6 +123,15 @@ export async function mail(site: string, options: MailOptions): Promise<void> {
     });
   }
   log.ok("Les fonctions peuvent lire la clé");
+
+  // The privacy policy names the e-mail service (also checked at each publication).
+  await client
+    .request({
+      url: `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${COLLECTIONS.system}/${DOCS.integrations}?updateMask.fieldPaths=mail`,
+      method: "PATCH",
+      data: { fields: { mail: { stringValue: "resend" } } },
+    })
+    .catch(() => undefined);
 
   if (options.from) {
     const lines = env.split("\n").filter((line) => line && !line.startsWith("CMS_MAIL_FROM="));

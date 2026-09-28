@@ -64,6 +64,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "cms_page_content/accueil"), content);
     await setDoc(doc(db, "cms_releases/r1"), { status: "live" });
     await setDoc(doc(db, "cms_system/source"), { path: "cms/source/x.tgz" });
+    await setDoc(doc(db, "cms_system/integrations"), { region: "europe-west1", mail: "resend" });
     await setDoc(doc(db, "cms_agent_tokens/k1"), {
       label: "Claude",
       hash: "abc",
@@ -123,6 +124,12 @@ describe("Firestore rules", () => {
     await assertFails(setDoc(doc(db, "cms_system/source"), { path: "evil" }));
   });
 
+  it("lets the owner read the public facts of the integrations (legal pages), never write them", async () => {
+    const db = owner().firestore();
+    await assertSucceeds(getDoc(doc(db, "cms_system/integrations")));
+    await assertFails(setDoc(doc(db, "cms_system/integrations"), { mail: "evil" }));
+  });
+
   it("lets the owner list and revoke assistant keys, never create them", async () => {
     const db = owner().firestore();
     await assertSucceeds(getDoc(doc(db, "cms_agent_tokens/k1")));
@@ -171,6 +178,7 @@ describe("Firestore rules", () => {
       await assertFails(deleteDoc(doc(db, "cms_agent_tokens/k1")));
       await assertFails(getDoc(doc(db, "cms_stats/2026-09-27-0")));
       await assertFails(setDoc(doc(db, "cms_stats/2026-09-27-9"), { views: 1 }));
+      await assertFails(getDoc(doc(db, "cms_system/integrations")));
     });
   }
 });

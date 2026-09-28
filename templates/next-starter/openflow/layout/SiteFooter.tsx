@@ -85,9 +85,25 @@ export function SiteFooter({
           ))}
         </div>
       </div>
-      <div className="border-t border-white/10 py-6 text-center text-sm text-stone-500">
-        © {year} {business?.name || site.name}
-        {settings.legalText ? ` · ${settings.legalText}` : ""}
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 border-t border-white/10 px-6 py-6 text-center text-sm text-stone-400 md:flex-row md:justify-between md:text-left">
+        <p>
+          © {year} {business?.name || site.name}
+          {settings.legalText ? ` · ${settings.legalText}` : ""}
+        </p>
+        {(settings.legalLinks ?? []).length > 0 && (
+          <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+            {(settings.legalLinks ?? []).map((item, index) => (
+              <li key={index}>
+                <a
+                  {...linkProps(item.link)}
+                  className="underline-offset-4 hover:text-white hover:underline"
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </footer>
   );

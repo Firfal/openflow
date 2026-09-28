@@ -1,7 +1,8 @@
 import type { Data } from "@puckeditor/core";
 import { z } from "zod";
 import { businessSchema, sanitizeBusiness } from "./business-schema.js";
-import type { PageDoc, SettingsDoc, SiteSettings } from "./model.js";
+import { sanitizeLegal } from "./legal.js";
+import type { IntegrationsDoc, PageDoc, SettingsDoc, SiteSettings } from "./model.js";
 import { isValidSlug, slugToPath } from "./slug.js";
 import { sanitizePageStyles, sanitizeTheme } from "./style.js";
 import { ensureIds, resolvePageLinks } from "./walk.js";
@@ -47,6 +48,19 @@ export const siteSettingsSchema = z.object({
   business: businessSchema.optional().catch(undefined),
   aiTraining: z.enum(["allow", "block"]).optional().catch(undefined),
   stats: z.enum(["on", "off"]).optional().catch(undefined),
+  legal: z
+    .object({
+      publisher: z.string().optional(),
+      legalForm: z.string().optional(),
+      registration: z.string().optional(),
+      vat: z.string().optional(),
+      address: z.string().optional(),
+      director: z.string().optional(),
+      privacyEmail: z.string().optional(),
+      mediator: z.string().optional(),
+    })
+    .optional()
+    .catch(undefined),
 });
 
 export const snapshotPageSchema = z.object({
@@ -71,7 +85,12 @@ export const snapshotSchema = z.object({
   theme: z.record(z.string(), z.string()).default({}),
   /** Public keys of the site's integrations (reCAPTCHA), from `cms_system/integrations`. */
   integrations: z
-    .object({ recaptchaSiteKey: z.string().optional(), indexNowKey: z.string().optional() })
+    .object({
+      recaptchaSiteKey: z.string().optional(),
+      indexNowKey: z.string().optional(),
+      mail: z.literal("resend").optional().catch(undefined),
+      region: z.string().optional(),
+    })
     .default({}),
   pages: z.array(snapshotPageSchema),
 });
@@ -83,7 +102,7 @@ export interface SnapshotInput {
   releaseId: string;
   createdAt?: string;
   /** Public keys of the integrations (`cms_system/integrations`). */
-  integrations?: { recaptchaSiteKey?: string; indexNowKey?: string };
+  integrations?: Pick<IntegrationsDoc, "recaptchaSiteKey" | "indexNowKey" | "mail" | "region">;
   settings: Pick<SettingsDoc, "site" | "values" | "theme">;
   pages: Array<
     Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & {
@@ -153,6 +172,10 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
   const indexNowKey = input.integrations?.indexNowKey;
   if (site.aiTraining !== "block") delete site.aiTraining;
   if (site.stats !== "off") delete site.stats;
+  const legal = sanitizeLegal(input.settings.site.legal);
+  if (legal) site.legal = legal;
+  else delete site.legal;
+  const region = input.integrations?.region;
   return {
     version: SNAPSHOT_VERSION,
     releaseId: input.releaseId,
@@ -163,6 +186,8 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     integrations: {
       ...(recaptchaSiteKey && /^[\w-]{20,60}$/.test(recaptchaSiteKey) ? { recaptchaSiteKey } : {}),
       ...(indexNowKey && /^[a-f0-9]{32}$/.test(indexNowKey) ? { indexNowKey } : {}),
+      ...(input.integrations?.mail === "resend" ? { mail: "resend" as const } : {}),
+      ...(region && /^[a-z0-9-]{2,40}$/.test(region) ? { region } : {}),
     },
     pages,
   };

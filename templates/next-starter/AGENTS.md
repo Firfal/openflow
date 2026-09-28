@@ -32,6 +32,10 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   « Événements » (`kind: "event"`) : la section `Event` (jour, heure, lieu, tarif, lus par Google et les
   IA) et l'agenda `EventList`. Pour une autre collection (réalisations, prestations, équipe), reprends ces
   modèles (voir « Collections » dans `contrat.md`).
+- Pages légales : la section `Legal` affiche la politique de confidentialité ou les mentions légales
+  (prop `legalDocument`, `legalDocumentField()`), dont le texte est écrit par OpenFlow d'après le site
+  (`getLegalDocument(puck.metadata, legalDocument)`). Elle porte le `h1` de sa page. Pages
+  `confidentialite` et `mentions-legales`, liées depuis le pied de page (`legalLinks`).
 - Export statique (`output: "export"`) sur Firebase Hosting. Il n'y a **pas de serveur Next.js**.
 
 ## Contrat des sections (obligatoire)

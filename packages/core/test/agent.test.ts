@@ -163,6 +163,10 @@ function memoryBackend() {
       if (business) settings.site.business = business;
       else delete settings.site.business;
     },
+    saveLegal: async (legal) => {
+      if (legal) settings.site.legal = legal;
+      else delete settings.site.legal;
+    },
     listMedia: async () => [
       {
         id: "m1",
@@ -520,5 +524,33 @@ describe("audit_site", () => {
     };
     expect(one.pagesChecked).toBe(1);
     expect(one.findings.map((f) => f.code)).not.toContain("site-url");
+  });
+});
+
+describe("update_legal", () => {
+  it("saves the publisher's details, reports what is missing, and never keeps a bad e-mail", async () => {
+    const result = await run("update_legal", {
+      publisher: "SARL Boulangerie du Four",
+      registration: "RCS Lyon 123 456 789",
+      director: " Marie Martin ",
+    });
+    expect(result.legal).toEqual({
+      publisher: "SARL Boulangerie du Four",
+      registration: "RCS Lyon 123 456 789",
+      director: "Marie Martin",
+    });
+    expect(result.missing).toContain("e-mail pour les données personnelles");
+    expect((await run("get_settings", {})).legal).toEqual(result.legal);
+    // null removes a detail; the others stay.
+    expect((await run("update_legal", { director: null })).legal).toEqual({
+      publisher: "SARL Boulangerie du Four",
+      registration: "RCS Lyon 123 456 789",
+    });
+    await expect(run("update_legal", { privacyEmail: "pas un e-mail" })).rejects.toThrow(
+      "privacyEmail",
+    );
+    const overview = await run("get_site_overview", {});
+    expect(overview.legal.missing).toContain("directeur de la publication");
+    expect(overview.notes.join(" ")).toContain("update_legal");
   });
 });

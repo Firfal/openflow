@@ -5,9 +5,11 @@ import {
   type CollectionConfig,
   DOCS,
   estimateSize,
+  type IntegrationsDoc,
   type ItemMetaPatch,
   itemMeta,
   joinPage,
+  type LegalInfo,
   type MediaDoc,
   type MessageDoc,
   newItemData,
@@ -287,6 +289,24 @@ export async function saveBusiness(db: Firestore, business: BusinessInfo | null,
     },
     { mergeFields: ["site.business", "updatedAt", "updatedBy"] },
   );
+}
+
+export async function saveLegal(db: Firestore, legal: LegalInfo | null, by?: string) {
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    {
+      site: { legal: legal ? JSON.parse(JSON.stringify(legal)) : null },
+      updatedAt: now(),
+      updatedBy: by ?? null,
+    },
+    { mergeFields: ["site.legal", "updatedAt", "updatedBy"] },
+  );
+}
+
+/** Public facts of the integrations (reCAPTCHA, e-mails, region), for the legal pages. */
+export async function getIntegrations(db: Firestore): Promise<IntegrationsDoc> {
+  const snap = await getDoc(doc(db, COLLECTIONS.system, DOCS.integrations));
+  return (snap.data() as IntegrationsDoc | undefined) ?? {};
 }
 
 /** Replaces the owner's theme tokens (keys absent from `theme` are removed). */

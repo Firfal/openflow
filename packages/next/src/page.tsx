@@ -7,6 +7,10 @@ import {
   findPage,
   itemEntry,
   jsonLdScript,
+  type LegalDocuments,
+  legalDocuments,
+  legalFacts,
+  legalSectionsOf,
   type OpenFlowConfig,
   type OpenFlowMetadata,
   pageJsonLd,
@@ -83,6 +87,27 @@ function collectionsOf(snapshot: Snapshot, config: OpenFlowConfig) {
 }
 
 /**
+ * The legal pages of a snapshot (privacy policy, legal notice), written from what the published
+ * site does; computed once per build.
+ */
+const legalCache = new WeakMap<Snapshot, LegalDocuments>();
+function legalOf(snapshot: Snapshot) {
+  let documents = legalCache.get(snapshot);
+  if (!documents) {
+    documents = legalDocuments(
+      legalFacts({
+        site: snapshot.site,
+        pages: snapshot.pages,
+        integrations: snapshot.integrations,
+        date: snapshot.createdAt,
+      }),
+    );
+    legalCache.set(snapshot, documents);
+  }
+  return documents;
+}
+
+/**
  * Creates the catch-all page of an OpenFlow site (`app/(site)/[[...slug]]/page.tsx`):
  *
  * ```tsx
@@ -135,6 +160,8 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
         ...(page.collection ? { collection: page.collection } : {}),
       },
       collections,
+      // Only the pages showing a legal document get them (`getLegalDocument`).
+      ...(legalSectionsOf(page.data).length > 0 ? { legal: legalOf(snapshot) } : {}),
     };
     return (
       <>

@@ -54,9 +54,10 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut) |
 | `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) et fiche établissement (lecture) |
 | `update_business` | Fiche établissement : coordonnées, horaires, fermetures exceptionnelles (« nous sommes fermés du 10 au 20 août ») |
+| `update_legal` | Informations de l'éditeur pour les pages légales (raison sociale, immatriculation, directeur de la publication, e-mail pour les données personnelles, médiateur). L'IA ne les invente jamais : elle les demande au propriétaire. Le texte des pages légales est écrit par OpenFlow d'après le site |
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |
-| `audit_site` | Audit du site (ou d'une page) : ce qui empêche d'être trouvé et cité par Google et les IA (descriptions, textes des images, liens vers une page masquée ou supprimée, pages courtes ou anciennes, fiche établissement, titres en double), avec l'outil qui corrige chaque point. L'IA propose ensuite ses corrections au propriétaire |
+| `audit_site` | Audit du site (ou d'une page) : ce qui empêche d'être trouvé et cité par Google et les IA (descriptions, textes des images, liens vers une page masquée ou supprimée, pages courtes ou anciennes, fiche établissement, titres en double, pages légales absentes ou non liées), avec l'outil qui corrige chaque point. L'IA propose ensuite ses corrections au propriétaire |
 | `get_stats` | Statistiques des 7, 30 ou 90 derniers jours : visites, pages vues, pages les plus lues, sources (dont les assistants IA), pages où arrivent les visiteurs envoyés par une IA, appareils, vitesse ressentie (Core Web Vitals) |
 | `publish`, `get_publication_status` | Mise en ligne et suivi |
 

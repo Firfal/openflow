@@ -7,6 +7,9 @@ import {
   COLLECTIONS,
   getCollectionConfig,
   itemMeta,
+  legalDocuments,
+  legalFacts,
+  legalSectionsOf,
   type OpenFlowMetadata,
   PAGE_SIZE_WARNING_BYTES,
   type PageContentDoc,
@@ -32,10 +35,11 @@ import { prepareEditorConfig } from "./fields.js";
 import { errorMessage } from "./firebase.js";
 import { type Focus, FocusContext, type FocusStore } from "./focus.js";
 import { FR_DICTIONARY } from "./i18n.js";
+import { useLegalFacts } from "./legal.js";
 import { Button, EmptyState, Spinner } from "./ui.js";
 
 export function EditorView({ pageId }: { pageId: string }) {
-  const { config, services, user, notify, navigate, pages } = useAdmin();
+  const { config, services, user, notify, navigate, pages, settings } = useAdmin();
   const [page, setPage] = useState<FullPage | null | undefined>(undefined);
   const lastSaved = useRef<string>("");
   const warned = useRef(false);
@@ -43,6 +47,11 @@ export function EditorView({ pageId }: { pageId: string }) {
   const collection = getCollectionConfig(config, page?.collection);
   // The site's items as they were when the page opened (sections listing a collection).
   const pagesAtOpen = useRef(pages);
+  const settingsAtOpen = useRef(settings);
+  // A legal page's text is written from the whole site (forms, integrations): loaded before the
+  // editor opens. A legal section added meanwhile shows what the settings alone tell.
+  const legalPage = page ? legalSectionsOf(page.data).length > 0 : false;
+  const facts = useLegalFacts(legalPage);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,9 +110,16 @@ export function EditorView({ pageId }: { pageId: string }) {
               ...(page.collection ? { collection: page.collection } : {}),
             },
             collections: buildCollections(pagesAtOpen.current, config),
+            legal: legalDocuments(
+              facts ??
+                legalFacts({
+                  site: { ...config.site, ...(settingsAtOpen.current?.site ?? {}) },
+                  pages: [],
+                }),
+            ),
           }
         : {},
-    [page, config],
+    [page, config, facts],
   );
   const [focus, setFocus] = useState<Focus | null>(null);
   const focusStore = useMemo<FocusStore>(() => ({ focus, setFocus }), [focus]);
@@ -150,7 +166,9 @@ export function EditorView({ pageId }: { pageId: string }) {
     });
   }, [page, pageId, services.db, config, notify]);
 
-  if (page === undefined) return <Spinner label="Ouverture de la page…" />;
+  if (page === undefined || (legalPage && !facts)) {
+    return <Spinner label="Ouverture de la page…" />;
+  }
   if (page === null) {
     return (
       <section className="of-view of-view--narrow" style={{ paddingTop: 64 }}>

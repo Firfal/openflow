@@ -1,0 +1,24 @@
+{
+  "slug": "confidentialite",
+  "title": "Politique de confidentialité",
+  "status": "published",
+  "seo": {
+    "title": "Politique de confidentialité",
+    "description": "Les données que traite ce site, pourquoi, combien de temps, et comment exercer vos droits : mesure d’audience sans cookie, formulaire de contact, hébergement."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Legal",
+        "props": {
+          "id": "legal-privacy",
+          "legalDocument": "privacy",
+          "extra": ""
+        }
+      }
+    ]
+  }
+}

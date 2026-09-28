@@ -1,0 +1,24 @@
+{
+  "slug": "mentions-legales",
+  "title": "Mentions légales",
+  "status": "published",
+  "seo": {
+    "title": "Mentions légales",
+    "description": "L’éditeur du site, son directeur de la publication et son hébergeur, avec leurs coordonnées, comme la loi le demande pour un site professionnel."
+  },
+  "data": {
+    "root": {
+      "props": {}
+    },
+    "content": [
+      {
+        "type": "Legal",
+        "props": {
+          "id": "legal-notice",
+          "legalDocument": "notice",
+          "extra": ""
+        }
+      }
+    ]
+  }
+}

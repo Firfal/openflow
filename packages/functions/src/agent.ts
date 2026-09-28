@@ -274,6 +274,12 @@ export function adminBackend({
         { mergeFields: ["site.business", "updatedAt", "updatedBy"] },
       );
     },
+    async saveLegal(legal) {
+      await settingsRef.set(
+        { site: { legal: legal ? JSON.parse(JSON.stringify(legal)) : null }, ...stamp() },
+        { mergeFields: ["site.legal", "updatedAt", "updatedBy"] },
+      );
+    },
     async listMedia() {
       const snap = await db
         .collection(COLLECTIONS.media)

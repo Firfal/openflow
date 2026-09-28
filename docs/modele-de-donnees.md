@@ -9,19 +9,19 @@ Les types TypeScript se trouvent dans `packages/core/src/model.ts`.
 
 | Document | Contenu | Écrit par | Lu par |
 |---|---|---|---|
-| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`, `business` : fiche établissement, voir plus bas, `aiTraining` : `block` pour refuser les robots d'entraînement des IA dans robots.txt), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
+| `cms_site/settings` | `site` (nom, langue, url, description, ogImage, `gaMeasurementId` : identifiant Google Analytics `G-…`, `business` : fiche établissement, voir plus bas, `aiTraining` : `block` pour refuser les robots d'entraînement des IA dans robots.txt, `stats` : `off` pour arrêter la mesure d'audience, `legal` : informations de l'éditeur, voir plus bas), `values` (réglages globaux déclarés dans `config.settings`), `theme` (jetons du thème, ex. `{ "color-ink": "#101820" }`), `updatedAt`, `updatedBy` | Admin, `openflow seed` | Admin, `cmsPublish` |
 | `cms_pages/{pageId}` | Fiche de la page, sans son contenu : `slug`, `title`, `status` (`draft` ou `published`, c'est-à-dire incluse dans le site), `seo` (`title`, `description`, `ogImage`, `noindex`), `updatedAt` (bouge aussi quand le contenu change), `updatedBy`. Pour un élément de collection : `collection` (son nom) et `summary` (valeurs affichées dans les listes, voir plus bas) | Admin, `openflow seed`, `cmsMcp` | Admin (liste des pages et des collections, en direct), `cmsPublish` |
 | `cms_page_content/{pageId}` | Contenu de la page (même identifiant) : `data` (données Puck du brouillon), `updatedAt`, `updatedBy` | Admin (enregistrement automatique, écrit avec la date de la fiche), `openflow seed`, `cmsMcp` | Admin (à l'ouverture de la page), `cmsPublish`, `cmsMcp` |
 | `cms_releases/{releaseId}` | `status` (`queued`, `building`, `live`, `failed` ou `superseded`), `createdAt`, `createdBy`, `snapshotPath`, `sourcePath`, `builder`, `buildId`, `logUrl`, `hostingVersion`, `finishedAt`, `error`, `pageCount`, `restoredAt`, `contentAt` (mise à jour automatique : date du contenu reconstruit) | Cloud Functions et CLI uniquement | Admin |
 | `cms_media/{mediaId}` | `path`, `url`, `name`, `contentType`, `size`, `width`, `height`, `alt`, `source` (`storage` : importé ; `static` : fichier de `public/`), `createdAt` ; `variants` (copies optimisées : `url`, `width`, `height`, `size`), `poster` (aperçu d'une vidéo), `optimization` (`status` : `pending`, `done`, `skipped` ou `failed`) | Admin, `openflow seed`, `cmsOptimizeMedia` (copies) | Admin (médiathèque), `cmsPublish` |
 | `cms_system/source` | Dernière archive du code (`path`, `sha256`, `uploadedAt`) | `openflow deploy` | `cmsPublish` |
-| `cms_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires ; `indexNowKey` : clé IndexNow (publique, servie à `/indexnow.txt`), créée à la première publication. Toutes deux sont publiées dans le snapshot | `openflow setup`, `cmsPublish` (clé IndexNow) | `cmsPublish` |
+| `cms_system/integrations` | `recaptchaSiteKey` : clé reCAPTCHA Enterprise des formulaires ; `indexNowKey` : clé IndexNow (publique, servie à `/indexnow.txt`), créée à la première publication ; `mail` : `resend` quand les messages sont envoyés par e-mail ; `region` : région Google Cloud des données (`europe-west1`). Tout est publié dans le snapshot (les pages légales s'en servent) | `openflow setup`, `openflow mail`, `cmsPublish` (clé IndexNow, `mail` et `region` à chaque publication) | `cmsPublish`, admin (lecture seule : Informations légales) |
 | `cms_system/schema` | Schéma sérialisable du site : sections, champs, réglages, thème, collections (`buildSiteSchema`) | `openflow seed` / `deploy` | `cmsMcp` |
 | `cms_agent_tokens/{id}` | IA connectées et clés d'accès : `kind` (`key` ou `oauth`), `label`, `hash` (SHA-256 de la clé ou du jeton d'accès), `prefix`, `createdAt`, `createdBy`, `lastUsedAt` ; en OAuth, `clientId`, `expiresAt`, `refreshHash`, `refreshExpiresAt`, `redirect` | `cmsCreateAgentToken`, `cmsMcp` | Admin (liste, déconnexion) |
 | `cms_agent_clients/{clientId}` | Clients OAuth enregistrés par les IA : `name`, `redirectUris`, `authMethod`, `secretHash`, `createdAt`, `lastUsedAt` | `cmsMcp` | `cmsMcp` |
 | `cms_agent_requests/{id}` | Demandes d'autorisation en attente du propriétaire (10 min) | `cmsMcp` | `cmsAgentConsent` |
 | `cms_agent_codes/{hash}` | Codes d'autorisation, à usage unique (5 min) | `cmsAgentConsent` | `cmsMcp` |
-| `cms_messages/{id}` | Messages des formulaires : `formId`, `page`, `formTitle`, `fields` (`[{ label, value }]` dans l'ordre du formulaire), `email` (pour répondre), `createdAt`, `read`, `spam`, `score` (reCAPTCHA) | `cmsSubmitForm` ; le propriétaire ne change que `read` et `spam` | Admin (Messages) |
+| `cms_messages/{id}` | Messages des formulaires : `formId`, `page`, `formTitle`, `fields` (`[{ label, value }]` dans l'ordre du formulaire), `email` (pour répondre), `createdAt`, `read`, `spam`, `score` (reCAPTCHA), `agent` (envoyé par l'assistant IA du visiteur), `expiresAt` (3 ans, TTL) | `cmsSubmitForm` ; le propriétaire ne change que `read` et `spam` | Admin (Messages) |
 | `cms_rate_limits/{empreinte}` | Envois récents d'un visiteur (`start`, `count`, `expiresAt`, effacé par TTL) | `cmsSubmitForm` | `cmsSubmitForm` |
 | `cms_stats/{jour}-{0..3}` | Compteurs d'audience d'une journée (heure de Paris), répartis sur 4 documents : `day`, `views`, `visits`, `pages` (adresse → vues, `(autre)` pour une adresse inconnue), `sources` (clé de source → visites : `chatgpt`, `google`, `direct`, `site`…), `devices` (`mobile`, `tablet`, `desktop`), `aiPages` (page d'arrivée des visites venues d'une IA), `expiresAt` (25 mois, TTL) | `cmsPageView` | Admin (Statistiques), outil `get_stats` |
 | `cms_stats/{jour}-sites` | Sites qui ont envoyé des visites ce jour-là : `sites` (hôte → visites, 100 au plus, puis `autres`), `expiresAt` | `cmsPageView` | Admin (Statistiques), outil `get_stats` |
@@ -116,6 +116,28 @@ Aucune nouvelle collection Firestore ni règle de sécurité : les fiches resten
   `openingHoursSpecification` et, pour les fermetures à venir, `specialOpeningHoursSpecification`),
   la rubrique « Informations pratiques » de `llms.txt`, l'outil `get_site_overview`, et le cadre du site
   (`site.business` dans `LayoutProps`, par exemple le pied de page).
+
+## Informations légales (`site.legal`)
+
+Écrites dans Réglages > Informations légales (ou par l'outil IA `update_legal`), publiées dans le snapshot
+(seuls les textes valides, `sanitizeLegal`) :
+
+```jsonc
+{
+  "publisher": "SARL Boulangerie du Four",      // raison sociale, ou nom d'un entrepreneur individuel
+  "legalForm": "SARL au capital de 10 000 €",
+  "registration": "RCS Paris 123 456 789",
+  "vat": "FR 12 123456789",
+  "address": "…",                                // siège, s'il diffère de l'adresse de l'établissement
+  "director": "Marie Martin",                    // directeur de la publication
+  "privacyEmail": "donnees@…",                   // sinon l'e-mail de l'établissement
+  "mediator": "CM2C, www.cm2c.net"               // médiateur de la consommation
+}
+```
+
+Avec la fiche établissement, les pages publiées et `cms_system/integrations`, elles forment les faits
+(`legalFacts`) d'où OpenFlow écrit la politique de confidentialité et les mentions légales
+(`legalDocuments`, voir [securite.md](securite.md#pages-légales-politique-de-confidentialité-mentions-légales)).
 
 ## Valeurs des champs OpenFlow
 

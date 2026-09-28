@@ -96,6 +96,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   ouverture », « Ajouter une fermeture », list « Fermetures exceptionnelles », « Du » (exact),
   « Enregistrer la fiche », statistics: « Statistiques » (sidebar, exact), lists « Sources des visites » /
   « Pages où arrivent les assistants IA » / « Vitesse ressentie », slider « Visites par jour », class `.of-stat`,
+  legal: « Informations légales » (sidebar), « Éditeur du site », labels « Nom ou raison sociale » /
+  « Immatriculation » / « Directeur de la publication », « Enregistrer » (exact), classes `.of-legal-pages`
+  and `.of-facts`,
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

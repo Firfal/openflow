@@ -78,7 +78,8 @@ function loadAnalytics(measurementId: string) {
   }
   loaded = true;
   window.gtag("js", new Date());
-  window.gtag("config", measurementId);
+  // 13 months at most, as the CNIL recommends (Google's default is 2 years).
+  window.gtag("config", measurementId, { cookie_expires: 395 * 24 * 3600 });
   const script = document.createElement("script");
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
@@ -117,6 +118,16 @@ export function OpenFlowAnalytics({ measurementId }: { measurementId: string }) 
   const [open, setOpen] = useState(false);
   const [lang, setLang] = useState<"fr" | "en">("fr");
   const t = TEXTS[lang];
+
+  // « Choisir pour les cookies » in the privacy policy (`consentButtonProps` of `@openflow/core`).
+  useEffect(() => {
+    const reopen = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("[data-of-consent-open]")) setOpen(true);
+    };
+    document.addEventListener("click", reopen);
+    return () => document.removeEventListener("click", reopen);
+  }, []);
 
   useEffect(() => {
     setLang(document.documentElement.lang.startsWith("en") ? "en" : "fr");

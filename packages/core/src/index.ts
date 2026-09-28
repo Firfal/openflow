@@ -128,6 +128,32 @@ export {
   formFieldsField,
   validateSubmission,
 } from "./forms.js";
+export type {
+  LegalBlock,
+  LegalDocument,
+  LegalDocumentKind,
+  LegalDocuments,
+  LegalFacts,
+  LegalFactsInput,
+  LegalInfo,
+  LegalSection,
+  LegalText,
+} from "./legal.js";
+export {
+  consentButtonProps,
+  getLegalDocument,
+  LEGAL_DOCUMENT_PROP,
+  LEGAL_LIMITS,
+  legalComponentOf,
+  legalDocumentField,
+  legalGaps,
+  legalSectionsOf,
+  MESSAGE_RETENTION_YEARS,
+  publisherOf,
+  sanitizeLegal,
+  statsOptOutProps,
+} from "./legal.js";
+export { legalDocuments, legalDocumentText, legalFacts } from "./legal-documents.js";
 export { buildLlmsFullTxt, buildLlmsTxt, htmlToMarkdown, pageText } from "./llms.js";
 export {
   collectEditablePaths,

@@ -95,6 +95,7 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
           pages,
           site: settings?.site ?? { name: config.site.name, lang: config.site.lang ?? "fr" },
           today: statsDay(new Date()),
+          settings: settings?.values ?? {},
         }).findings.filter((finding) => finding.severity !== "low"),
       );
       setConfirming(true);

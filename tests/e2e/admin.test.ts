@@ -108,6 +108,7 @@ beforeAll(async () => {
   page.on("console", (message) => {
     if (message.type() === "error") console.warn(`[navigateur] ${message.text()}`);
   });
+  page.on("pageerror", (error) => console.warn(`[navigateur] ${error.message}`));
 });
 
 afterAll(async () => {
@@ -404,6 +405,47 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("fills the legal information, and lists the legal pages written from the site", async () => {
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Réglages" }).click();
+    await page.getByRole("button", { name: "Informations légales" }).click();
+    await page.getByRole("heading", { name: "Éditeur du site" }).waitFor();
+    await page.getByLabel("Nom ou raison sociale").fill("SARL Boulangerie du Test");
+    await page.getByLabel("Immatriculation").fill("RCS Paris 123 456 789");
+    await page.getByLabel("Directeur de la publication").fill("Marie Martin");
+    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    const legal = await waitFor(
+      async () => {
+        const value = (await db.doc("cms_site/settings").get()).data()?.site?.legal;
+        return value?.director === "Marie Martin" ? value : undefined;
+      },
+      30_000,
+      "informations légales enregistrées",
+    );
+    expect(legal).toEqual({
+      publisher: "SARL Boulangerie du Test",
+      registration: "RCS Paris 123 456 789",
+      director: "Marie Martin",
+    });
+    if (existsSync(path.join(site, "openflow", "seed", "pages", "confidentialite.json"))) {
+      const pages = page.locator(".of-legal-pages");
+      await pages.getByText("/mentions-legales/").waitFor();
+      await pages.getByText("/confidentialite/").waitFor();
+      // What the privacy policy says, from the site itself: the contact form is there.
+      const forms = page.locator(".of-facts li", { hasText: "Formulaires de contact" });
+      await forms.getByText("Oui", { exact: true }).waitFor();
+    }
+    await page.screenshot({ path: path.join(SCREENSHOTS, "10-legal.png"), fullPage: true });
+    // Dark theme, on a phone too (the admin follows the system's appearance).
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "10-legal-dark.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(SCREENSHOTS, "10-legal-mobile-dark.png") });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -462,6 +504,20 @@ describe("admin OpenFlow (émulateurs)", () => {
       expect(event).toContain('"@type":"Event"');
       expect(event).toContain('"startDate":"2026-11-14T14:30"');
       expect(event).toContain('"price":35');
+    }
+    // Legal pages, written from the published site and the publisher's details.
+    if (existsSync(path.join(site, "openflow", "seed", "pages", "confidentialite.json"))) {
+      const notice = readFileSync(path.join(site, "out", "mentions-legales", "index.html"), "utf8");
+      expect(notice).toContain("SARL Boulangerie du Test");
+      expect(notice).toContain("Directeur de la publication\u00a0: Marie Martin");
+      expect(notice).toContain("Google Cloud France SARL");
+      const privacy = readFileSync(path.join(site, "out", "confidentialite", "index.html"), "utf8");
+      expect(privacy).toContain("Mesure d\u2019audience sans cookie");
+      expect(privacy).toContain("Formulaires de contact");
+      expect(privacy).toContain("data-of-stats-optout");
+      expect(privacy).not.toContain("Google Analytics");
+      // Linked from every page (footer).
+      expect(html).toContain('href="/confidentialite/"');
     }
     expect(existsSync(path.join(site, "out", "admin", "index.html"))).toBe(true);
     await page
@@ -612,6 +668,54 @@ describe("admin OpenFlow (émulateurs)", () => {
       /1 visite, 1 depuis un assistant IA, 2 pages vues$/,
     );
     await page.screenshot({ path: path.join(SCREENSHOTS, "07-stats.png") });
+  });
+
+  it("lets a visitor stop the counting from the privacy policy", async () => {
+    if (!existsSync(path.join(site, "openflow", "seed", "pages", "confidentialite.json"))) return;
+    // A real phone (the default agent, HeadlessChrome, is left out as a robot).
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+    });
+    await context.addInitScript(() =>
+      Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }),
+    );
+    const visitor = await context.newPage();
+    visitor.on("pageerror", (error) => console.warn(`[visiteur] ${error.message}`));
+    visitor.on("console", (message) => {
+      if (message.type() === "error") console.warn(`[visiteur] ${message.text()}`);
+    });
+    try {
+      await visitor.goto(`http://localhost:${PORT}/confidentialite/`);
+      const before = await waitFor(
+        async () => {
+          const total = await statsTotal();
+          return total.pages["/confidentialite/"] ? total.views : undefined;
+        },
+        30_000,
+        "page de confidentialité comptée",
+      );
+      const status = visitor.getByRole("status").filter({ hasText: "Vos visites" });
+      await status.getByText("Vos visites sont comptées de façon anonyme.").waitFor();
+      await visitor.getByRole("button", { name: "Ne plus compter mes visites" }).click();
+      await status.getByText("Vos visites ne sont plus comptées sur cet appareil.").waitFor();
+      await visitor.getByRole("button", { name: "Compter à nouveau mes visites" }).waitFor();
+      expect(await visitor.evaluate(() => localStorage.getItem("cms-stats-optout"))).toBe("1");
+      await visitor.screenshot({
+        path: path.join(SCREENSHOTS, "11-privacy-mobile.png"),
+        fullPage: true,
+      });
+      // The next pages are not counted.
+      await visitor.goto(`http://localhost:${PORT}/contact/`);
+      await visitor.waitForLoadState("networkidle");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      expect((await statsTotal()).views).toBe(before);
+      // Still no cookie.
+      expect(await context.cookies()).toEqual([]);
+    } finally {
+      await context.close();
+    }
   });
 
   it("edits global settings (site name)", async () => {
