@@ -58,11 +58,19 @@ async function statsTotal() {
     sources: {} as Record<string, number>,
     devices: {} as Record<string, number>,
     aiPages: {} as Record<string, number>,
+    /** Page loads whose speed was measured, per Core Web Vital. */
+    vitals: {} as Record<string, number>,
   };
   for (const doc of (await db.collection("cms_stats").get()).docs) {
     const data = doc.data();
     total.views += data.views ?? 0;
     total.visits += data.visits ?? 0;
+    for (const [vital, ratings] of Object.entries(
+      (data.vitals ?? {}) as Record<string, Record<string, number>>,
+    )) {
+      total.vitals[vital] =
+        (total.vitals[vital] ?? 0) + Object.values(ratings).reduce((sum, n) => sum + n, 0);
+    }
     for (const key of ["pages", "sources", "devices", "aiPages"] as const) {
       for (const [name, count] of Object.entries((data[key] ?? {}) as Record<string, number>)) {
         total[key][name] = (total[key][name] ?? 0) + count;
@@ -568,6 +576,12 @@ describe("admin OpenFlow (émulateurs)", () => {
         60_000,
         "deuxième page vue comptée",
       );
+      // Leaving the first page sent its speed (Core Web Vitals), not counted as a view.
+      await waitFor(
+        async () => (((await statsTotal()).vitals.lcp ?? 0) >= 1 ? true : undefined),
+        30_000,
+        "vitesse de la première page mesurée",
+      );
       // Nothing is stored in the visitor's browser.
       expect(await context.cookies()).toEqual([]);
     } finally {
@@ -589,6 +603,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       .getByRole("list", { name: "Pages où arrivent les assistants IA" })
       .getByText("Accueil")
       .waitFor();
+    await page.getByRole("list", { name: "Vitesse ressentie" }).getByText("Affichage").waitFor();
     // The chart reads with the keyboard: today is the last column.
     const chart = page.getByRole("slider", { name: "Visites par jour" });
     await chart.focus();

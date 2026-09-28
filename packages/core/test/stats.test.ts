@@ -4,6 +4,7 @@ import {
   classifySource,
   deviceOf,
   isBotAgent,
+  rateVital,
   STATS_OTHER_PAGE,
   statsDay,
   statsExpiry,
@@ -82,6 +83,30 @@ describe("devices, robots and days", () => {
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
     expect(statsExpiry("2026-09-28").toISOString().slice(0, 10)).toBe("2028-10-28");
     expect(statsPeriod(7, "2026-09-28")).toEqual({ from: "2026-09-22", to: "2026-09-28" });
+  });
+});
+
+describe("Core Web Vitals", () => {
+  it("rates each measure with Google's thresholds, and the site at 75 % of the loads", () => {
+    expect(rateVital("lcp", 2500)).toBe("good");
+    expect(rateVital("lcp", 3000)).toBe("ni");
+    expect(rateVital("inp", 600)).toBe("poor");
+    expect(rateVital("cls", 0.05)).toBe("good");
+    const summary = summarizeStats(
+      [
+        {
+          day: "2026-09-27",
+          vitals: { lcp: { good: 8, ni: 1, poor: 1 }, cls: { good: 5, poor: 5 } },
+        },
+        { day: "2026-09-27", vitals: { lcp: { good: 2 }, inp: { good: 1, ni: 3 } } },
+      ],
+      { from: "2026-09-27", to: "2026-09-27" },
+    );
+    expect(summary.vitals.map((v) => [v.key, v.rating, v.total])).toEqual([
+      ["lcp", "good", 12],
+      ["inp", "ni", 4],
+      ["cls", "poor", 10],
+    ]);
   });
 });
 

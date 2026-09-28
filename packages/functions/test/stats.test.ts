@@ -132,6 +132,29 @@ describe("page views", () => {
     expect(db.writes).toHaveLength(0);
   });
 
+  it("counts the speed of a page load by Google's rating, not as a view", async () => {
+    const db = recordingDb();
+    const outcome = await recordPageView(
+      { p: "/", v: { lcp: 1800, inp: 350, cls: 0.4 } },
+      { userAgent: BROWSER, ip: "203.0.113.5" },
+      deps(db),
+    );
+    expect(outcome).toBe("counted");
+    const data = db.writes[0]?.data ?? {};
+    expect(data.views).toBeUndefined();
+    expect(isOne(data.vitals.lcp.good)).toBe(true);
+    expect(isOne(data.vitals.inp.ni)).toBe(true);
+    expect(isOne(data.vitals.cls.poor)).toBe(true);
+    // Broken measures are dropped.
+    expect(
+      await recordPageView(
+        { p: "/", v: { lcp: -1, cls: "x", inp: 999_999 } },
+        { userAgent: BROWSER, ip: "203.0.113.6" },
+        deps(db),
+      ),
+    ).toBe("ignored");
+  });
+
   it("stops counting a visitor posting in a loop", () => {
     const start = 1_000_000;
     for (let i = 0; i < VIEWS_PER_MINUTE; i++) expect(withinViewLimit("v", start)).toBe(true);

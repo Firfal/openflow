@@ -11,13 +11,15 @@ import {
   statsDay,
   statsPeriod,
   summarizeStats,
+  VITALS,
+  type VitalRating,
 } from "@openflow/core";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { errorMessage } from "./firebase.js";
 import { PageHead } from "./shell.js";
-import { Button, EmptyState, Spinner } from "./ui.js";
+import { Button, EmptyState, Spinner, StatusChip, type Tone } from "./ui.js";
 
 /**
  * « Statistiques »: the visits of the published site, measured without cookies (`cmsPageView`,
@@ -361,6 +363,61 @@ function Sources({ summary }: { summary: StatsSummary }) {
   );
 }
 
+const RATINGS: Record<VitalRating, { label: string; tone: Tone }> = {
+  good: { label: "Bon", tone: "green" },
+  ni: { label: "À améliorer", tone: "orange" },
+  poor: { label: "Lent", tone: "red" },
+};
+
+/**
+ * The speed visitors feel (Core Web Vitals, Google's thresholds): per measure, Google's verdict
+ * (a status chip: dot and word) and the share of fast page loads (a meter in the accent).
+ */
+function Speed({ vitals }: { vitals: StatsSummary["vitals"] }) {
+  return (
+    <div className="of-card">
+      <h2>Vitesse ressentie par les visiteurs</h2>
+      {vitals.length === 0 ? (
+        <p className="of-card__lead">
+          Mesurée chez les vrais visiteurs, elle s'affiche avec les prochaines visites. Google en
+          tient compte pour classer les pages.
+        </p>
+      ) : (
+        <>
+          <ul className="of-speed" aria-label="Vitesse ressentie">
+            {vitals.map((vital) => (
+              <li key={vital.key} className="of-speed__row">
+                <span className="of-speed__name">
+                  <strong>{vital.label}</strong>
+                  <span className="of-subtle">{vital.hint}</span>
+                </span>
+                <StatusChip tone={RATINGS[vital.rating].tone}>
+                  {vital.rating === "poor"
+                    ? VITALS[vital.key].poorLabel
+                    : RATINGS[vital.rating].label}
+                </StatusChip>
+                <span className="of-speed__share">
+                  {percent(vital.good, vital.total)} {VITALS[vital.key].fast}
+                  <span className="of-rank__track" aria-hidden>
+                    <span
+                      className="of-rank__bar"
+                      style={{ width: `${(vital.good / vital.total) * 100}%` }}
+                    />
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="of-subtle of-speed__note">
+            Selon les seuils de Google, sur {number(Math.max(...vitals.map((v) => v.total)))}{" "}
+            chargements de page mesurés. « Bon » : au moins trois chargements sur quatre le sont.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function StatsView() {
   const { services, pages, settings, navigate } = useAdmin();
   const [docs, setDocs] = useState<StatsDoc[]>();
@@ -489,6 +546,7 @@ export function StatsView() {
                 <RankList items={summary.devices} total={summary.visits} label="Appareils" />
               </div>
             </div>
+            <Speed vitals={summary.vitals} />
           </>
         )}
         <div className="of-card of-stats__privacy">

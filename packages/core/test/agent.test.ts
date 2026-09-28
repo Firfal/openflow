@@ -97,6 +97,7 @@ function memoryBackend() {
       sources: { chatgpt: 2, google: 1, direct: 1 },
       devices: { mobile: 3, desktop: 1 },
       aiPages: { "/": 2 },
+      vitals: { lcp: { good: 3, poor: 1 } },
     },
     { day: today, sites: {} },
     { day: "2020-01-01", views: 100, visits: 100 },
@@ -488,6 +489,14 @@ describe("get_stats", () => {
     });
     expect(result.aiLandingPages).toEqual([{ path: "/", title: home?.title ?? "/", visits: 2 }]);
     expect(result.devices[0]).toEqual({ device: "Mobile", visits: 3 });
+    expect((result as any).speed).toEqual([
+      expect.objectContaining({
+        measure: "Affichage",
+        verdict: "bon",
+        goodShare: "75 %",
+        pageLoads: 4,
+      }),
+    ]);
   });
 });
 

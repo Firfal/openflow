@@ -4200,3 +4200,57 @@ button.of-style-row__reset:hover {
   margin: 10px 12px 12px;
   font-size: 12.5px;
 }
+
+/* Speed felt by visitors (Core Web Vitals): verdict chip and share of fast loads. */
+.of-speed {
+  display: flex;
+  flex-direction: column;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-speed__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(140px, 200px);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--of-border);
+}
+
+.of-speed__row:first-child {
+  border-top: 0;
+}
+
+.of-speed__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.of-speed__share {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.of-speed__note {
+  margin-top: 10px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 600px) {
+  .of-speed__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .of-speed__share {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}

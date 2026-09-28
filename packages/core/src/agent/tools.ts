@@ -26,6 +26,7 @@ import {
   statsDay,
   statsPeriod,
   summarizeStats,
+  VITALS,
 } from "../stats.js";
 import {
   type ResponsiveStyle,
@@ -1375,7 +1376,7 @@ tool({
   name: "get_stats",
   title: "Statistiques des visites",
   description:
-    "Visites du site publié, mesurées sans cookie : visites, pages vues, pages les plus lues, sources (assistants IA comme ChatGPT ou Perplexity, moteurs de recherche, réseaux sociaux, autres sites, accès direct), pages où arrivent les visiteurs envoyés par une IA, appareils. « days » : 7, 30 (par défaut) ou 90 derniers jours, aujourd'hui compris.",
+    "Visites du site publié, mesurées sans cookie : visites, pages vues, pages les plus lues, sources (assistants IA comme ChatGPT ou Perplexity, moteurs de recherche, réseaux sociaux, autres sites, accès direct), pages où arrivent les visiteurs envoyés par une IA, appareils, et vitesse ressentie (Core Web Vitals : affichage, réactivité, stabilité). « days » : 7, 30 (par défaut) ou 90 derniers jours, aujourd'hui compris.",
   input: z.object({ days: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional() }),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async ({ days = 30 }, ctx) => {
@@ -1410,6 +1411,19 @@ tool({
         visits: p.count,
       })),
       devices: summary.devices.map((d) => ({ device: d.label, visits: d.count })),
+      // Core Web Vitals, Google's thresholds: verdict at 75 % of the page loads.
+      speed: summary.vitals.map((v) => ({
+        measure: v.label,
+        about: v.hint,
+        verdict:
+          v.rating === "poor"
+            ? VITALS[v.key].poorLabel.toLowerCase()
+            : v.rating === "ni"
+              ? "à améliorer"
+              : "bon",
+        goodShare: `${Math.round((v.good / v.total) * 100)} %`,
+        pageLoads: v.total,
+      })),
       note:
         summary.views === 0
           ? "Aucune visite mesurée sur la période : le site n'est peut-être pas encore publié, ou la mesure est désactivée (Réglages > Site et référencement)."

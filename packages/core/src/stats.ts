@@ -228,7 +228,49 @@ export interface StatsDoc {
   aiPages?: Record<string, number>;
   /** `-sites` document: visits per referring host. */
   sites?: Record<string, number>;
+  /** Page loads per Core Web Vitals rating. */
+  vitals?: Partial<Record<Vital, Partial<Record<VitalRating, number>>>>;
   expiresAt?: unknown;
+}
+
+/**
+ * Core Web Vitals, the speed visitors feel (and a Google ranking signal): LCP (the page shows,
+ * ms), INP (it answers a click or a key, ms), CLS (it does not jump, unitless). Thresholds of
+ * Google: « good » up to the first value, « poor » beyond the second.
+ */
+export const VITALS = {
+  lcp: {
+    label: "Affichage",
+    hint: "Temps pour afficher l'essentiel de la page",
+    fast: "rapides",
+    poorLabel: "Lent",
+    good: 2500,
+    poor: 4000,
+  },
+  inp: {
+    label: "Réactivité",
+    hint: "Temps de réponse à un clic ou une touche",
+    fast: "réactifs",
+    poorLabel: "Lent",
+    good: 200,
+    poor: 500,
+  },
+  cls: {
+    label: "Stabilité",
+    hint: "Déplacements de la page pendant la lecture",
+    fast: "stables",
+    poorLabel: "Instable",
+    good: 0.1,
+    poor: 0.25,
+  },
+} as const;
+export type Vital = keyof typeof VITALS;
+export type VitalRating = "good" | "ni" | "poor";
+
+/** Google's rating of one measure. */
+export function rateVital(vital: Vital, value: number): VitalRating {
+  const { good, poor } = VITALS[vital];
+  return value <= good ? "good" : value <= poor ? "ni" : "poor";
 }
 
 /** One beacon of the site, as sent by `<OpenFlowStats>`. */
@@ -243,6 +285,8 @@ export interface PageViewBeacon {
   w?: unknown;
   /** The view starts a visit. */
   e?: unknown;
+  /** Core Web Vitals of the page load (sent when the visitor leaves it), instead of a view. */
+  v?: unknown;
 }
 
 export interface Ranked {
@@ -269,6 +313,17 @@ export interface StatsSummary {
   devices: Array<Ranked & { key: StatsDevice }>;
   /** Referring sites. */
   sites: Ranked[];
+  /** Page loads measured per rating, and Google's verdict (75 % of the loads). */
+  vitals: Array<{
+    key: Vital;
+    label: string;
+    hint: string;
+    good: number;
+    ni: number;
+    poor: number;
+    total: number;
+    rating: VitalRating;
+  }>;
 }
 
 const addInto = (target: Map<string, number>, values: Record<string, number> | undefined) => {
@@ -300,6 +355,7 @@ export function summarizeStats(
   const devices = new Map<string, number>();
   const aiPages = new Map<string, number>();
   const sites = new Map<string, number>();
+  const vitals = new Map<Vital, Record<VitalRating, number>>();
   for (const doc of docs) {
     const day = byDay.get(doc.day);
     if (!day) continue;
@@ -313,6 +369,14 @@ export function summarizeStats(
     addInto(devices, doc.devices);
     addInto(aiPages, doc.aiPages);
     addInto(sites, doc.sites);
+    for (const [key, ratings] of Object.entries(doc.vitals ?? {}) as Array<
+      [Vital, Partial<Record<VitalRating, number>>]
+    >) {
+      if (!(key in VITALS)) continue;
+      const sum = vitals.get(key) ?? { good: 0, ni: 0, poor: 0 };
+      for (const rating of ["good", "ni", "poor"] as const) sum[rating] += ratings?.[rating] ?? 0;
+      vitals.set(key, sum);
+    }
   }
   const days = [...byDay].map(([day, counts]) => ({ day, ...counts }));
   const sourceList = ranked(sources, (key) => STATS_SOURCES[key]?.label ?? key).map((entry) => ({
@@ -343,6 +407,19 @@ export function summarizeStats(
       (key) => STATS_DEVICES[key as StatsDevice] ?? key,
     ) as StatsSummary["devices"],
     sites: ranked(sites, (key) => key),
+    vitals: (Object.keys(VITALS) as Vital[]).flatMap((key) => {
+      const counts = vitals.get(key);
+      const total = counts ? counts.good + counts.ni + counts.poor : 0;
+      if (!counts || total === 0) return [];
+      // Google's assessment: the rating of the 75th percentile of the page loads.
+      const rating: VitalRating =
+        counts.good >= total * 0.75
+          ? "good"
+          : counts.good + counts.ni >= total * 0.75
+            ? "ni"
+            : "poor";
+      return [{ key, label: VITALS[key].label, hint: VITALS[key].hint, ...counts, total, rating }];
+    }),
   };
 }
 

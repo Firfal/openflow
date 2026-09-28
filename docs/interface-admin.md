@@ -83,6 +83,9 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Pages les plus vues** ; **D'où viennent les visites**, groupées : Assistants IA (ChatGPT, Perplexity,
     Claude, Gemini, Copilot, Le Chat…), Moteurs de recherche, Réseaux sociaux, Autres sites (et campagnes
     `utm_source`), Accès direct ; **Pages où arrivent les assistants IA** ; **Appareils**.
+  - **Vitesse ressentie par les visiteurs** (Core Web Vitals, mesurés chez les vrais visiteurs) :
+    Affichage, Réactivité et Stabilité, chacun avec le verdict de Google (« Bon », « À améliorer »,
+    « Lent » ou « Instable », au 75e centile) et la part des chargements rapides.
   - En bas, « Ne pas compter mes visites sur cet appareil », pour que le propriétaire ne gonfle pas ses
     chiffres.
 - **Établissement** (Réglages) : la fiche que lisent Google, les assistants IA et le site.

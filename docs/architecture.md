@@ -66,7 +66,8 @@ livraison, sans rien refaire de ce qui est déjà en place.
 - **Mesure d'audience sans cookie** : `createOpenFlowLayout` ajoute `<OpenFlowStats>` (sauf si le
   propriétaire l'a désactivée). À chaque page affichée, il envoie avec `sendBeacon` quelques octets à
   `/cms/view` (réécriture vers `cmsPageView`) : l'adresse de la page, la largeur de la fenêtre et, pour la
-  première page d'une visite, la page d'origine et `utm_source`. La fonction ajoute la vue aux compteurs du
+  première page d'une visite, la page d'origine et `utm_source`. Quand le visiteur quitte la première page
+  chargée, une seconde balise donne sa vitesse (LCP, INP, CLS, observés avec `PerformanceObserver`). La fonction ajoute la vue aux compteurs du
   jour (`cms_stats`) ; l'admin les lit dans « Statistiques » (voir
   [securite.md](securite.md#mesure-daudience-sans-cookie)).
 - **Google Analytics** (facultatif) : si le propriétaire a saisi un identifiant, `createOpenFlowLayout`

@@ -5,12 +5,15 @@ import {
   deviceOf,
   isBotAgent,
   type PageViewBeacon,
+  rateVital,
   STATS_MAX_SITES,
   STATS_OTHER_PAGE,
   STATS_SHARDS,
   STATS_SOURCES,
   statsDay,
   statsExpiry,
+  VITALS,
+  type Vital,
 } from "@openflow/core";
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
 
@@ -95,6 +98,7 @@ export async function recordPageView(
   if (!withinViewLimit(visitor)) return "ignored";
   const site = await deps.livePages();
   if (!site || site.off) return "ignored";
+  if (beacon.v !== undefined) return recordVitals(beacon.v, deps);
   const path = normalizePath(beacon.p.slice(0, 300));
   const page = site.paths.has(path) ? path : STATS_OTHER_PAGE;
   const now = deps.now ?? new Date();
@@ -124,6 +128,33 @@ export async function recordPageView(
   const shard = Math.floor(Math.random() * STATS_SHARDS);
   await stats.doc(`${day}-${shard}`).set(counters, { merge: true });
   if (host) await countSite(deps.db, day, host);
+  return "counted";
+}
+
+/** Largest plausible values: anything beyond is a broken measure, not a slow page. */
+const VITAL_LIMITS: Record<Vital, number> = { lcp: 120_000, inp: 60_000, cls: 50 };
+
+/**
+ * Adds the Core Web Vitals of one page load to the day's counters, by Google's rating
+ * (good, needs improvement, poor). Only the ratings are kept.
+ */
+async function recordVitals(value: unknown, deps: PageViewDeps): Promise<PageViewOutcome> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "ignored";
+  const increment = FieldValue.increment(1);
+  const vitals: Record<string, Record<string, FieldValue>> = {};
+  for (const key of Object.keys(VITALS) as Vital[]) {
+    const measure = (value as Record<string, unknown>)[key];
+    if (typeof measure !== "number" || !Number.isFinite(measure)) continue;
+    if (measure < 0 || measure > VITAL_LIMITS[key]) continue;
+    vitals[key] = { [rateVital(key, measure)]: increment };
+  }
+  if (Object.keys(vitals).length === 0) return "ignored";
+  const day = statsDay(deps.now ?? new Date());
+  const shard = Math.floor(Math.random() * STATS_SHARDS);
+  await deps.db
+    .collection(COLLECTIONS.stats)
+    .doc(`${day}-${shard}`)
+    .set({ day, expiresAt: statsExpiry(day), vitals }, { merge: true });
   return "counted";
 }
 

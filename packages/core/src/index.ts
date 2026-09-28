@@ -216,6 +216,8 @@ export type {
   StatsDoc,
   StatsGroup,
   StatsSummary,
+  Vital,
+  VitalRating,
 } from "./stats.js";
 export {
   addDays,
@@ -223,6 +225,7 @@ export {
   cleanHost,
   deviceOf,
   isBotAgent,
+  rateVital,
   STATS_DEVICES,
   STATS_GROUPS,
   STATS_MAX_SITES,
@@ -237,6 +240,7 @@ export {
   statsExpiry,
   statsPeriod,
   summarizeStats,
+  VITALS,
 } from "./stats.js";
 export {
   BREAKPOINT_MAX_WIDTH,

@@ -51,6 +51,88 @@ function send(payload: Record<string, unknown>) {
   fetch(url, { method: "POST", body, keepalive: true, mode: "no-cors" }).catch(() => {});
 }
 
+type ShiftEntry = PerformanceEntry & { value: number; hadRecentInput: boolean };
+type EventEntry = PerformanceEntry & { interactionId?: number };
+
+/** Observes a kind of performance entry; nothing in browsers that do not support it. */
+function observe<T extends PerformanceEntry>(
+  type: string,
+  onEntries: (entries: T[]) => void,
+  options: Record<string, unknown> = {},
+) {
+  try {
+    new PerformanceObserver((list) => onEntries(list.getEntries() as T[])).observe({
+      type,
+      buffered: true,
+      ...options,
+    } as PerformanceObserverInit);
+  } catch {
+    // Not supported (Safari has no LCP or INP yet): that measure is left out.
+  }
+}
+
+/**
+ * Core Web Vitals of the page load, sent once when the visitor leaves the page (Google's
+ * definitions, simplified): LCP, the largest paint before any input; CLS, the worst window of
+ * layout shifts; INP, the slowest interaction (none when the visitor did not interact).
+ */
+function watchVitals(path: string) {
+  let lcp = 0;
+  let cls = 0;
+  let inp = 0;
+  let interacted = false;
+  let windowValue = 0;
+  let windowStart = 0;
+  let windowLast = 0;
+  observe<PerformanceEntry>("largest-contentful-paint", (entries) => {
+    const latest = entries.at(-1);
+    if (latest) lcp = latest.startTime;
+  });
+  observe<ShiftEntry>("layout-shift", (entries) => {
+    for (const entry of entries) {
+      if (entry.hadRecentInput) continue;
+      const sameWindow =
+        windowValue > 0 &&
+        entry.startTime - windowLast < 1000 &&
+        entry.startTime - windowStart < 5000;
+      windowValue = sameWindow ? windowValue + entry.value : entry.value;
+      if (!sameWindow) windowStart = entry.startTime;
+      windowLast = entry.startTime;
+      cls = Math.max(cls, windowValue);
+    }
+  });
+  observe<EventEntry>(
+    "event",
+    (entries) => {
+      for (const entry of entries) if (entry.interactionId) inp = Math.max(inp, entry.duration);
+    },
+    { durationThreshold: 40 },
+  );
+  const onInput = () => {
+    interacted = true;
+  };
+  addEventListener("pointerdown", onInput, { once: true, capture: true });
+  addEventListener("keydown", onInput, { once: true, capture: true });
+  let sent = false;
+  const flush = () => {
+    if (sent || (!lcp && !interacted)) return;
+    sent = true;
+    send({
+      p: path,
+      v: {
+        ...(lcp ? { lcp: Math.round(lcp) } : {}),
+        cls: Math.round(cls * 1000) / 1000,
+        // An interaction faster than the observer's threshold is a fast one.
+        ...(interacted ? { inp: Math.round(inp || 16) } : {}),
+      },
+    });
+  };
+  addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flush();
+  });
+  addEventListener("pagehide", flush);
+}
+
 export function OpenFlowStats() {
   const pathname = usePathname();
   const first = useRef(true);
@@ -73,6 +155,8 @@ export function OpenFlowStats() {
       external = true;
     }
     const entry = external && !revisited();
+    // The speed of this page load (one measure per load, sent when the visitor leaves).
+    watchVitals(window.location.pathname);
     send({
       p: window.location.pathname,
       w: window.innerWidth,

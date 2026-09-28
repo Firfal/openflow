@@ -100,7 +100,8 @@ Les statistiques suivent les conditions de la CNIL pour une mesure d'audience **
   balise par page vue (adresse de la page, largeur de la fenêtre, et pour la première page d'une visite la
   page d'origine et `utm_source`).
 - **Aucune donnée personnelle conservée** : la fonction `cmsPageView` n'enregistre que des totaux par jour
-  (pages, sources, type d'appareil). L'adresse IP ne sert qu'à une limite anti-abus en mémoire (60 vues
+  (pages, sources, type d'appareil, et le nombre de chargements rapides, moyens ou lents pour les Core Web
+  Vitals : jamais la mesure elle-même). L'adresse IP ne sert qu'à une limite anti-abus en mémoire (60 vues
   par minute), jamais écrite.
 - **Usage réservé au propriétaire**, sans croisement ni transmission à un tiers ; les compteurs sont effacés
   après **25 mois** (politique TTL Firestore installée par `openflow setup`).
