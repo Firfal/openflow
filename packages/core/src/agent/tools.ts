@@ -17,6 +17,22 @@ import {
 import type { OpenFlowConfig } from "../config.js";
 import { getOpenFlowFieldKind, isSafeHref, isValidDate, today } from "../fields.js";
 import {
+  isLanguage,
+  LANGUAGES,
+  languageLabel,
+  languageName,
+  localizedSlug,
+  MAX_LOCALES,
+  type PageTranslation,
+  pageTexts,
+  type SettingsTranslation,
+  settingsTexts,
+  siteLocales,
+  type TranslatableText,
+  textFingerprint,
+  translationStatus,
+} from "../i18n.js";
+import {
   LEGAL_LIMITS,
   type LegalInfo,
   legalComponentOf,
@@ -104,6 +120,8 @@ export interface AgentSettings {
   site: SiteSettings;
   values: Record<string, unknown>;
   theme: Record<string, string>;
+  /** The common content in the other languages. */
+  translations?: Record<string, SettingsTranslation>;
 }
 
 /** Storage of the site, implemented with the Admin SDK (server) or the web SDK (admin). */
@@ -129,6 +147,12 @@ export interface AgentBackend {
   saveBusiness(business: BusinessInfo | null): Promise<void>;
   /** Replaces the publisher's legal information (`site.legal`); `null` removes it. */
   saveLegal(legal: LegalInfo | null): Promise<void>;
+  /** The other languages of the site (`site.locales`). */
+  saveSiteLocales(locales: string[]): Promise<void>;
+  getTranslation(pageId: string, locale: string): Promise<PageTranslation | undefined>;
+  /** Saves a page's translation (and moves the page's date: it shows as changed). */
+  saveTranslation(pageId: string, locale: string, translation: PageTranslation): Promise<void>;
+  saveSettingsTranslation(locale: string, translation: SettingsTranslation): Promise<void>;
   listMedia(): Promise<AgentMedia[]>;
   /** Copies a public image or video into the media library. */
   importMedia(url: string, alt?: string): Promise<AgentMedia>;
@@ -612,6 +636,10 @@ tool({
       business: settings.site.business
         ? businessLines(settings.site, today()).map((l) => l.replace(/^\s*- /, ""))
         : null,
+      languages: {
+        main: settings.site.lang,
+        others: siteLocales(settings.site),
+      },
       legal: {
         section: legalComponentOf(ctx.schema.sections) ?? null,
         missing: legalGaps({
@@ -628,6 +656,7 @@ tool({
         "Collections (articles, réalisations…) : list_items, create_item ; un élément est une page (get_page, update_section, update_page, delete_page), dont la section « itemSection » porte les champs.",
         "Coordonnées, horaires et fermetures exceptionnelles de l'établissement : get_settings (« business »), puis update_business.",
         "Mentions légales et politique de confidentialité : leur texte est écrit par OpenFlow d'après le site, dans une page qui contient la section « legal.section » (champ legalDocument : « notice » ou « privacy »). Les informations de l'éditeur (raison sociale, immatriculation…) se modifient avec update_legal : ne les inventez jamais, demandez-les au propriétaire.",
+        "Langues : chaque autre langue (languages.others) a ses pages à /<langue>/. Pour traduire une page ou le contenu commun (« settings ») : get_translation, puis set_translation. set_languages ajoute une langue.",
         "Demandez confirmation au propriétaire avant publish, delete_page et remove_section.",
       ],
     };
@@ -1283,6 +1312,254 @@ tool({
         siteName: settings.site.name,
       }),
       note: "Enregistré en brouillon : les pages légales seront à jour à la prochaine publication.",
+    };
+  },
+});
+
+// ---------------------------------------------------------------------------------------------
+// Languages
+
+function assertLocale(settings: AgentSettings, locale: string): void {
+  const locales = siteLocales(settings.site);
+  if (!locales.includes(locale)) {
+    throw new AgentError(
+      locales.length > 0
+        ? `La langue « ${locale} » n'est pas une langue du site (langues : ${locales.join(", ")}). set_languages en ajoute une.`
+        : "Le site n'a qu'une langue : ajoutez-en une avec set_languages.",
+    );
+  }
+}
+
+type TextState = "à traduire" | "traduit" | "à revoir";
+
+function describeTexts(
+  texts: TranslatableText[],
+  translation: Pick<PageTranslation, "values" | "sources"> | undefined,
+) {
+  return texts.map((text) => {
+    const value = translation?.values?.[text.key];
+    const source = translation?.sources?.[text.key];
+    const state: TextState =
+      value === undefined
+        ? "à traduire"
+        : source && source !== textFingerprint(text.value)
+          ? "à revoir"
+          : "traduit";
+    return {
+      key: text.key,
+      where: text.label,
+      kind: text.kind,
+      source: text.value,
+      translation: value ?? null,
+      state,
+    };
+  });
+}
+
+/** Applies `key → text | null` changes to a translation, rich text sanitized. */
+function mergeTexts(
+  texts: TranslatableText[],
+  previous: Pick<PageTranslation, "values" | "sources"> | undefined,
+  changes: Record<string, string | null> | undefined,
+): { values: Record<string, string>; sources: Record<string, string> } {
+  const byKey = new Map(texts.map((text) => [text.key, text]));
+  const unknown = Object.keys(changes ?? {}).filter((key) => !byKey.has(key));
+  if (unknown.length > 0) {
+    throw new AgentError(
+      `Clé inconnue : ${unknown.slice(0, 5).join(", ")}. Lisez les clés avec get_translation.`,
+    );
+  }
+  const values: Record<string, string> = {};
+  const sources: Record<string, string> = {};
+  for (const text of texts) {
+    const before = previous?.values?.[text.key];
+    if (before !== undefined) {
+      values[text.key] = before;
+      const fingerprint = previous?.sources?.[text.key];
+      if (fingerprint) sources[text.key] = fingerprint;
+    }
+  }
+  for (const [key, value] of Object.entries(changes ?? {})) {
+    const text = byKey.get(key)!;
+    if (value === null || !value.trim()) {
+      delete values[key];
+      delete sources[key];
+      continue;
+    }
+    values[key] = text.kind === "richtext" ? sanitizeRichText(value) : value;
+    sources[key] = textFingerprint(text.value);
+  }
+  return { values, sources };
+}
+
+tool({
+  name: "set_languages",
+  title: "Choisir les langues du site",
+  description: `Langues du site en plus de sa langue principale (${LANGUAGES.map((l) => l.code).join(", ")}). Chaque langue a ses pages à /<langue>/, avec les mêmes sections et images ; une page n'y existe qu'une fois traduite (set_translation). Remplace toute la liste : demandez confirmation au propriétaire avant d'en retirer une.`,
+  input: z.object({
+    locales: z.array(z.string()).max(MAX_LOCALES).describe("Codes des langues : [« en », « de »]."),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  run: async ({ locales }, ctx) => {
+    const settings = await ctx.backend.getSettings();
+    const unknown = locales.filter((code) => !isLanguage(code));
+    if (unknown.length > 0) {
+      throw new AgentError(
+        `Langue inconnue : ${unknown.join(", ")}. Langues possibles : ${LANGUAGES.map((l) => `${l.code} (${l.french})`).join(", ")}.`,
+      );
+    }
+    const next = siteLocales({ lang: settings.site.lang, locales });
+    await ctx.backend.saveSiteLocales(next);
+    return {
+      ok: true,
+      main: settings.site.lang,
+      locales: next.map((code) => ({ code, name: languageName(code) })),
+      note: "Enregistré en brouillon. Traduisez les pages (get_translation, set_translation), puis publiez.",
+    };
+  },
+});
+
+tool({
+  name: "get_translation",
+  title: "Lire une traduction",
+  description:
+    "Les textes d'une page (ou du menu et du pied de page : pageId « settings ») dans la langue principale, avec leur traduction dans une autre langue et leur état : « à traduire », « traduit », « à revoir » (le texte d'origine a changé depuis). Pour traduire : get_translation, puis set_translation avec les textes traduits sous la même clé.",
+  input: z.object({
+    pageId: z
+      .string()
+      .describe("Page (identifiant ou adresse), ou « settings » pour le contenu commun."),
+    locale: z.string().describe("Langue : « en », « de »…"),
+  }),
+  annotations: { readOnlyHint: true, openWorldHint: false },
+  run: async ({ pageId, locale }, ctx) => {
+    const settings = await ctx.backend.getSettings();
+    assertLocale(settings, locale);
+    const language = `${languageName(locale)} (${languageLabel(locale)})`;
+    if (pageId === "settings") {
+      const values = { ...(ctx.schema.settings?.defaults ?? {}), ...settings.values };
+      const texts = settingsTexts(values, ctx.config);
+      const translation = settings.translations?.[locale];
+      return {
+        locale,
+        language,
+        page: "settings",
+        siteName: { source: settings.site.name, translation: translation?.site?.name ?? null },
+        siteDescription: {
+          source: settings.site.description ?? null,
+          translation: translation?.site?.description ?? null,
+        },
+        status: translationStatus(texts, translation),
+        texts: describeTexts(texts, translation),
+      };
+    }
+    const page = await findPage(ctx, pageId);
+    const texts = pageTexts(applyDefaults(page.data, ctx.config), ctx.config);
+    const translation = await ctx.backend.getTranslation(page.id, locale);
+    return {
+      locale,
+      language,
+      page: {
+        id: page.id,
+        path: slugToPath(page.slug),
+        translatedPath: translation
+          ? slugToPath(localizedSlug(translation.slug ?? page.slug, locale))
+          : null,
+      },
+      title: { source: page.title, translation: translation?.title ?? null },
+      description: {
+        source: page.seo?.description ?? null,
+        translation: translation?.seo?.description ?? null,
+      },
+      status: translationStatus(texts, translation),
+      texts: describeTexts(texts, translation),
+      ...(translation
+        ? {}
+        : {
+            note: `Pas encore traduite : la page n'existe pas en ${languageName(locale)} avant set_translation.`,
+          }),
+    };
+  },
+});
+
+tool({
+  name: "set_translation",
+  title: "Enregistrer une traduction",
+  description:
+    "Enregistre la traduction d'une page (ou du contenu commun : pageId « settings ») dans une langue du site. « texts » : clé (de get_translation) → texte traduit ; null en efface un. Seuls les textes donnés changent. Le texte riche garde ses balises (<p>, <strong>, <a href>…). Pour une page : title, description (référencement) et slug (adresse sans la langue, facultatif). Pour « settings » : siteName, siteDescription. En brouillon : en ligne à la prochaine publication.",
+  input: z.object({
+    pageId: z.string(),
+    locale: z.string(),
+    texts: z.record(z.string(), z.string().nullable()).optional(),
+    title: z.string().max(200).nullable().optional(),
+    description: z.string().max(400).nullable().optional(),
+    slug: z.string().max(200).nullable().optional(),
+    siteName: z.string().max(120).nullable().optional(),
+    siteDescription: z.string().max(400).nullable().optional(),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  run: async (input, ctx) => {
+    const settings = await ctx.backend.getSettings();
+    assertLocale(settings, input.locale);
+    const text = (value: string | null | undefined, before: string | undefined) =>
+      value === undefined ? before : value?.trim() || undefined;
+    if (input.pageId === "settings") {
+      const values = { ...(ctx.schema.settings?.defaults ?? {}), ...settings.values };
+      const texts = settingsTexts(values, ctx.config);
+      const previous = settings.translations?.[input.locale];
+      const merged = mergeTexts(texts, previous, input.texts);
+      const name = text(input.siteName, previous?.site?.name);
+      const description = text(input.siteDescription, previous?.site?.description);
+      const next: SettingsTranslation = {
+        ...(name || description
+          ? { site: { ...(name ? { name } : {}), ...(description ? { description } : {}) } }
+          : {}),
+        ...merged,
+      };
+      await ctx.backend.saveSettingsTranslation(input.locale, next);
+      return {
+        ok: true,
+        status: translationStatus(texts, next),
+        note: "Enregistré en brouillon : en ligne à la prochaine publication.",
+      };
+    }
+    const page = await findPage(ctx, input.pageId);
+    const texts = pageTexts(applyDefaults(page.data, ctx.config), ctx.config);
+    const previous = await ctx.backend.getTranslation(page.id, input.locale);
+    const merged = mergeTexts(texts, previous, input.texts);
+    const title = text(input.title, previous?.title);
+    const description = text(input.description, previous?.seo?.description);
+    let slug = text(input.slug, previous?.slug);
+    if (slug !== undefined) {
+      slug = normalizeSlug(slug);
+      if (page.slug === "" || page.collection) slug = undefined;
+      else if (!isValidSlug(slug)) {
+        throw new AgentError(
+          `Adresse invalide « ${slug} » : minuscules, chiffres et tirets, sans la langue.`,
+        );
+      }
+    }
+    const next: PageTranslation = {
+      ...(title ? { title } : {}),
+      ...(slug ? { slug } : {}),
+      ...(description ? { seo: { description } } : {}),
+      ...merged,
+    };
+    await ctx.backend.saveTranslation(page.id, input.locale, next);
+    return {
+      ok: true,
+      path: slugToPath(localizedSlug(next.slug ?? page.slug, input.locale)),
+      status: translationStatus(texts, next),
+      note: "Enregistré en brouillon : en ligne à la prochaine publication.",
     };
   },
 });

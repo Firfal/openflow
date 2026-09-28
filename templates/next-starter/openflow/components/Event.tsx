@@ -7,6 +7,7 @@ import {
   type LinkValue,
   linkField,
   linkProps,
+  pageLang,
 } from "@openflow/core";
 import type { ComponentConfig } from "@puckeditor/core";
 
@@ -92,6 +93,7 @@ export const Event: ComponentConfig<EventProps> = {
     priceLabel,
     ctaLabel,
     ctaLink,
+    puck,
   }) => {
     const img = imageProps(cover, { sizes: "(min-width: 768px) 768px, 100vw" });
     const cta = linkProps(ctaLink);
@@ -111,7 +113,7 @@ export const Event: ComponentConfig<EventProps> = {
               <>
                 <dt className="font-semibold">{whenLabel}</dt>
                 <dd className="break-words first-letter:uppercase">
-                  {formatDate(date, "fr", LONG_DAY)}
+                  {formatDate(date, pageLang(puck.metadata), LONG_DAY)}
                 </dd>
               </>
             )}
@@ -119,7 +121,7 @@ export const Event: ComponentConfig<EventProps> = {
               <>
                 <dt className="font-semibold">{untilLabel}</dt>
                 <dd className="break-words first-letter:uppercase">
-                  {formatDate(endDate, "fr", LONG_DAY)}
+                  {formatDate(endDate, pageLang(puck.metadata), LONG_DAY)}
                 </dd>
               </>
             )}

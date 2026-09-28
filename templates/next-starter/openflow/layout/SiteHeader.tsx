@@ -1,19 +1,49 @@
-import { imageProps, linkProps } from "@openflow/core";
+import { imageProps, type LayoutProps, linkProps } from "@openflow/core";
 import type { SiteSettingsValues } from "./settings";
+
+type Languages = NonNullable<LayoutProps["languages"]>;
+
+/** The site's languages (only when it has several), each in its own name. */
+function LanguageLinks({ languages, className }: { languages: Languages; className: string }) {
+  return (
+    <ul className={className}>
+      {languages.map((language) => (
+        <li key={language.lang}>
+          <a
+            href={language.href}
+            hrefLang={language.lang}
+            lang={language.lang}
+            aria-current={language.current ? "true" : undefined}
+            className="rounded-md px-2 py-1 aria-[current=true]:font-semibold aria-[current=true]:text-stone-900 hover:text-accent"
+          >
+            {language.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function SiteHeader({
   settings,
   siteName,
+  languages,
+  homeHref,
 }: {
   settings: SiteSettingsValues;
   siteName: string;
+  languages: Languages;
+  homeHref: string;
 }) {
   const logo = imageProps(settings.logo);
   const navigation = settings.navigation ?? [];
   return (
     <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-6">
-        <a href="/" className="flex items-center gap-3 font-bold tracking-tight text-stone-900">
+        <a
+          href={homeHref}
+          className="flex items-center gap-3 font-bold tracking-tight text-stone-900"
+        >
           {logo ? <img {...logo} className="h-9 w-auto" /> : siteName}
         </a>
         <nav className="hidden items-center gap-8 text-sm font-medium text-stone-700 md:flex">
@@ -24,6 +54,12 @@ export function SiteHeader({
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          {languages.length > 1 && (
+            <LanguageLinks
+              languages={languages}
+              className="hidden items-center gap-1 text-sm text-stone-600 md:flex"
+            />
+          )}
           {settings.headerCtaLabel && (
             <a
               {...linkProps(settings.headerCtaLink)}
@@ -32,7 +68,7 @@ export function SiteHeader({
               {settings.headerCtaLabel}
             </a>
           )}
-          {navigation.length > 0 && (
+          {(navigation.length > 0 || languages.length > 1) && (
             <details className="relative md:hidden">
               <summary
                 aria-label="Menu"
@@ -59,6 +95,12 @@ export function SiteHeader({
                     {item.label}
                   </a>
                 ))}
+                {languages.length > 1 && (
+                  <LanguageLinks
+                    languages={languages}
+                    className="mt-2 flex flex-wrap gap-1 border-t border-stone-200 pt-2 text-sm text-stone-600"
+                  />
+                )}
               </nav>
             </details>
           )}

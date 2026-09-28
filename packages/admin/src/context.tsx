@@ -10,7 +10,8 @@ export type Route =
   | { view: "pages" }
   /** Items of a collection (`config.collections`): articles, projects… */
   | { view: "collection"; collection: string }
-  | { view: "editor"; pageId: string }
+  /** `locale`: the page in another language of the site (translation editor). */
+  | { view: "editor"; pageId: string; locale?: string }
   | { view: "settings"; tab?: SettingsTab }
   | { view: "media" }
   | { view: "assistant" }
@@ -68,7 +69,10 @@ function readRoute(): Route {
   const pageId = params.get("page");
   const tab = params.get("tab");
   const request = params.get("request");
-  if (view === "editor" && pageId) return { view: "editor", pageId };
+  if (view === "editor" && pageId) {
+    const lang = params.get("lang");
+    return lang ? { view: "editor", pageId, locale: lang } : { view: "editor", pageId };
+  }
   const collection = params.get("c");
   if (view === "collection" && collection) return { view: "collection", collection };
   if (view === "connect" && request) return { view: "connect", request };
@@ -91,6 +95,7 @@ function routeToSearch(route: Route): string {
   const params = new URLSearchParams();
   if (route.view !== "pages") params.set("view", route.view);
   if (route.view === "editor") params.set("page", route.pageId);
+  if (route.view === "editor" && route.locale) params.set("lang", route.locale);
   if (route.view === "collection") params.set("c", route.collection);
   if (route.view === "settings" && route.tab) params.set("tab", route.tab);
   if (route.view === "connect") params.set("request", route.request);

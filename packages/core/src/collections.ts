@@ -307,7 +307,18 @@ export function buildCollections(
 export interface OpenFlowMetadata {
   page?: { id: string; slug: string; title: string; collection?: string };
   collections?: Record<string, CollectionEntry[]>;
+  /** Language of the page shown (`fr`, `en`…): dates and hours are written in it. */
+  locale?: string;
   [key: string]: unknown;
+}
+
+/**
+ * The language of the page a section is shown in, for dates and numbers:
+ * `formatDate(date, pageLang(puck.metadata))`.
+ */
+export function pageLang(metadata: unknown, fallback = "fr"): string {
+  const locale = (metadata as OpenFlowMetadata | undefined)?.locale;
+  return typeof locale === "string" && locale ? locale : fallback;
 }
 
 /**

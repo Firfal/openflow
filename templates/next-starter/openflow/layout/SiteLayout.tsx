@@ -7,10 +7,21 @@ import type { SiteSettingsValues } from "./settings";
  * Frame of every page (header, footer, theme colour), shared by the published site and the admin
  * editor: the owner edits each page inside its real frame.
  */
-export function SiteLayout({ settings, site, children }: LayoutProps<SiteSettingsValues>) {
+export function SiteLayout({
+  settings,
+  site,
+  children,
+  languages,
+  homeHref,
+}: LayoutProps<SiteSettingsValues>) {
   return (
     <div data-theme={settings.theme} className="flex min-h-dvh flex-col">
-      <SiteHeader settings={settings} siteName={site.name} />
+      <SiteHeader
+        settings={settings}
+        siteName={site.name}
+        languages={languages ?? []}
+        homeHref={homeHref ?? "/"}
+      />
       <main className="flex-1">{children}</main>
       <SiteFooter settings={settings} site={site} />
     </div>

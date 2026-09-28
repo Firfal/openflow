@@ -446,6 +446,66 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Pages", exact: true }).click();
   });
 
+  it("translates the home page and the common content into English", async () => {
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Réglages" }).click();
+    await page.getByRole("button", { name: "Site et référencement" }).click();
+    await page.getByRole("checkbox", { name: "English" }).check();
+    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await waitFor(
+      async () =>
+        (await db.doc("cms_site/settings").get()).data()?.site?.locales?.includes("en")
+          ? true
+          : undefined,
+      30_000,
+      "anglais ajouté",
+    );
+
+    // The menu and the footer: the site's name in English.
+    await page.getByRole("button", { name: "Contenu commun" }).click();
+    await page.getByRole("combobox", { name: "Langue" }).selectOption("en");
+    await page.getByLabel("Nom du site").fill("My business");
+    await page.getByRole("button", { name: "Enregistrer la traduction" }).click();
+    await waitFor(
+      async () =>
+        (await db.doc("cms_site/settings").get()).data()?.translations?.en?.site?.name ===
+        "My business"
+          ? true
+          : undefined,
+      30_000,
+      "contenu commun traduit",
+    );
+
+    // The home page: same sections, texts in English.
+    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await page.getByRole("button", { name: "Traduire en anglais : Accueil" }).click();
+    // Puck renders the panel twice (desktop and mobile layouts): the visible one.
+    const panel = page.locator(".of-translate:visible");
+    await panel.getByText("Traduction en anglais (English)").waitFor();
+    await panel.getByLabel("Titre de la page").fill("Home");
+    const first = panel.locator(".of-translate__text").first();
+    await first.locator("input, textarea").first().fill("Handmade in our workshop");
+    const translation = await waitFor(
+      async () => {
+        const data = (await db.doc("cms_page_translations/accueil__en").get()).data();
+        return data?.title === "Home" &&
+          Object.values(data.values ?? {}).includes("Handmade in our workshop")
+          ? data
+          : undefined;
+      },
+      30_000,
+      "page traduite",
+    );
+    expect(translation.locale).toBe("en");
+    // The structure stays the French one: no sections to add in English.
+    await expect.poll(() => page.locator(".of-editor.is-translating").count()).toBe(1);
+    await page.screenshot({ path: path.join(SCREENSHOTS, "12-translate.png") });
+    await page.getByRole("button", { name: "Retour aux pages" }).click();
+    await page
+      .getByRole("button", { name: "Version en anglais : Accueil" })
+      .waitFor({ timeout: 30_000 });
+  });
+
   it("publishes: snapshot, static build, release live", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.getByRole("button", { name: /^Publier/ }).click();
@@ -505,6 +565,13 @@ describe("admin OpenFlow (émulateurs)", () => {
       expect(event).toContain('"startDate":"2026-11-14T14:30"');
       expect(event).toContain('"price":35');
     }
+    // English: the home page at /en/, in English, with the site's name in English.
+    const english = readFileSync(path.join(site, "out", "en", "index.html"), "utf8");
+    expect(english).toContain("Handmade in our workshop");
+    expect(english).toContain("My business");
+    expect(english).toContain('document.documentElement.lang="en"');
+    // The language switcher of the French home page.
+    expect(html).toMatch(/href="\/en\/"[^>]*hreflang="en"/i);
     // Legal pages, written from the published site and the publisher's details.
     if (existsSync(path.join(site, "openflow", "seed", "pages", "confidentialite.json"))) {
       const notice = readFileSync(path.join(site, "out", "mentions-legales", "index.html"), "utf8");

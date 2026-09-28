@@ -1,10 +1,10 @@
-import { collectionEntry, formatDate, sortEntries, today } from "@openflow/core";
+import { collectionEntry, formatDate, siteLocales, sortEntries, today } from "@openflow/core";
 import { useEffect, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { deletePage, duplicatePage, type PageEntry } from "./data.js";
 import { errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
-import { PageDialog, pageStatus } from "./pages.js";
+import { LanguageButtons, PageDialog, pageStatus, useTranslated } from "./pages.js";
 import { PageHead } from "./shell.js";
 import { Button, Dialog, EmptyState, Menu, StatusChip, timeAgo } from "./ui.js";
 
@@ -18,6 +18,11 @@ type Filter = "all" | "published" | "draft";
  */
 export function CollectionView({ name }: { name: string }) {
   const { config, pages, releases, services, user, notify, navigate, settings } = useAdmin();
+  const locales = siteLocales({
+    lang: settings?.site?.lang || config.site.lang,
+    locales: settings?.site?.locales,
+  });
+  const translated = useTranslated(locales.length > 0);
   const collection = config.collections?.[name];
   const [dialog, setDialog] = useState<PageEntry | "new" | null>(null);
   const [toDelete, setToDelete] = useState<PageEntry | null>(null);
@@ -195,6 +200,7 @@ export function CollectionView({ name }: { name: string }) {
                       <span title={status.title}>
                         <StatusChip tone={status.tone}>{itemStatusLabel(status.label)}</StatusChip>
                       </span>
+                      <LanguageButtons page={page} locales={locales} translated={translated} />
                       <div className="of-list__actions">
                         <Button size="sm" icon="pencil" onClick={open}>
                           Modifier

@@ -98,7 +98,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   « Pages où arrivent les assistants IA » / « Vitesse ressentie », slider « Visites par jour », class `.of-stat`,
   legal: « Informations légales » (sidebar), « Éditeur du site », labels « Nom ou raison sociale » /
   « Immatriculation » / « Directeur de la publication », « Enregistrer » (exact), classes `.of-legal-pages`
-  and `.of-facts`,
+  and `.of-facts`, languages: checkbox « English », combobox « Langue », buttons « Traduire en anglais : … » /
+  « Version en anglais : … », « Titre de la page », « Enregistrer la traduction », classes `.of-translate`
+  and `.of-editor.is-translating` (Puck renders the panel twice: select the `:visible` one),
   « Mettre en ligne », « Enregistré », button « Style » (`aria-expanded`), « Tous les champs de la
   section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one

@@ -54,6 +54,8 @@ connecte s'il ne l'est pas, vérifie le nom de l'assistant et l'adresse de retou
 | `list_items`, `create_item` | Collections (articles, réalisations…) : lister les éléments dans l'ordre du site, en ajouter un avec les valeurs de sa section (brouillon masqué par défaut) |
 | `get_settings`, `update_settings` | Contenu commun (menu, pied de page…) et fiche établissement (lecture) |
 | `update_business` | Fiche établissement : coordonnées, horaires, fermetures exceptionnelles (« nous sommes fermés du 10 au 20 août ») |
+| `set_languages` | Langues du site en plus de la langue principale (chacune à `/<langue>/`) |
+| `get_translation`, `set_translation` | Traduction d'une page ou du contenu commun (`settings`) : chaque texte avec sa clé, son original, sa traduction et son état (« à traduire », « traduit », « à revoir »), puis l'enregistrement des textes traduits, du titre, de la description et de l'adresse |
 | `update_legal` | Informations de l'éditeur pour les pages légales (raison sociale, immatriculation, directeur de la publication, e-mail pour les données personnelles, médiateur). L'IA ne les invente jamais : elle les demande au propriétaire. Le texte des pages légales est écrit par OpenFlow d'après le site |
 | `set_theme` | Couleurs et polices du thème (`config.theme`) |
 | `list_media`, `import_media` | Médiathèque ; import d'une image ou d'une vidéo depuis une adresse https |

@@ -1,6 +1,7 @@
 import type { Data } from "@puckeditor/core";
 import { z } from "zod";
 import { businessSchema, sanitizeBusiness } from "./business-schema.js";
+import { localizedSlug, type PageTranslation, siteLocales } from "./i18n.js";
 import { sanitizeLegal } from "./legal.js";
 import type { IntegrationsDoc, PageDoc, SettingsDoc, SiteSettings } from "./model.js";
 import { isValidSlug, slugToPath } from "./slug.js";
@@ -61,6 +62,17 @@ export const siteSettingsSchema = z.object({
     })
     .optional()
     .catch(undefined),
+  locales: z.array(z.string()).optional().catch(undefined),
+});
+
+const texts = z.record(z.string(), z.string());
+
+/** A page in another language, as published (`i18n.ts`). */
+export const pageTranslationSchema = z.object({
+  title: z.string().optional(),
+  slug: z.string().optional(),
+  seo: z.object({ title: z.string().optional(), description: z.string().optional() }).optional(),
+  values: texts.default({}),
 });
 
 export const snapshotPageSchema = z.object({
@@ -72,6 +84,8 @@ export const snapshotPageSchema = z.object({
   collection: z.string().optional(),
   /** Last change of the page (sitemap `lastmod`, `dateModified`). */
   updatedAt: z.string().optional(),
+  /** The page in the site's other languages (`locale` → texts). */
+  translations: z.record(z.string(), pageTranslationSchema).optional(),
   data: pageDataSchema,
 });
 
@@ -93,6 +107,18 @@ export const snapshotSchema = z.object({
     })
     .default({}),
   pages: z.array(snapshotPageSchema),
+  /** The common content and the site's name in the other languages. */
+  settingsTranslations: z
+    .record(
+      z.string(),
+      z.object({
+        site: z
+          .object({ name: z.string().optional(), description: z.string().optional() })
+          .optional(),
+        values: texts.default({}),
+      }),
+    )
+    .optional(),
 });
 
 export type SnapshotPage = z.infer<typeof snapshotPageSchema> & { data: Data };
@@ -103,11 +129,13 @@ export interface SnapshotInput {
   createdAt?: string;
   /** Public keys of the integrations (`cms_system/integrations`). */
   integrations?: Pick<IntegrationsDoc, "recaptchaSiteKey" | "indexNowKey" | "mail" | "region">;
-  settings: Pick<SettingsDoc, "site" | "values" | "theme">;
+  settings: Pick<SettingsDoc, "site" | "values" | "theme" | "translations">;
   pages: Array<
     Pick<PageDoc, "slug" | "title" | "status" | "seo" | "data" | "collection"> & {
       id: string;
       updatedAt?: string;
+      /** The page's translations (`locale` → texts), from `cms_page_translations`. */
+      translations?: Record<string, PageTranslation>;
     }
   >;
 }
@@ -141,6 +169,33 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
     }
     seen.set(page.slug, page.title);
   }
+  // The other languages live at /<lang>/: no page of the default language may use these addresses.
+  const locales = siteLocales(input.settings.site);
+  for (const page of published) {
+    const first = page.slug.split("/")[0] ?? "";
+    if (locales.includes(first)) {
+      problems.push(
+        `Page « ${page.title} » : l'adresse ${slugToPath(page.slug)} est réservée à la version « ${first} » du site`,
+      );
+    }
+  }
+  const translations = new Map<string, Record<string, PageTranslation>>();
+  for (const locale of locales) {
+    const taken = new Map<string, string>();
+    for (const page of published) {
+      const translation = cleanTranslation(page, page.translations?.[locale]);
+      if (!translation) continue;
+      translations.set(page.id, { ...(translations.get(page.id) ?? {}), [locale]: translation });
+      const slug = localizedSlug(translation.slug ?? page.slug, locale);
+      const other = taken.get(slug);
+      if (other !== undefined) {
+        problems.push(
+          `Pages « ${other} » et « ${page.title} » : même adresse ${slugToPath(slug)} en « ${locale} »`,
+        );
+      }
+      taken.set(slug, page.title);
+    }
+  }
   if (problems.length > 0) throw new SnapshotError("Publication impossible", problems);
 
   const hrefByPageId = new Map(input.pages.map((page) => [page.id, slugToPath(page.slug)]));
@@ -152,6 +207,7 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
       seo: page.seo ?? {},
       ...(page.collection ? { collection: page.collection } : {}),
       ...(page.updatedAt ? { updatedAt: page.updatedAt } : {}),
+      ...(translations.has(page.id) ? { translations: translations.get(page.id) } : {}),
       // Styles are re-validated here: only whitelisted values reach the published CSS.
       data: sanitizePageStyles(resolvePageLinks(ensureIds(page.data), hrefByPageId)),
     }))
@@ -175,6 +231,21 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
   const legal = sanitizeLegal(input.settings.site.legal);
   if (legal) site.legal = legal;
   else delete site.legal;
+  if (locales.length > 0) site.locales = locales;
+  else delete site.locales;
+  const settingsTranslations: NonNullable<Snapshot["settingsTranslations"]> = {};
+  for (const locale of locales) {
+    const translation = input.settings.translations?.[locale];
+    if (!translation) continue;
+    const name = translation.site?.name?.trim();
+    const description = translation.site?.description?.trim();
+    settingsTranslations[locale] = {
+      ...(name || description
+        ? { site: { ...(name ? { name } : {}), ...(description ? { description } : {}) } }
+        : {}),
+      values: onlyTexts(translation.values),
+    };
+  }
   const region = input.integrations?.region;
   return {
     version: SNAPSHOT_VERSION,
@@ -190,6 +261,48 @@ export function createSnapshot(input: SnapshotInput): Snapshot {
       ...(region && /^[a-z0-9-]{2,40}$/.test(region) ? { region } : {}),
     },
     pages,
+    ...(Object.keys(settingsTranslations).length > 0 ? { settingsTranslations } : {}),
+  };
+}
+
+/** Keeps the string values of a translation. */
+function onlyTexts(values: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!values || typeof values !== "object") return out;
+  for (const [key, value] of Object.entries(values)) {
+    if (typeof value === "string" && key.length <= 300) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * The published part of a page's translation: its title, address (not for the home page nor an
+ * item of a collection, whose address follows its collection), description and texts.
+ */
+function cleanTranslation(
+  page: Pick<PageDoc, "slug" | "collection">,
+  translation: PageTranslation | undefined,
+): PageTranslation | undefined {
+  if (!translation || typeof translation !== "object") return undefined;
+  const title = typeof translation.title === "string" ? translation.title.trim() : "";
+  const slug =
+    page.slug !== "" && !page.collection && translation.slug && isValidSlug(translation.slug)
+      ? translation.slug
+      : undefined;
+  const seoTitle = translation.seo?.title?.trim();
+  const seoDescription = translation.seo?.description?.trim();
+  return {
+    ...(title ? { title: title.slice(0, 200) } : {}),
+    ...(slug ? { slug } : {}),
+    ...(seoTitle || seoDescription
+      ? {
+          seo: {
+            ...(seoTitle ? { title: seoTitle } : {}),
+            ...(seoDescription ? { description: seoDescription } : {}),
+          },
+        }
+      : {}),
+    values: onlyTexts(translation.values),
   };
 }
 

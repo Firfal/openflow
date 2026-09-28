@@ -4,21 +4,25 @@ import {
   buildPageCss,
   type CollectionEntry,
   FEED_PATH,
-  findPage,
+  findVersionPage,
   itemEntry,
   jsonLdScript,
   type LegalDocuments,
+  languageLinks,
   legalDocuments,
   legalFacts,
   legalSectionsOf,
   type OpenFlowConfig,
   type OpenFlowMetadata,
+  pageAlternates,
   pageJsonLd,
   paramsToSlug,
   prepareRenderConfig,
+  type SiteVersion,
   type Snapshot,
   type SnapshotPage,
   shareImageUrl,
+  siteVersions,
   slugToParams,
 } from "@openflow/core";
 import { Render } from "@puckeditor/core";
@@ -37,7 +41,11 @@ export function buildMetadata(
   site: Snapshot["site"],
   page: SnapshotPage,
   entry?: CollectionEntry,
-  options: { feed?: boolean } = {},
+  options: {
+    feed?: boolean;
+    /** The page in each language of the site (`hreflang`). */
+    alternates?: Array<{ locale: string; slug: string }>;
+  } = {},
 ): Metadata {
   const title = page.seo.title || page.title;
   const fullTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
@@ -52,6 +60,15 @@ export function buildMetadata(
     description,
     alternates: {
       ...(url ? { canonical: url } : {}),
+      ...(site.url && (options.alternates?.length ?? 0) > 1
+        ? {
+            languages: Object.fromEntries([
+              ...options.alternates!.map((alt) => [alt.locale, pageUrl(site, alt.slug)!]),
+              // The default language's page for any other visitor.
+              ["x-default", pageUrl(site, options.alternates![0]!.slug)!],
+            ]),
+          }
+        : {}),
       ...(options.feed
         ? { types: { "application/rss+xml": [{ url: FEED_PATH, title: site.name }] } }
         : {}),
@@ -86,29 +103,42 @@ function collectionsOf(snapshot: Snapshot, config: OpenFlowConfig) {
   return collections;
 }
 
+/** The site in each of its languages, computed once per build (`siteVersions`). */
+const versionsCache = new WeakMap<Snapshot, SiteVersion[]>();
+export function versionsOf(snapshot: Snapshot, config: OpenFlowConfig): SiteVersion[] {
+  let versions = versionsCache.get(snapshot);
+  if (!versions) {
+    versions = siteVersions(snapshot, config);
+    versionsCache.set(snapshot, versions);
+  }
+  return versions;
+}
+
 /**
- * The legal pages of a snapshot (privacy policy, legal notice), written from what the published
- * site does; computed once per build.
+ * The legal pages of a language of the site (privacy policy, legal notice), written from what the
+ * published site does; computed once per build.
  */
 const legalCache = new WeakMap<Snapshot, LegalDocuments>();
-function legalOf(snapshot: Snapshot) {
-  let documents = legalCache.get(snapshot);
+function legalOf(version: Snapshot, main: Snapshot) {
+  let documents = legalCache.get(version);
   if (!documents) {
     documents = legalDocuments(
       legalFacts({
-        site: snapshot.site,
-        pages: snapshot.pages,
-        integrations: snapshot.integrations,
-        date: snapshot.createdAt,
+        site: version.site,
+        // This language's pages first (links to its legal pages), then the whole site (forms).
+        pages: version === main ? main.pages : [...version.pages, ...main.pages],
+        integrations: version.integrations,
+        date: version.createdAt,
       }),
     );
-    legalCache.set(snapshot, documents);
+    legalCache.set(version, documents);
   }
   return documents;
 }
 
 /**
- * Creates the catch-all page of an OpenFlow site (`app/(site)/[[...slug]]/page.tsx`):
+ * Creates the catch-all page of an OpenFlow site (`app/(site)/[[...slug]]/page.tsx`), in every
+ * language of the site (`/`, `/en/`…), inside the site's layout (`config.layout`):
  *
  * ```tsx
  * const site = createOpenFlowPage(config);
@@ -124,35 +154,42 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
   async function load(params: Params) {
     const { slug } = await params;
     const snapshot = await getSnapshot(config);
-    const page = findPage(snapshot, paramsToSlug(slug));
-    return { snapshot, page };
+    const versions = versionsOf(snapshot, config);
+    const found = findVersionPage(versions, paramsToSlug(slug));
+    return { snapshot, versions, version: found?.version, page: found?.page };
   }
 
   async function generateStaticParams() {
     const snapshot = await getSnapshot(config);
-    return snapshot.pages.map((page) => ({ slug: slugToParams(page.slug) }));
+    return versionsOf(snapshot, config).flatMap((version) =>
+      version.snapshot.pages.map((page) => ({ slug: slugToParams(page.slug) })),
+    );
   }
 
   async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-    const { snapshot, page } = await load(params);
-    if (!page) return {};
-    const collections = collectionsOf(snapshot, config);
-    return buildMetadata(snapshot.site, page, itemEntry(snapshot, page, config, collections), {
+    const { versions, version, page } = await load(params);
+    if (!page || !version) return {};
+    const localized = version.snapshot;
+    const collections = collectionsOf(localized, config);
+    return buildMetadata(localized.site, page, itemEntry(localized, page, config, collections), {
       // `app/rss.xml/route.ts` lists the collections' items (see `createRssFeed`).
-      feed: Object.keys(config.collections ?? {}).length > 0,
+      feed: version.main && Object.keys(config.collections ?? {}).length > 0,
+      alternates: pageAlternates(versions, page.id),
     });
   }
 
   async function Page({ params }: { params: Params }) {
-    const { snapshot, page } = await load(params);
-    if (!page) notFound();
+    const { snapshot, versions, version, page } = await load(params);
+    if (!page || !version) notFound();
+    const localized = version.snapshot;
     // Free style of the sections (`_style`), hoisted into <head> by React.
     const css = buildPageCss(page.data);
-    const collections = collectionsOf(snapshot, config);
+    const collections = collectionsOf(localized, config);
     // What sections receive in `puck.metadata`: the site, the page, and every collection's items.
     const metadata: OpenFlowMetadata = {
-      site: snapshot.site,
-      settings: snapshot.settings,
+      site: localized.site,
+      settings: localized.settings,
+      locale: version.locale,
       page: {
         id: page.id,
         slug: page.slug,
@@ -161,16 +198,16 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
       },
       collections,
       // Only the pages showing a legal document get them (`getLegalDocument`).
-      ...(legalSectionsOf(page.data).length > 0 ? { legal: legalOf(snapshot) } : {}),
+      ...(legalSectionsOf(page.data).length > 0 ? { legal: legalOf(localized, snapshot) } : {}),
     };
-    return (
+    const content = (
       <>
         {css && (
           <style href={`openflow-page-${page.id}`} precedence="openflow">
             {css}
           </style>
         )}
-        {pageJsonLd(snapshot, page, config, collections).map((item, index) => (
+        {pageJsonLd(localized, page, config, collections).map((item, index) => (
           <script
             key={index}
             type="application/ld+json"
@@ -180,6 +217,35 @@ export function createOpenFlowPage(config: OpenFlowConfig) {
         ))}
         <Render config={renderConfig} data={applyDefaults(page.data, config)} metadata={metadata} />
       </>
+    );
+    const Layout = config.layout;
+    const framed = Layout ? (
+      <Layout
+        settings={{ ...(config.settings?.defaultProps ?? {}), ...localized.settings }}
+        site={localized.site}
+        languages={languageLinks(versions, page.id, version.locale)}
+        homeHref={
+          localized.pages.some((p) => p.slug === version.locale) ? `/${version.locale}/` : "/"
+        }
+      >
+        {content}
+      </Layout>
+    ) : (
+      content
+    );
+    if (version.main) return framed;
+    // A page in another language: its language for assistive technologies, search engines and
+    // the browser (the document's <html lang> is the default language's).
+    return (
+      <div lang={version.locale} style={{ display: "contents" }}>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: a constant language code.
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.lang=${JSON.stringify(version.locale)}`,
+          }}
+        />
+        {framed}
+      </div>
     );
   }
 

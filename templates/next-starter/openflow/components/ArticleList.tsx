@@ -1,4 +1,4 @@
-import { formatDate, getCollection, imageProps } from "@openflow/core";
+import { formatDate, getCollection, imageProps, pageLang } from "@openflow/core";
 import type { ComponentConfig } from "@puckeditor/core";
 import type { ArticleProps } from "./Article";
 import { Section, type Tone, toneField } from "./shared";
@@ -70,7 +70,7 @@ export const ArticleList: ComponentConfig<ArticleListProps> = {
                   )}
                   {item.date && (
                     <time dateTime={item.date} className="text-sm opacity-70">
-                      {formatDate(item.date)}
+                      {formatDate(item.date, pageLang(puck.metadata))}
                     </time>
                   )}
                   <h3 className="mt-2 text-xl font-semibold break-words">

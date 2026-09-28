@@ -18,6 +18,9 @@ ou Framer, avec un backend 100 % Firebase.**
   ([docs/sites-de-demain.md](docs/sites-de-demain.md)).
 - **Statistiques sans cookie ni bandeau** (conformes CNIL), avec les visites envoyées par ChatGPT, Perplexity,
   Claude, Gemini ou Copilot.
+- **Multilingue** : le site dans d'autres langues (`/en/`, `/de/`…), mêmes sections, textes traduits
+  dans l'éditeur (chaque texte d'origine au-dessus de sa traduction) ou par l'IA du propriétaire,
+  `hreflang` et sélecteur de langue.
 - **Pages légales écrites d'après le site** : la politique de confidentialité et les mentions légales disent
   exactement ce que fait le site (mesure d'audience, formulaires, Google Analytics, hébergeur…) et se
   mettent à jour à chaque publication. Le visiteur peut y arrêter le comptage de ses visites.

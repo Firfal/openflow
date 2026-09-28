@@ -5,6 +5,7 @@ import {
   type ImageValue,
   imageField,
   imageProps,
+  pageLang,
 } from "@openflow/core";
 import type { ComponentConfig } from "@puckeditor/core";
 
@@ -51,7 +52,7 @@ export const Article: ComponentConfig<ArticleProps> = {
         <header className="mx-auto max-w-3xl">
           {date && (
             <time dateTime={date} className="text-sm font-medium text-accent">
-              {formatDate(date)}
+              {formatDate(date, pageLang(puck.metadata))}
             </time>
           )}
           {title && (

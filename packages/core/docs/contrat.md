@@ -240,6 +240,20 @@ de liste les affichent toutes seules, triés.
 Ne renomme jamais une collection, son `path` ni sa section une fois le site livré (OF-202) : les
 éléments du propriétaire en dépendent.
 
+## Sites multilingues
+
+Le propriétaire peut ajouter des langues (`site.locales`). Une page traduite vit à `/<langue>/<adresse>/`,
+avec les mêmes sections, images, liens et style : seuls changent les **textes** (champs `text`, `textarea`,
+`richtext`, et la description `alt` des images). Pour qu'une section reste traduisible :
+
+- tout texte visible passe par un champ (règle déjà imposée par la norme) ; un `select` ou un `radio` n'est
+  jamais traduit : ne l'utilisez pas pour un texte affiché ;
+- les dates et les nombres se forment dans la langue de la page :
+  `formatDate(date, pageLang(puck.metadata))` (`pageLang` de `@openflow/core`) ;
+- le cadre (`config.layout`) reçoit la langue de la page dans `site.lang` (par exemple
+  `formatOpeningHours(business.hours, site.lang)`), `languages` pour un sélecteur de langue (`lang`,
+  `label`, `href`, `current` ; vide si le site n'a qu'une langue) et `homeHref` pour le lien du logo.
+
 ## Pages légales (politique de confidentialité, mentions légales)
 
 OpenFlow écrit leur texte d'après ce que fait le site (formulaires publiés, mesure d'audience, Google

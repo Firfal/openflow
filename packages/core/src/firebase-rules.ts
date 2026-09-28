@@ -23,6 +23,10 @@ match /cms_page_content/{pageId} {
   allow read, delete: if cmsIsOwner();
   allow create, update: if cmsIsOwner() && request.resource.data.data is map;
 }
+match /cms_page_translations/{translationId} {
+  allow read, delete: if cmsIsOwner();
+  allow create, update: if cmsIsOwner() && request.resource.data.values is map;
+}
 match /cms_media/{mediaId} {
   allow read, write: if cmsIsOwner();
 }

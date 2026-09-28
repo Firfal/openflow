@@ -13,12 +13,12 @@ import {
   parseSnapshot,
   publicStorageUrl,
   publishedAt,
+  publishedPaths,
   REFRESH_AUTHOR,
   type ReleaseDoc,
   type SiteSchema,
   type Snapshot,
   SnapshotError,
-  slugToPath,
   statsDay,
 } from "@openflow/core";
 import { getApps, initializeApp } from "firebase-admin/app";
@@ -859,7 +859,8 @@ async function livePagesUncached() {
     host = undefined;
   }
   return {
-    paths: new Set(snapshot.pages.map((page) => slugToPath(page.slug))),
+    // Every language of the site (`/en/…`).
+    paths: new Set(publishedPaths(snapshot)),
     host,
     off: snapshot.site.stats === "off",
   };

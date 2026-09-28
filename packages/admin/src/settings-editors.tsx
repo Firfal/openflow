@@ -5,6 +5,7 @@ import {
   buildPageCss,
   prepareRenderConfig,
   sanitizeTheme,
+  siteLocales,
   type ThemeConfig,
 } from "@openflow/core";
 import { type Config, type CustomField, type Data, type Fields, Puck } from "@puckeditor/core";
@@ -25,12 +26,33 @@ import { mapFields } from "./fields.js";
 import { FR_DICTIONARY } from "./i18n.js";
 import { PageHead } from "./shell.js";
 import { ColorControl } from "./style-controls.js";
+import { CommonTranslation } from "./translate.js";
 import { EmptyState } from "./ui.js";
 
 const SETTINGS_UI = editorUi({ leftSideBarVisible: false });
 
 /** Global content (navigation, footer…) edited with Puck's root fields, with an optional preview. */
 export function GlobalContent() {
+  const { config, settings } = useAdmin();
+  const main = settings?.site?.lang || config.site.lang || "fr";
+  const others = siteLocales({ lang: main, locales: settings?.site?.locales });
+  const [locale, setLocale] = useState(main);
+  const key = others.join();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `others` is tracked through `key`.
+  const languages = useMemo(() => ({ main, others }), [main, key]);
+  if (locale !== main && others.includes(locale)) {
+    return <CommonTranslation locale={locale} main={main} others={others} onLanguage={setLocale} />;
+  }
+  return <GlobalContentEditor languages={languages} onLanguage={setLocale} />;
+}
+
+function GlobalContentEditor({
+  languages,
+  onLanguage,
+}: {
+  languages: { main: string; others: string[] };
+  onLanguage: (locale: string) => void;
+}) {
   const { config, services, settings, user } = useAdmin();
   const site = settings?.site ?? config.site;
   const settingsConfig = config.settings;
@@ -53,8 +75,17 @@ export function GlobalContent() {
       saveState: autosave.state,
       saveError: autosave.error,
       retry: () => void flush(),
+      ...(languages.others.length > 0
+        ? {
+            languages: { ...languages, current: languages.main },
+            setLanguage: async (next: string) => {
+              await flush();
+              onLanguage(next);
+            },
+          }
+        : {}),
     }),
-    [autosave.state, autosave.error, flush],
+    [autosave.state, autosave.error, flush, languages, onLanguage],
   );
   // The preview only depends on the site identity: keep the config stable across saves.
   const siteKey = JSON.stringify(site);

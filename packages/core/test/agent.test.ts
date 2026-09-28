@@ -12,6 +12,7 @@ import {
   handleMcpMessage,
   imageField,
   linkField,
+  type PageTranslation,
   runAgentTool,
   type StatsDoc,
   sanitizeRichText,
@@ -135,6 +136,7 @@ function memoryBackend() {
     seo: {},
     data: { root: { props: {} }, content: [] },
   });
+  const translations = new Map<string, PageTranslation>();
   const backend: AgentBackend = {
     listPages: async () => [...pages.values()],
     getPage: async (id) => pages.get(id),
@@ -166,6 +168,17 @@ function memoryBackend() {
     saveLegal: async (legal) => {
       if (legal) settings.site.legal = legal;
       else delete settings.site.legal;
+    },
+    saveSiteLocales: async (locales) => {
+      settings.site.locales = locales;
+    },
+    getTranslation: async (pageId, locale) =>
+      structuredClone(translations.get(`${pageId}__${locale}`)),
+    saveTranslation: async (pageId, locale, translation) => {
+      translations.set(`${pageId}__${locale}`, translation);
+    },
+    saveSettingsTranslation: async (locale, translation) => {
+      settings.translations = { ...(settings.translations ?? {}), [locale]: translation };
     },
     listMedia: async () => [
       {
@@ -552,5 +565,67 @@ describe("update_legal", () => {
     const overview = await run("get_site_overview", {});
     expect(overview.legal.missing).toContain("directeur de la publication");
     expect(overview.notes.join(" ")).toContain("update_legal");
+  });
+});
+
+describe("translations", () => {
+  it("adds a language, lists the texts to translate and saves their translation", async () => {
+    await expect(run("get_translation", { pageId: "/", locale: "en" })).rejects.toThrow(
+      "set_languages",
+    );
+    await expect(run("set_languages", { locales: ["xx"] })).rejects.toThrow("Langue inconnue");
+    const languages = await run("set_languages", { locales: ["en", "fr"] });
+    expect(languages.locales).toEqual([{ code: "en", name: "anglais" }]);
+    expect((await run("get_site_overview", {})).languages).toEqual({ main: "fr", others: ["en"] });
+
+    const before = await run("get_translation", { pageId: "/", locale: "en" });
+    expect(before.texts.map((t: { key: string; state: string }) => [t.key, t.state])).toEqual([
+      ["hero/title", "à traduire"],
+      ["hero/body", "à traduire"],
+      ["faq/items[0].question", "à traduire"],
+      ["faq/items[0].answer", "à traduire"],
+    ]);
+    expect(before.note).toContain("Pas encore traduite");
+
+    const saved = await run("set_translation", {
+      pageId: "accueil",
+      locale: "en",
+      title: "Home",
+      texts: { "hero/title": "Hello", "hero/body": "<p>Bread <script>x()</script></p>" },
+    });
+    expect(saved).toMatchObject({ ok: true, path: "/en/", status: { translated: 2, total: 4 } });
+    const after = await run("get_translation", { pageId: "accueil", locale: "en" });
+    expect(after.title).toEqual({ source: "Accueil", translation: "Home" });
+    expect(after.texts[0]).toMatchObject({
+      source: "Bonjour",
+      translation: "Hello",
+      state: "traduit",
+    });
+    expect(after.texts[1].translation).not.toContain("script");
+    // Only texts: a style or a link is not translated.
+    await expect(
+      run("set_translation", { pageId: "accueil", locale: "en", texts: { "hero/tone": "dark" } }),
+    ).rejects.toThrow("Clé inconnue");
+    // null removes a translation.
+    const removed = await run("set_translation", {
+      pageId: "accueil",
+      locale: "en",
+      texts: { "hero/body": null },
+    });
+    expect(removed.status.translated).toBe(1);
+
+    // The common content (menu, footer) and the site's name.
+    await run("update_settings", { changes: { phone: "01 23 45 67 89" } });
+    await run("set_translation", {
+      pageId: "settings",
+      locale: "en",
+      siteName: "The bakery",
+      texts: { phone: "+33 1 23 45 67 89" },
+    });
+    const common = await run("get_translation", { pageId: "settings", locale: "en" });
+    expect(common.siteName.translation).toBe("The bakery");
+    expect(common.texts).toEqual([
+      expect.objectContaining({ key: "phone", translation: "+33 1 23 45 67 89", state: "traduit" }),
+    ]);
   });
 });

@@ -4,6 +4,8 @@ import {
   buildLlmsTxt,
   buildRssFeed,
   type OpenFlowConfig,
+  pageAlternates,
+  siteVersions,
 } from "@openflow/core";
 import type { MetadataRoute } from "next";
 import { getSnapshot } from "./snapshot.js";
@@ -19,15 +21,33 @@ import { pageUrl } from "./urls.js";
 export function createSitemap(config: OpenFlowConfig) {
   return async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const snapshot = await getSnapshot(config);
-    return (
-      snapshot.pages
+    const versions = siteVersions(snapshot, config);
+    const site = snapshot.site;
+    return versions.flatMap((version) =>
+      version.snapshot.pages
         .filter((page) => !page.seo.noindex)
-        .map((page) => ({ url: pageUrl(snapshot.site, page.slug), page }))
+        .map((page) => ({ url: pageUrl(site, page.slug), page }))
         .filter((entry): entry is { url: string; page: (typeof snapshot.pages)[number] } =>
           Boolean(entry.url),
         )
-        // The page's own last change (search engines and AI assistants favour fresh pages).
-        .map(({ url, page }) => ({ url, lastModified: page.updatedAt ?? snapshot.createdAt }))
+        .map(({ url, page }) => {
+          // The same page in the site's other languages (`hreflang`).
+          const alternates = pageAlternates(versions, page.id);
+          return {
+            url,
+            // The page's own last change (search engines and AI assistants favour fresh pages).
+            lastModified: page.updatedAt ?? snapshot.createdAt,
+            ...(alternates.length > 1
+              ? {
+                  alternates: {
+                    languages: Object.fromEntries(
+                      alternates.map((alt) => [alt.locale, pageUrl(site, alt.slug)!]),
+                    ),
+                  },
+                }
+              : {}),
+          };
+        }),
     );
   };
 }

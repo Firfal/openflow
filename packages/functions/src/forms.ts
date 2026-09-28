@@ -6,8 +6,8 @@ import {
   type FormFieldDef,
   MESSAGE_RETENTION_YEARS,
   type MessageDoc,
+  pageAtPath,
   type Snapshot,
-  slugToPath,
   validateSubmission,
   walkComponents,
 } from "@openflow/core";
@@ -57,23 +57,34 @@ export interface SubmitResult {
   body: { ok: boolean; error?: string; errors?: Record<string, string> };
 }
 
-/** The form definition in the published page (a section whose `formFields` is the form). */
+/**
+ * The form definition in the published page (a section whose `formFields` is the form), in the
+ * page's language: on `/en/contact/`, its labels and choices are the English ones.
+ */
 export function findForm(
   snapshot: Snapshot,
   page: string,
   formId: string,
 ): { definition: FormFieldDef[]; title: string; page: string } | undefined {
-  const target = page.endsWith("/") ? page : `${page}/`;
-  const found = snapshot.pages.find((p) => slugToPath(p.slug) === target);
+  const found = pageAtPath(snapshot, page);
   if (!found) return undefined;
+  const values = found.values ?? {};
+  const text = (key: string, fallback: unknown) =>
+    typeof values[`${formId}/${key}`] === "string" ? values[`${formId}/${key}`] : fallback;
   let form: { definition: FormFieldDef[]; title: string; page: string } | undefined;
-  walkComponents(found.data, (item) => {
+  walkComponents(found.page.data, (item) => {
     const props = item.props as Record<string, unknown>;
     if (form || props.id !== formId || !Array.isArray(props[FORM_FIELDS_PROP])) return;
+    const definition = (props[FORM_FIELDS_PROP] as FormFieldDef[]).map((field, index) => ({
+      ...field,
+      label: String(text(`${FORM_FIELDS_PROP}[${index}].label`, field.label) ?? ""),
+      options: String(text(`${FORM_FIELDS_PROP}[${index}].options`, field.options) ?? ""),
+    }));
+    const title = text("title", props.title);
     form = {
-      definition: props[FORM_FIELDS_PROP] as FormFieldDef[],
-      title: typeof props.title === "string" && props.title ? props.title : found.title,
-      page: slugToPath(found.slug),
+      definition,
+      title: typeof title === "string" && title ? title : found.page.title,
+      page: page.endsWith("/") ? page : `${page}/`,
     };
   });
   return form;

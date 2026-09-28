@@ -41,6 +41,13 @@ export interface LayoutProps<Values extends object = Record<string, any>> {
   children: ReactNode;
   /** True inside the admin editor. */
   editing?: boolean;
+  /**
+   * The site's languages for a language switcher (none when the site has one language): each
+   * with its own name, the page in that language (or its home page), and the current one.
+   */
+  languages?: Array<{ lang: string; label: string; href: string; current: boolean }>;
+  /** The home page in the page's language (`/`, `/en/`): the logo's link. */
+  homeHref?: string;
 }
 
 /** A theme token editable by the owner (Réglages > Thème). */

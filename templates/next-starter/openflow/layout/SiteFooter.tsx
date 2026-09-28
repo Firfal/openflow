@@ -22,7 +22,7 @@ export function SiteFooter({
   const business = site.business;
   const address = formatAddress(business);
   const map = mapUrl(business);
-  const hours = formatOpeningHours(business?.hours);
+  const hours = formatOpeningHours(business?.hours, site.lang);
   return (
     <footer className="bg-stone-950 text-stone-300">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 md:grid-cols-3">

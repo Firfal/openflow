@@ -1,4 +1,4 @@
-import type { SiteSettings } from "@openflow/core";
+import { LANGUAGES, MAX_LOCALES, type SiteSettings, siteLocales } from "@openflow/core";
 import { lazy, Suspense, useState } from "react";
 import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
@@ -52,7 +52,14 @@ function SiteForm() {
     try {
       await saveSettings(
         services.db,
-        { site: { ...site, url: site.url || undefined, gaMeasurementId: gaId || undefined } },
+        {
+          site: {
+            ...site,
+            url: site.url || undefined,
+            gaMeasurementId: gaId || undefined,
+            locales: siteLocales(site),
+          },
+        },
         user.email ?? undefined,
       );
       notify("success", "Réglages du site enregistrés. Publiez pour les mettre en ligne.");
@@ -122,6 +129,36 @@ function SiteForm() {
           ))}
         </select>
       </FormField>
+      <fieldset className="of-choices">
+        <legend className="of-field__label">Autres langues du site</legend>
+        <p className="of-field__hint">
+          Chaque langue a ses pages à part (/en/, /de/…), avec les mêmes sections et images. Vous
+          traduisez les textes dans l'éditeur, en choisissant la langue en haut, ou votre IA les
+          traduit pour vous. Une page non traduite n'existe que dans la langue principale.
+        </p>
+        {LANGUAGES.filter((language) => language.code !== site.lang).map((language) => {
+          const locales = siteLocales(site);
+          const checked = locales.includes(language.code);
+          return (
+            <label key={language.code} className="of-checkbox">
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={!checked && locales.length >= MAX_LOCALES}
+                onChange={(e) =>
+                  setSite({
+                    ...site,
+                    locales: e.target.checked
+                      ? [...locales, language.code]
+                      : locales.filter((code) => code !== language.code),
+                  })
+                }
+              />
+              <span lang={language.code}>{language.label}</span>
+            </label>
+          );
+        })}
+      </fieldset>
       <div>
         <h2>Mesure d'audience</h2>
         <p className="of-card__lead">

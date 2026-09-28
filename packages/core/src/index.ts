@@ -67,6 +67,7 @@ export {
   itemSummary,
   newItemData,
   type OpenFlowMetadata,
+  pageLang,
   richTextToPlain,
   setItemTitle,
   sortEntries,
@@ -129,6 +130,40 @@ export {
   validateSubmission,
 } from "./forms.js";
 export type {
+  LanguageCode,
+  PageTranslation,
+  SettingsTranslation,
+  TranslatableText,
+  TranslationStatus,
+} from "./i18n.js";
+export {
+  applyPageTranslation,
+  applySettingsTranslation,
+  collectTranslation,
+  isLanguage,
+  LANGUAGES,
+  languageLabel,
+  languageName,
+  localizedSlug,
+  MAX_LOCALES,
+  pageTexts,
+  settingsTexts,
+  siteLocales,
+  textFingerprint,
+  translationId,
+  translationStatus,
+} from "./i18n.js";
+export type { LanguageLink, SiteVersion } from "./i18n-site.js";
+export {
+  findVersionPage,
+  languageLinks,
+  localizeSnapshot,
+  pageAlternates,
+  pageAtPath,
+  publishedPaths,
+  siteVersions,
+} from "./i18n-site.js";
+export type {
   LegalBlock,
   LegalDocument,
   LegalDocumentKind,
@@ -175,6 +210,7 @@ export type {
   PageMetaDoc,
   PageSeo,
   PageStatus,
+  PageTranslationDoc,
   ReleaseDoc,
   ReleaseStatus,
   SettingsDoc,

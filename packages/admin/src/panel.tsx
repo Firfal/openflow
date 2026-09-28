@@ -19,6 +19,7 @@ import {
 } from "./focus.js";
 import { Icon, type IconName } from "./icons.js";
 import { StylePanel, useStyleSummary } from "./style-panel.js";
+import { TranslationPanel, useTranslation } from "./translate.js";
 import { Button, IconButton } from "./ui.js";
 
 const usePuck = createUsePuck();
@@ -272,6 +273,13 @@ function StyleBlock() {
  * No style block when `editor.styles` is `off`.
  */
 export function FieldsPanel({ children }: { children: ReactNode }) {
+  // The translation editor has its own panel: the texts, each under its original.
+  const translation = useTranslation();
+  if (translation) return <TranslationPanel />;
+  return <ContentPanel>{children}</ContentPanel>;
+}
+
+function ContentPanel({ children }: { children: ReactNode }) {
   const { config } = useAdmin();
   const { focus, setFocus } = useFocus();
   const selected = usePuck((s) => s.selectedItem);

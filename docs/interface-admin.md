@@ -23,7 +23,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Statistiques** ;
   - **Assistant IA**, avec un point vert quand une IA est connectée ;
   - **Réglages**, qui se déplie en cinq sous-pages : Contenu commun, Thème, Site et référencement
-    (identité, langue, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
+    (identité, langue principale et **autres langues du site**, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
     l'identifiant Google Analytics `G-…`, facultatif, et **Robots des IA** :
     autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
     **Établissement** et **Informations légales** (voir plus bas) ;
@@ -111,6 +111,17 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Dans l'éditeur, la section « Page légale » affiche le texte tel qu'il sera publié ; le panneau propose le
     choix du document et un champ « Informations complémentaires » pour ce qu'OpenFlow ne connaît pas
     (newsletter, prise de rendez-vous…).
+- **Langues** (sites multilingues) : chaque page et chaque élément de collection montre un bouton par autre
+  langue (« EN », en couleur quand la page est traduite, en pointillés sinon) qui ouvre sa traduction.
+  - L'éditeur a un menu des langues en haut, à côté du nom de la page. Dans une autre langue, la page
+    s'ouvre avec les mêmes sections, verrouillées : on ne change que les textes, sur la page ou dans le
+    panneau de droite, qui montre chaque texte d'origine au-dessus de sa traduction (« À traduire »,
+    « À revoir » quand le texte d'origine a changé depuis), et le titre, l'adresse et la description de la
+    page dans cette langue.
+  - « Contenu commun » a le même menu : dans une autre langue, un formulaire traduit le nom du site, sa
+    description, le menu et le pied de page.
+  - Une page n'existe dans une langue qu'une fois traduite ; ce qui n'est pas traduit reste dans la langue
+    principale. L'IA du propriétaire peut tout traduire (« Traduis le site en anglais »).
 - **Messages** : l'en-tête rappelle que chaque message est effacé automatiquement 3 ans après sa réception.
 - **Historique** : la frise des publications. Une version remplacée se remet en ligne d'un clic. Une
   « Mise à jour automatique » y apparaît quand le site s'est reconstruit seul (voir plus bas) ; elle ne

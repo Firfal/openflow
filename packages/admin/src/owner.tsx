@@ -72,7 +72,11 @@ function Shell() {
   if (route.view === "editor") {
     return (
       <Suspense fallback={<Spinner label="Ouverture de la page…" />}>
-        <EditorView key={route.pageId} pageId={route.pageId} />
+        <EditorView
+          key={`${route.pageId}:${route.locale ?? ""}`}
+          pageId={route.pageId}
+          locale={route.locale}
+        />
       </Suspense>
     );
   }

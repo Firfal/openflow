@@ -18,11 +18,15 @@ import {
   type PageContentDoc,
   type PageDoc,
   type PageMetaDoc,
+  type PageTranslation,
+  type PageTranslationDoc,
   type ReleaseDoc,
   type SettingsDoc,
+  type SettingsTranslation,
   STORAGE_PATHS,
   setItemTitle,
   slugify,
+  translationId,
 } from "@openflow/core";
 import type { Data } from "@puckeditor/core";
 import {
@@ -300,6 +304,82 @@ export async function saveLegal(db: Firestore, legal: LegalInfo | null, by?: str
       updatedBy: by ?? null,
     },
     { mergeFields: ["site.legal", "updatedAt", "updatedBy"] },
+  );
+}
+
+/** A page's translation into one language, if it exists. */
+export async function getTranslation(
+  db: Firestore,
+  pageId: string,
+  locale: string,
+): Promise<PageTranslationDoc | undefined> {
+  const snap = await getDoc(doc(db, COLLECTIONS.pageTranslations, translationId(pageId, locale)));
+  return snap.exists() ? (snap.data() as PageTranslationDoc) : undefined;
+}
+
+/**
+ * Saves a page's translation; the page's date moves too, so the admin shows it as changed until
+ * the next publication.
+ */
+export async function saveTranslation(
+  db: Firestore,
+  pageId: string,
+  locale: string,
+  translation: PageTranslation,
+  by?: string,
+) {
+  const at = now();
+  const batch = writeBatch(db);
+  batch.set(
+    doc(db, COLLECTIONS.pageTranslations, translationId(pageId, locale)),
+    JSON.parse(
+      JSON.stringify({
+        page: pageId,
+        locale,
+        ...translation,
+        updatedAt: at,
+        updatedBy: by ?? null,
+      } satisfies Omit<PageTranslationDoc, "updatedBy"> & { updatedBy: string | null }),
+    ),
+  );
+  batch.update(doc(db, COLLECTIONS.pages, pageId), { updatedAt: at, updatedBy: by ?? null });
+  await batch.commit();
+}
+
+/** Which pages are translated into which language (the pages list shows it). */
+export function subscribeTranslations(
+  db: Firestore,
+  onData: (translations: Array<{ page: string; locale: string; updatedAt: string }>) => void,
+  onError: (e: Error) => void,
+) {
+  return onSnapshot(
+    collection(db, COLLECTIONS.pageTranslations),
+    (snap) =>
+      onData(
+        snap.docs.map((d) => {
+          const data = d.data() as PageTranslationDoc;
+          return { page: data.page, locale: data.locale, updatedAt: data.updatedAt };
+        }),
+      ),
+    onError,
+  );
+}
+
+/** The common content in one language (Réglages > Contenu commun, in that language). */
+export async function saveSettingsTranslation(
+  db: Firestore,
+  locale: string,
+  translation: SettingsTranslation,
+  by?: string,
+) {
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    {
+      translations: { [locale]: JSON.parse(JSON.stringify(translation)) },
+      updatedAt: now(),
+      updatedBy: by ?? null,
+    },
+    { mergeFields: [`translations.${locale}`, "updatedAt", "updatedBy"] },
   );
 }
 

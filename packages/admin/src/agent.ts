@@ -36,12 +36,15 @@ import {
   type FullPage,
   getAllPages,
   getPage,
+  getTranslation,
   listMedia,
   saveBusiness,
   saveLegal,
   savePageData,
   saveSettings,
+  saveSettingsTranslation,
   saveTheme,
+  saveTranslation,
   updatePageMeta,
   uploadMedia,
   writePage,
@@ -111,8 +114,25 @@ export function browserBackend(services: Services, config: OpenFlowConfig): Agen
         site: settings.site ?? { name: config.site.name, lang: config.site.lang ?? "fr" },
         values: settings.values ?? {},
         theme: settings.theme ?? {},
+        ...(settings.translations ? { translations: settings.translations } : {}),
       };
     },
+    saveSiteLocales: (locales) =>
+      setDoc(
+        doc(db, COLLECTIONS.site, DOCS.settings),
+        { site: { locales }, updatedAt: new Date().toISOString(), updatedBy: AGENT_AUTHOR },
+        { mergeFields: ["site.locales", "updatedAt", "updatedBy"] },
+      ),
+    getTranslation: async (pageId, locale) => {
+      const found = await getTranslation(db, pageId, locale);
+      if (!found) return undefined;
+      const { title, slug, seo, values, sources } = found;
+      return JSON.parse(JSON.stringify({ title, slug, seo, values: values ?? {}, sources }));
+    },
+    saveTranslation: (pageId, locale, translation) =>
+      saveTranslation(db, pageId, locale, translation, AGENT_AUTHOR),
+    saveSettingsTranslation: (locale, translation) =>
+      saveSettingsTranslation(db, locale, translation, AGENT_AUTHOR),
     saveSettingsValues: (values) => saveSettings(db, { values }, AGENT_AUTHOR),
     saveTheme: (theme) => saveTheme(db, theme, AGENT_AUTHOR),
     saveBusiness: (business) => saveBusiness(db, business, AGENT_AUTHOR),

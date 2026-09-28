@@ -1,9 +1,10 @@
-import { buildPageCss, buildThemeCss, slugToPath } from "@openflow/core";
+import { applySettingsTranslation, buildPageCss, buildThemeCss, slugToPath } from "@openflow/core";
 import { createUsePuck, type Fields } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAdmin } from "./context.js";
 import { type Focus, resolveField, resolveGroup, useFocus } from "./focus.js";
+import { useTranslation } from "./translate.js";
 
 /** Elements handled by Puck itself (sections, drop zones, action bars): never intercepted. */
 const PUCK_UI = "[data-puck-dropzone], [data-puck-overlay], [data-puck-overlay-portal]";
@@ -245,9 +246,22 @@ export function ThemeStyles({ theme }: { theme: Record<string, string> | undefin
 /** The site layout (header, footer, theme) around the page being edited. */
 export function EditorFrame({ children }: { children: ReactNode }) {
   const { config, settings } = useAdmin();
+  const translation = useTranslation();
   const Layout = config.layout;
-  const values = { ...(config.settings?.defaultProps ?? {}), ...(settings?.values ?? {}) };
-  const site = { ...config.site, ...(settings?.site ?? {}) };
+  const locale = translation?.locale;
+  const common = locale ? settings?.translations?.[locale] : undefined;
+  // In the translation editor, the header and footer in that language.
+  const values = applySettingsTranslation(
+    { ...(config.settings?.defaultProps ?? {}), ...(settings?.values ?? {}) },
+    config,
+    common?.values,
+  );
+  const site = {
+    ...config.site,
+    ...(settings?.site ?? {}),
+    ...(locale ? { lang: locale } : {}),
+    ...(common?.site?.name ? { name: common.site.name } : {}),
+  };
   return (
     <>
       <ThemeStyles theme={settings?.theme} />

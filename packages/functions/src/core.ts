@@ -15,6 +15,8 @@ import {
   OWNER_CLAIM,
   type PageContentDoc,
   type PageMetaDoc,
+  type PageTranslation,
+  type PageTranslationDoc,
   type ReleaseDoc,
   type ReleaseStatus,
   type SettingsDoc,
@@ -128,19 +130,30 @@ export function isOwnerToken(token: TokenInfo | undefined, owners: string[]): bo
 // ---------------------------------------------------------------------------------------------
 // Snapshot
 
-const FALLBACK_SETTINGS: Pick<SettingsDoc, "site" | "values" | "theme"> = {
+const FALLBACK_SETTINGS: Pick<SettingsDoc, "site" | "values" | "theme" | "translations"> = {
   site: { name: "Site", lang: "fr" },
   values: {},
 };
 
 /** Reads drafts and settings from Firestore and freezes them into a snapshot. */
 export async function snapshotFromFirestore(db: Firestore, releaseId: string): Promise<Snapshot> {
-  const [settingsSnap, pagesSnap, contentsSnap] = await Promise.all([
+  const [settingsSnap, pagesSnap, contentsSnap, translationsSnap] = await Promise.all([
     db.collection(COLLECTIONS.site).doc(DOCS.settings).get(),
     db.collection(COLLECTIONS.pages).get(),
     db.collection(COLLECTIONS.pageContent).get(),
+    db.collection(COLLECTIONS.pageTranslations).get(),
   ]);
   const contents = new Map(contentsSnap.docs.map((d) => [d.id, d.data() as PageContentDoc]));
+  // The pages' texts in the site's other languages (`{pageId}__{locale}`).
+  const translations = new Map<string, Record<string, PageTranslation>>();
+  for (const doc of translationsSnap.docs) {
+    const { page, locale, title, slug, seo, values } = doc.data() as PageTranslationDoc;
+    if (!page || !locale) continue;
+    translations.set(page, {
+      ...(translations.get(page) ?? {}),
+      [locale]: { title, slug, seo, values: values ?? {} },
+    });
+  }
   const settings = (settingsSnap.data() as SettingsDoc | undefined) ?? FALLBACK_SETTINGS;
   const integrations = (
     await db.collection(COLLECTIONS.system).doc(DOCS.integrations).get()
@@ -152,10 +165,12 @@ export async function snapshotFromFirestore(db: Firestore, releaseId: string): P
       site: settings.site ?? FALLBACK_SETTINGS.site,
       values: settings.values ?? {},
       theme: settings.theme ?? {},
+      ...(settings.translations ? { translations: settings.translations } : {}),
     },
     pages: pagesSnap.docs.map((doc) => ({
       id: doc.id,
       ...joinPage(doc.data() as PageMetaDoc, contents.get(doc.id)),
+      ...(translations.has(doc.id) ? { translations: translations.get(doc.id) } : {}),
     })),
   });
   // Optimized copies of the library's images and videos (srcset, <source>).

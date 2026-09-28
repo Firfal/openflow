@@ -28,7 +28,9 @@ est défini dans `packages/core/src/firebase-rules.ts`. La règle OF-303 vérifi
 - `cms_site`, `cms_pages`, `cms_page_content`, `cms_media` : lecture et écriture réservées au propriétaire. Les pages sont
   validées (champs obligatoires, statut).
 - `cms_releases` : lecture pour le propriétaire, **aucune écriture client** (fonctions uniquement).
-- `cms_system` : aucun accès client.
+- `cms_system` : aucun accès client, sauf `cms_system/integrations` (faits publics : région, e-mails,
+  clés publiques), en lecture pour le propriétaire.
+- `cms_page_translations` (textes des autres langues) : lecture et écriture par le propriétaire.
 - `cms_agent_tokens` (IA connectées et clés d'accès) : lecture et suppression (déconnexion) par le
   propriétaire ; création uniquement par les fonctions ; seules les empreintes SHA-256 sont stockées.
 - `cms_agent_clients`, `cms_agent_requests`, `cms_agent_codes` (connexion OAuth des IA) : aucun accès client.

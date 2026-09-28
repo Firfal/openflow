@@ -1,10 +1,12 @@
 import {
   collectionEntry,
   isValidSlug,
+  languageName,
   normalizeSlug,
   type PageSeo,
   type PageStatus,
   publishedAt,
+  siteLocales,
   slugify,
   slugToPath,
   today,
@@ -20,6 +22,7 @@ import {
   type PageEntry,
   type ReleaseEntry,
   renameItem,
+  subscribeTranslations,
   updatePageMeta,
 } from "./data.js";
 import { errorMessage } from "./firebase.js";
@@ -378,8 +381,68 @@ function SiteStatus() {
   );
 }
 
+/**
+ * One button per other language of the site: the page's translation (the translation editor),
+ * or « Traduire » when it has none yet.
+ */
+export function LanguageButtons({
+  page,
+  locales,
+  translated,
+}: {
+  page: PageEntry;
+  locales: string[];
+  translated: Set<string>;
+}) {
+  const { navigate } = useAdmin();
+  if (locales.length === 0) return null;
+  return (
+    <span className="of-langs">
+      {locales.map((locale) => {
+        const done = translated.has(`${page.id}__${locale}`);
+        return (
+          <button
+            key={locale}
+            type="button"
+            className={`of-langs__item${done ? " is-done" : ""}`}
+            aria-label={
+              done
+                ? `Version en ${languageName(locale)} : ${page.title}`
+                : `Traduire en ${languageName(locale)} : ${page.title}`
+            }
+            title={done ? `Modifier la version en ${languageName(locale)}` : "Pas encore traduite"}
+            onClick={() => navigate({ view: "editor", pageId: page.id, locale })}
+          >
+            {locale.toUpperCase()}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
+/** Which pages are translated into which language (`pageId__locale`), live. */
+export function useTranslated(enabled: boolean): Set<string> {
+  const { services } = useAdmin();
+  const [translated, setTranslated] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!enabled) return;
+    return subscribeTranslations(
+      services.db,
+      (list) => setTranslated(new Set(list.map((t) => `${t.page}__${t.locale}`))),
+      () => setTranslated(new Set()),
+    );
+  }, [enabled, services.db]);
+  return translated;
+}
+
 export function PagesView() {
-  const { pages, releases, services, user, notify, navigate } = useAdmin();
+  const { pages, releases, services, user, notify, navigate, settings, config } = useAdmin();
+  const locales = siteLocales({
+    lang: settings?.site?.lang || config.site.lang,
+    locales: settings?.site?.locales,
+  });
+  const translated = useTranslated(locales.length > 0);
   const [dialog, setDialog] = useState<PageEntry | "new" | null>(null);
   const [toDelete, setToDelete] = useState<PageEntry | null>(null);
   const lastLive = releases.find((release) => release.status === "live");
@@ -464,6 +527,7 @@ export function PagesView() {
                   <span title={status.title}>
                     <StatusChip tone={status.tone}>{status.label}</StatusChip>
                   </span>
+                  <LanguageButtons page={page} locales={locales} translated={translated} />
                   <div className="of-list__actions">
                     <Button size="sm" icon="pencil" onClick={open}>
                       Modifier

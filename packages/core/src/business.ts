@@ -1,3 +1,5 @@
+import { formatDate } from "./fields.js";
+
 /**
  * The business behind the site (« Fiche établissement », Réglages > Établissement): one source for
  * what Google, AI assistants and visitors ask first — where, when, how to reach it. It feeds the
@@ -91,24 +93,107 @@ const SCHEMA_DAYS: Record<Weekday, string> = {
 /** No line break inside « 12 h 30 » or before « : » (French typography). */
 const NBSP = "\u00a0";
 
-/** `"09:00"` → « 9 h », `"12:30"` → « 12 h 30 » (French, with non-breaking spaces). */
-export function formatTime(time: string): string {
+/**
+ * `"09:00"` → « 9 h », `"12:30"` → « 12 h 30 » in French (with non-breaking spaces); in another
+ * language, the local way (« 9:00 AM », « 09:00 »).
+ */
+export function formatTime(time: string, lang = "fr"): string {
   const [h, m] = time.split(":");
-  return `${Number(h)}${NBSP}h${m && m !== "00" ? `${NBSP}${m}` : ""}`;
+  if (lang.startsWith("fr")) return `${Number(h)}${NBSP}h${m && m !== "00" ? `${NBSP}${m}` : ""}`;
+  try {
+    return new Intl.DateTimeFormat(lang, {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(2024, 0, 1, Number(h), Number(m ?? 0))));
+  } catch {
+    return time;
+  }
 }
 
-const rangesText = (ranges: TimeRange[]) =>
-  ranges.map((r) => `${formatTime(r.opens)} – ${formatTime(r.closes)}`).join(", ");
+/** Words of the hours and closures in the site's other languages (French is the default). */
+const HOURS_WORDS: Record<
+  string,
+  {
+    range: (a: string, b: string) => string;
+    and: string;
+    closed: string;
+    closedRange: (a: string, b: string) => string;
+    closedDay: (a: string) => string;
+  }
+> = {
+  en: {
+    range: (a, b) => `${a} to ${b}`,
+    and: "and",
+    closed: "closed",
+    closedRange: (a, b) => `Closed from ${a} to ${b}`,
+    closedDay: (a) => `Closed on ${a}`,
+  },
+  es: {
+    range: (a, b) => `De ${a} a ${b}`,
+    and: "y",
+    closed: "cerrado",
+    closedRange: (a, b) => `Cerrado del ${a} al ${b}`,
+    closedDay: (a) => `Cerrado el ${a}`,
+  },
+  de: {
+    range: (a, b) => `${a} bis ${b}`,
+    and: "und",
+    closed: "geschlossen",
+    closedRange: (a, b) => `Geschlossen vom ${a} bis ${b}`,
+    closedDay: (a) => `Geschlossen am ${a}`,
+  },
+  it: {
+    range: (a, b) => `Da ${a} a ${b}`,
+    and: "e",
+    closed: "chiuso",
+    closedRange: (a, b) => `Chiuso dal ${a} al ${b}`,
+    closedDay: (a) => `Chiuso il ${a}`,
+  },
+  pt: {
+    range: (a, b) => `De ${a} a ${b}`,
+    and: "e",
+    closed: "fechado",
+    closedRange: (a, b) => `Fechado de ${a} a ${b}`,
+    closedDay: (a) => `Fechado a ${a}`,
+  },
+  nl: {
+    range: (a, b) => `${a} t/m ${b}`,
+    and: "en",
+    closed: "gesloten",
+    closedRange: (a, b) => `Gesloten van ${a} tot ${b}`,
+    closedDay: (a) => `Gesloten op ${a}`,
+  },
+};
+
+const wordsOf = (lang: string) => HOURS_WORDS[lang.slice(0, 2)] ?? HOURS_WORDS.en!;
+
+/** A weekday's name in a language (2024-01-01 was a Monday). */
+function dayName(day: Weekday, lang: string): string {
+  if (lang.startsWith("fr")) return DAY_NAMES[day];
+  try {
+    return new Intl.DateTimeFormat(lang, { weekday: "long", timeZone: "UTC" }).format(
+      new Date(Date.UTC(2024, 0, 1 + WEEKDAYS.indexOf(day))),
+    );
+  } catch {
+    return SCHEMA_DAYS[day];
+  }
+}
+
+const rangesText = (ranges: TimeRange[], lang: string) =>
+  ranges.map((r) => `${formatTime(r.opens, lang)} – ${formatTime(r.closes, lang)}`).join(", ");
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * The weekly hours in French, consecutive days with the same hours grouped: « Du mardi au samedi :
- * 9 h – 12 h 30, 14 h – 19 h », « Dimanche et lundi : fermé ». Empty when no hours are given.
+ * The weekly hours, consecutive days with the same hours grouped: « Du mardi au samedi :
+ * 9 h – 12 h 30, 14 h – 19 h », « Dimanche et lundi : fermé » (in French by default, or in the
+ * page's language: « Tuesday to Saturday: … »). Empty when no hours are given.
  */
-export function formatOpeningHours(hours: BusinessInfo["hours"]): string[] {
+export function formatOpeningHours(hours: BusinessInfo["hours"], lang = "fr"): string[] {
   if (!hours || Object.keys(hours).length === 0) return [];
-  const key = (day: Weekday) => rangesText(hours[day] ?? []) || "fermé";
+  if (!lang.startsWith("fr")) return otherHours(hours, lang);
+  const key = (day: Weekday) => rangesText(hours[day] ?? [], lang) || "fermé";
   const groups: Array<{ days: Weekday[]; text: string }> = [];
   for (const day of WEEKDAYS) {
     const text = key(day);
@@ -125,6 +210,28 @@ export function formatOpeningHours(hours: BusinessInfo["hours"]): string[] {
           ? `${capitalize(first)} et ${DAY_NAMES[days[1] as Weekday]}`
           : `Du ${first} au ${DAY_NAMES[days.at(-1) as Weekday]}`;
     return `${label}${NBSP}: ${text}`;
+  });
+}
+
+function otherHours(hours: NonNullable<BusinessInfo["hours"]>, lang: string): string[] {
+  const words = wordsOf(lang);
+  const groups: Array<{ days: Weekday[]; text: string }> = [];
+  for (const day of WEEKDAYS) {
+    const text = rangesText(hours[day] ?? [], lang) || words.closed;
+    const last = groups.at(-1);
+    if (last && last.text === text) last.days.push(day);
+    else groups.push({ days: [day], text });
+  }
+  return groups.map(({ days, text }) => {
+    const first = dayName(days[0] as Weekday, lang);
+    const lastDay = dayName(days.at(-1) as Weekday, lang);
+    const label =
+      days.length === 1
+        ? capitalize(first)
+        : days.length === 2
+          ? `${capitalize(first)} ${words.and} ${lastDay}`
+          : capitalize(words.range(first, lastDay));
+    return `${label}: ${text}`;
   });
 }
 
@@ -146,8 +253,17 @@ const frDate = (value: string) => {
   return DATE_FORMAT.format(new Date(Date.UTC(y, m - 1, d)));
 };
 
-/** « Fermé du 10 août 2026 au 20 août 2026 (congés d'été) ». */
-export function formatClosure(closure: Closure): string {
+/** « Fermé du 10 août 2026 au 20 août 2026 (congés d'été) », or in the page's language. */
+export function formatClosure(closure: Closure, lang = "fr"): string {
+  if (!lang.startsWith("fr")) {
+    const words = wordsOf(lang);
+    const date = (value: string) => formatDate(value, lang);
+    const when =
+      closure.to && closure.to !== closure.from
+        ? words.closedRange(date(closure.from), date(closure.to))
+        : words.closedDay(date(closure.from));
+    return `${when}${closure.label ? ` (${closure.label})` : ""}`;
+  }
   const when =
     closure.to && closure.to !== closure.from
       ? `du ${frDate(closure.from)} au ${frDate(closure.to)}`

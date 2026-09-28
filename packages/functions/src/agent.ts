@@ -17,11 +17,13 @@ import {
   type PageContentDoc,
   type PageDoc,
   type PageMetaDoc,
+  type PageTranslationDoc,
   type ReleaseDoc,
   type SettingsDoc,
   type SiteSchema,
   STORAGE_PATHS,
   type StatsDoc,
+  translationId,
 } from "@openflow/core";
 import { imageDimensions } from "@openflow/core/node";
 import type { Firestore } from "firebase-admin/firestore";
@@ -253,7 +255,40 @@ export function adminBackend({
         site: doc.site ?? { name: "Site", lang: "fr" },
         values: doc.values ?? {},
         theme: doc.theme ?? {},
+        ...(doc.translations ? { translations: doc.translations } : {}),
       };
+    },
+    async saveSiteLocales(locales) {
+      await settingsRef.set(
+        { site: { locales }, ...stamp() },
+        { mergeFields: ["site.locales", "updatedAt", "updatedBy"] },
+      );
+    },
+    async getTranslation(pageId, locale) {
+      const snap = await db
+        .collection(COLLECTIONS.pageTranslations)
+        .doc(translationId(pageId, locale))
+        .get();
+      if (!snap.exists) return undefined;
+      const { title, slug, seo, values, sources } = snap.data() as PageTranslationDoc;
+      return JSON.parse(JSON.stringify({ title, slug, seo, values: values ?? {}, sources }));
+    },
+    async saveTranslation(pageId, locale, translation) {
+      const at = stamp();
+      const batch = db.batch();
+      batch.set(
+        db.collection(COLLECTIONS.pageTranslations).doc(translationId(pageId, locale)),
+        JSON.parse(JSON.stringify({ page: pageId, locale, ...translation, ...at })),
+      );
+      // The page shows as changed until the next publication.
+      batch.update(db.collection(COLLECTIONS.pages).doc(pageId), at);
+      await batch.commit();
+    },
+    async saveSettingsTranslation(locale, translation) {
+      await settingsRef.set(
+        { translations: { [locale]: JSON.parse(JSON.stringify(translation)) }, ...stamp() },
+        { mergeFields: [`translations.${locale}`, "updatedAt", "updatedBy"] },
+      );
     },
     async saveSettingsValues(values) {
       await settingsRef.set(

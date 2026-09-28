@@ -1,4 +1,4 @@
-import { slugToPath } from "@openflow/core";
+import { languageLabel, slugToPath } from "@openflow/core";
 import {
   ActionBar,
   blocksPlugin,
@@ -42,6 +42,10 @@ export interface EditorChrome {
   back?: string;
   /** The item's collection, when the page is an item. */
   collection?: string;
+  /** The site's languages (page editor of a multilingual site), and the one being edited. */
+  languages?: { main: string; others: string[]; current: string };
+  /** Opens the page in another language (saved first). */
+  setLanguage?: (locale: string) => void;
 }
 
 export const EditorChromeContext = createContext<EditorChrome | null>(null);
@@ -276,12 +280,16 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
             </button>
             <span className="of-ebar__sep" aria-hidden />
             <PageSwitcher chrome={chrome} />
+            {chrome.languages && <LanguageSwitch chrome={chrome} />}
           </>
         ) : (
-          <span className="of-ebar__title">
-            <span>{chrome.title}</span>
-            <small className="of-ebar__hide-sm">Appliqué à toutes les pages</small>
-          </span>
+          <>
+            <span className="of-ebar__title">
+              <span>{chrome.title}</span>
+              <small className="of-ebar__hide-sm">Appliqué à toutes les pages</small>
+            </span>
+            {chrome.languages && <LanguageSwitch chrome={chrome} />}
+          </>
         )}
       </div>
       <Screens />
@@ -299,6 +307,29 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
         <PublishControl compact />
       </div>
     </header>
+  );
+}
+
+/** The page's language (multilingual sites): another one opens the translation editor. */
+function LanguageSwitch({ chrome }: { chrome: EditorChrome }) {
+  const languages = chrome.languages;
+  if (!languages) return null;
+  return (
+    <label className="of-lang">
+      <Icon name="globe" size={14} />
+      <span className="of-sr-only">Langue</span>
+      <select
+        className="of-lang__select"
+        value={languages.current}
+        onChange={(event) => chrome.setLanguage?.(event.target.value)}
+      >
+        {[languages.main, ...languages.others].map((code) => (
+          <option key={code} value={code}>
+            {languageLabel(code)}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

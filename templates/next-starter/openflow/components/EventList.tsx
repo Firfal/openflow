@@ -1,4 +1,4 @@
-import { formatDate, getCollection, today } from "@openflow/core";
+import { formatDate, getCollection, pageLang, today } from "@openflow/core";
 import type { ComponentConfig } from "@puckeditor/core";
 import type { EventProps } from "./Event";
 import { Section, type Tone, toneField } from "./shared";
@@ -69,10 +69,10 @@ export const EventList: ComponentConfig<EventListProps> = {
                   className="row-span-2 flex flex-col items-center leading-none"
                 >
                   <span className="text-3xl font-bold tabular-nums">
-                    {formatDate(event.date, "fr", { day: "numeric" })}
+                    {formatDate(event.date, pageLang(puck.metadata), { day: "numeric" })}
                   </span>
                   <span className={`mt-1 text-sm ${subtle}`}>
-                    {formatDate(event.date, "fr", { month: "short" })}
+                    {formatDate(event.date, pageLang(puck.metadata), { month: "short" })}
                   </span>
                 </time>
                 <div className="min-w-0">

@@ -1,6 +1,7 @@
 import type { Data } from "@puckeditor/core";
 import type { BusinessInfo } from "./business.js";
 import type { ImageVariant, VideoVariant } from "./fields.js";
+import type { PageTranslation, SettingsTranslation } from "./i18n.js";
 import type { LegalInfo } from "./legal.js";
 
 /**
@@ -33,6 +34,8 @@ export const COLLECTIONS = {
   rateLimits: "cms_rate_limits",
   /** Audience counters per day, without cookies (`cmsPageView`), read in « Statistiques ». */
   stats: "cms_stats",
+  /** A page's texts in another language: `{pageId}__{locale}` (see `i18n.ts`). */
+  pageTranslations: "cms_page_translations",
 } as const;
 
 /** Well-known document ids. */
@@ -163,6 +166,14 @@ export function joinPage(meta: PageMetaDoc, content: PageContentDoc | undefined)
   return { ...meta, data: content?.data ?? { root: { props: {} }, content: [] } };
 }
 
+/** `cms_page_translations/{pageId}__{locale}`: a page's texts in another language. */
+export interface PageTranslationDoc extends PageTranslation {
+  page: string;
+  locale: string;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
 /** Site-level settings edited in "Site et SEO". */
 export interface SiteSettings {
   name: string;
@@ -183,6 +194,8 @@ export interface SiteSettings {
   stats?: "on" | "off";
   /** The publisher (Réglages > Informations légales), for the legal notice and privacy policy. */
   legal?: LegalInfo;
+  /** Other languages of the site (`en`, `de`…), each at `/<lang>/`; `lang` is the default one. */
+  locales?: string[];
 }
 
 /** `cms_system/integrations`: public keys prepared by `openflow setup`, copied into snapshots. */
@@ -204,6 +217,8 @@ export interface IntegrationsDoc {
 export interface SettingsDoc {
   site: SiteSettings;
   values: Record<string, unknown>;
+  /** The common content and the site's name in the other languages (`locale` → translation). */
+  translations?: Record<string, SettingsTranslation>;
   /** Theme tokens chosen by the owner, e.g. `{ "color-ink": "#101820" }` (see `config.theme`). */
   theme?: Record<string, string>;
   updatedAt: string;

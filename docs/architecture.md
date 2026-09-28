@@ -39,7 +39,14 @@ livraison, sans rien refaire de ce qui est déjà en place.
 - `app/(site)/[[...slug]]/page.tsx` crée une page par entrée du **snapshot** (`generateStaticParams`,
   avec `dynamicParams = false`). Chaque page est rendue par `<Render config data>` de Puck, après
   application des `defaultProps`.
-- Les réglages globaux alimentent `app/(site)/layout.tsx` (en-tête, pied de page, thème).
+- Le cadre du site (`config.layout` : en-tête, pied de page) est rendu par chaque page, avec les réglages
+  globaux de sa langue ; `app/(site)/layout.tsx` ajoute le thème, la mesure d'audience et Google Analytics.
+- **Langues** : `siteVersions` (`packages/core/src/i18n-site.ts`) produit, à partir du snapshot, une
+  version par langue du site. Les pages traduites y vivent à `/<langue>/<adresse>/`, avec leurs textes, le
+  contenu commun traduit, et des liens internes qui mènent aux pages traduites (ou à la langue principale
+  quand une page n'est pas traduite). Chaque page annonce ses équivalents (`hreflang`, plan du site) et
+  donne au cadre la liste des langues (`languages`) pour un sélecteur. Une page d'une autre langue porte
+  `lang` sur son contenu et corrige `<html lang>` au chargement.
 - **Collections** : les éléments (articles…) sont des pages du snapshot qui portent `collection`. Chaque
   section reçoit dans `puck.metadata` la page courante et, pour chaque collection, ses éléments visibles
   triés (`buildCollections`, calculé une fois par export) ; l'éditeur passe les mêmes données, tirées des
