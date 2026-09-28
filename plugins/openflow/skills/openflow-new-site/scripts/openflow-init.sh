@@ -130,7 +130,8 @@ if [ -n "$site" ]; then
   fi
   if [ ! -x "$site/node_modules/.bin/openflow" ]; then
     say "→ Liaison du site aux paquets du dépôt (pnpm install)…"
-    run_pnpm install
+    # The lockfile gains the new site (pnpm freezes it by default when CI is set).
+    run_pnpm install --no-frozen-lockfile
     touch "$marker" # The lockfile now lists the site: nothing to rebuild.
   fi
 fi
