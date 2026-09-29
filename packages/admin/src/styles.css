@@ -4608,3 +4608,96 @@ button.of-style-row__reset:hover {
 .of-gsc h2 + .of-gsc__todo {
   margin-top: 8px;
 }
+
+/* ───────────────────────── Tableau de bord ───────────────────────── */
+
+.of-home {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.of-start {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.of-start .of-card__header {
+  margin: 0;
+}
+
+.of-meter {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--of-surface-3);
+}
+
+.of-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--of-accent);
+}
+
+.of-steps {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-steps > li {
+  --of-icon-color: var(--of-text-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 0;
+  border-top: 1px solid var(--of-border);
+}
+
+.of-steps > li:first-child {
+  border-top: 0;
+}
+
+.of-steps__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--of-text-sm);
+}
+
+.of-steps__text strong {
+  font-weight: 500;
+}
+
+.of-steps__check {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--of-border-strong);
+  border-radius: 50%;
+}
+
+.of-steps > li.is-done .of-steps__check {
+  --of-icon-color: var(--of-on-accent);
+  border-color: var(--of-success);
+  background: var(--of-success);
+}
+
+.of-steps > li.is-done strong {
+  color: var(--of-text-3);
+  font-weight: 400;
+}
+
+.of-steps__more {
+  color: var(--of-text-3);
+  font-size: var(--of-text-sm);
+}

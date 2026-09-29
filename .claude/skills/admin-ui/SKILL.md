@@ -82,6 +82,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
 - AI entry points (sidebar « Assistant IA » with a green dot, Pages card, editor ✦ button, ⌘K entry) all lead
   to the same view. New button names must not contain « Assistant IA » or « Modifier » (substring
   selectors in the e2e tests), nor repeat a sidebar label outside the sidebar.
+- The owner lands on « Tableau de bord » (`home.tsx`, route `{ view: "home" }`, no `view` in the
+  address): site status, « Pour bien démarrer », activity, audit advice, AI card. Its buttons never
+  repeat a sidebar label, and never start with « Publier » or « Mettre en ligne » (e2e prefixes).
 - A new place of the dashboard is one entry of `navEntries()` (`nav.ts`): label, icon, group, route,
   keywords. The sidebar, the phone's tab bar and the ⌘K palette all read it.
 - Site-wide look settings (a palette in `config.settings`) are listed in `settings.appearance`: they show

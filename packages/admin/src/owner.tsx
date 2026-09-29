@@ -27,6 +27,7 @@ import {
 } from "./data.js";
 import { type AuthServices, errorMessage } from "./firebase.js";
 import { HistoryView } from "./history.js";
+import { HomeView } from "./home.js";
 import { Icon, type IconName } from "./icons.js";
 import { MediaView } from "./media.js";
 import { MessagesView } from "./messages.js";
@@ -131,6 +132,7 @@ function Shell() {
       <Sidebar />
       <MobileTabs />
       <main className="of-main">
+        {route.view === "home" && <HomeView />}
         {route.view === "pages" && <PagesView />}
         {route.view === "collection" && (
           <CollectionView key={route.collection} name={route.collection} />

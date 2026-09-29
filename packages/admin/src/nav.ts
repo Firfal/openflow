@@ -2,8 +2,8 @@ import { bookingComponentOf, type OpenFlowConfig } from "@openflow/core";
 import type { Route } from "./context.js";
 import type { IconName } from "./icons.js";
 
-/** Groups of the sidebar: plain titles, never buttons. */
-export type NavGroup = "Contenu" | "Activité" | "Réglages";
+/** Groups of the sidebar: plain titles, never buttons (« Général » has no title). */
+export type NavGroup = "Général" | "Contenu" | "Activité" | "Réglages";
 
 /**
  * One place of the dashboard. The sidebar and the ⌘K palette both read this list, so they use the
@@ -23,6 +23,14 @@ export interface NavEntry {
 export function navEntries(config: OpenFlowConfig): NavEntry[] {
   const collections = Object.entries(config.collections ?? {});
   return [
+    {
+      id: "home",
+      label: "Tableau de bord",
+      icon: "layoutDashboard",
+      group: "Général",
+      route: { view: "home" },
+      keywords: "accueil état du site premiers pas activité conseils",
+    },
     {
       id: "pages",
       label: "Pages",

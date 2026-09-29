@@ -40,15 +40,23 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   trouvent aussi : la couleur principale se règle à un seul endroit.
 - **Menu et pied de page** : le logo, le menu, le pied de page, communs à toutes les pages, avec leur
   aperçu. Le panneau de droite porte ce nom.
+- **Tableau de bord**, la vue d'arrivée :
+  - l'état du site en ligne (à jour, modifications à publier, ou rien encore en ligne) ;
+  - **Pour bien démarrer** : présenter l'établissement, compléter les informations légales, indiquer
+    l'adresse du site, faire la première publication, relier Google Search Console, connecter son IA.
+    Chaque étape a son bouton ; la liste se masque, et disparaît une fois tout fait ;
+  - **Activité** : les visites des 7 derniers jours, les messages non lus et les prochains
+    rendez-vous ;
+  - **Conseils pour être trouvé** : les trois premiers conseils de l'audit du site, avec « Voir » (au-delà
+    de 50 pages, l'analyse se lance d'un clic) ;
+  - la carte « Connecter Claude ou ChatGPT », tant qu'aucune IA n'est connectée (elle se masque).
 - **En-tête de chaque vue**, de même hauteur partout : le titre, une ligne de description, les actions de
   la vue, « Voir le site » et **Publier**. Le bouton Publier affiche le nombre de modifications en attente,
   et sa bulle les détaille (« 3 pages modifiées, 2 éléments de collection modifiés et réglages
   modifiés »). L'onglet du navigateur porte le nom de la vue, puis celui du site.
 - **Pages** :
-  - un bandeau dit si le site en ligne est à jour, ou que rien n'est encore en ligne ;
   - la page qui liste une collection mène à ses éléments (« Liste des actualités · 3 → »), et une page
     légale à « Informations légales », d'où son texte est écrit ;
-  - tant qu'aucune IA n'est connectée, une carte propose « Connecter Claude ou ChatGPT » (elle se masque) ;
   - chaque page affiche **un seul statut** : Masquée, Programmée le …, Mise en ligne…, Brouillon (tant
     que le site n'a jamais été publié : le bandeau le dit une fois pour toutes), Modifications non
     publiées ou En ligne ;

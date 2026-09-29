@@ -107,7 +107,7 @@ function NavItem({
   );
 }
 
-const GROUPS: NavGroup[] = ["Contenu", "Activité", "Réglages"];
+const GROUPS: NavGroup[] = ["Général", "Contenu", "Activité", "Réglages"];
 
 /** What an entry shows after its label: unread messages, a connected AI. */
 function useNavBadges(): (entry: NavEntry) => ReactNode {
@@ -162,7 +162,7 @@ export function Sidebar() {
         </button>
         {GROUPS.map((group) => (
           <div key={group} className="of-nav__group">
-            <p className="of-nav__title">{group}</p>
+            {group !== "Général" && <p className="of-nav__title">{group}</p>}
             {entries
               .filter((entry) => entry.group === group)
               .map((entry) => (
@@ -187,7 +187,7 @@ export function Sidebar() {
 }
 
 /** Tabs of a phone: the most used places with their names, and « Plus » for all the others. */
-const MOBILE_TABS = ["pages", "messages", "stats"];
+const MOBILE_TABS = ["home", "pages", "messages"];
 
 export function MobileTabs() {
   const { route, navigate, config } = useAdmin();
@@ -215,7 +215,7 @@ export function MobileTabs() {
         label="Toutes les rubriques"
         direction="up"
         items={GROUPS.flatMap((group) => [
-          { heading: group },
+          ...(group === "Général" ? [] : [{ heading: group }]),
           ...entries
             .filter((entry) => entry.group === group)
             .map((entry) => ({

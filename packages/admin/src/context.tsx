@@ -7,6 +7,8 @@ import type { Services } from "./firebase.js";
 export type SettingsTab = "global" | "theme" | "site" | "business" | "legal" | "languages";
 
 export type Route =
+  /** « Tableau de bord », where the owner lands. */
+  | { view: "home" }
   | { view: "pages" }
   /** Items of a collection (`config.collections`): articles, projects… */
   | { view: "collection"; collection: string }
@@ -95,6 +97,7 @@ function readRoute(): Route {
       : { view };
   }
   if (
+    view === "pages" ||
     view === "history" ||
     view === "media" ||
     view === "messages" ||
@@ -103,12 +106,12 @@ function readRoute(): Route {
   ) {
     return { view };
   }
-  return { view: "pages" };
+  return { view: "home" };
 }
 
 function routeToSearch(route: Route): string {
   const params = new URLSearchParams();
-  if (route.view !== "pages") params.set("view", route.view);
+  if (route.view !== "home") params.set("view", route.view);
   if (route.view === "editor") params.set("page", route.pageId);
   if (route.view === "editor" && route.locale) params.set("lang", route.locale);
   if (route.view === "collection") params.set("c", route.collection);

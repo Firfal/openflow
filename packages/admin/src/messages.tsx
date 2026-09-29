@@ -10,7 +10,8 @@ import { PageHead } from "./shell.js";
 import { Button, Dialog, EmptyState, timeAgo } from "./ui.js";
 
 /** Who wrote: the name (first text field), else the e-mail. */
-function sender(message: MessageEntry): string {
+/** Who wrote a message: the « name » field, else the e-mail, else the first answer. */
+export function sender(message: MessageEntry): string {
   const name = message.fields.find((f) => /nom|name/i.test(f.label))?.value;
   return name || message.email || message.fields[0]?.value || "Visiteur";
 }

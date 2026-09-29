@@ -17,7 +17,6 @@ import {
   today,
 } from "@openflow/core";
 import { useEffect, useState } from "react";
-import { AiPromo } from "./assistant.js";
 import { useAdmin } from "./context.js";
 import {
   createItem,
@@ -497,7 +496,7 @@ function PageRole({ page }: { page: PageEntry }) {
 }
 
 /** Is the live site up to date? (last publication, pending changes). */
-function SiteStatus() {
+export function SiteStatus() {
   const { pages, releases, settings } = useAdmin();
   const siteUrl = useSiteUrl();
   const lastLive = releases.find((release) => release.status === "live");
@@ -652,8 +651,6 @@ export function PagesView() {
         }
       />
       <section className="of-view">
-        <SiteStatus />
-        <AiPromo />
         {sitePages.length === 0 ? (
           <EmptyState icon="fileText" title="Aucune page pour l'instant">
             <p>Créez la première page de votre site.</p>

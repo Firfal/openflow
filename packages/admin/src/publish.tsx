@@ -21,7 +21,7 @@ interface Problem {
 }
 
 /** Where the owner fixes a piece of advice: the page, or the settings it concerns. */
-function adviceTarget(finding: AuditFinding): Route | undefined {
+export function adviceTarget(finding: AuditFinding): Route | undefined {
   if (finding.page) return { view: "editor", pageId: finding.page.id };
   if (finding.code.startsWith("business-")) return { view: "settings", tab: "business" };
   if (finding.code.startsWith("site-")) return { view: "settings", tab: "site" };
