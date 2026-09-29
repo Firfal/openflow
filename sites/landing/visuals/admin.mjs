@@ -93,7 +93,12 @@ try {
   await page.getByLabel("Votre adresse e-mail").waitFor({ timeout: 120_000 });
   await page.getByLabel("Votre adresse e-mail").fill(OWNER);
   await page.getByRole("button", { name: "Connexion rapide (émulateur local)" }).click();
-  await page.getByRole("heading", { name: "Pages", exact: true }).waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("heading", { name: "Tableau de bord", exact: true })
+    .waitFor({ timeout: 60_000 });
+  const sidebar = page.getByRole("navigation", { name: "Navigation", exact: true });
+  await sidebar.getByRole("button", { name: "Pages", exact: true }).click();
+  await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
 
   // 1. Editor: the hero title in inline editing, as the owner sees it.
   await page.getByRole("button", { name: "Modifier" }).first().click();
@@ -137,7 +142,7 @@ try {
   await page.keyboard.press("Escape");
 
   // 4. Global settings (header and footer shared by every page).
-  await page.getByRole("button", { name: "Réglages" }).click();
+  await sidebar.getByRole("button", { name: "Menu et pied de page", exact: true }).click();
   await page.frameLocator("#preview-frame").locator("header").first().waitFor({ timeout: 120_000 });
   await page.waitForTimeout(1500);
   await shoot(page, "settings", 1200);

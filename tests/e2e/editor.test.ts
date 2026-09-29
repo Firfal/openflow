@@ -79,7 +79,14 @@ beforeAll(async () => {
   await page.goto(ADMIN);
   await page.getByLabel("Votre adresse e-mail").fill(OWNER);
   await page.getByRole("button", { name: "Connexion rapide (émulateur local)" }).click();
-  await page.getByRole("heading", { name: "Pages", exact: true }).waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("heading", { name: "Tableau de bord", exact: true })
+    .waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("navigation", { name: "Navigation", exact: true })
+    .getByRole("button", { name: "Pages", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
   await page.getByRole("button", { name: "Modifier" }).first().click();
   frame = page.frameLocator("#preview-frame");
   await frame.locator("[data-puck-component]").first().waitFor({ timeout: 120_000 });
@@ -253,7 +260,7 @@ describe("éditeur de page", () => {
     await header.waitFor();
     const link = header.locator("a").first();
     await link.click({ force: true });
-    await page.getByText("modifiez-les dans Réglages").waitFor({ timeout: 5_000 });
+    await page.getByText("modifiez-les dans « Menu et pied de page »").waitFor({ timeout: 5_000 });
     expect(await frame.locator("[data-puck-component]").count()).toBeGreaterThan(0);
   });
 

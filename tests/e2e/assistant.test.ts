@@ -75,6 +75,14 @@ async function tool(name: string, args: object) {
   return body.result.structuredContent;
 }
 
+/** A place of the sidebar (exact name, inside the « Navigation » landmark: no clash with the page). */
+async function nav(name: string) {
+  await page
+    .getByRole("navigation", { name: "Navigation", exact: true })
+    .getByRole("button", { name, exact: true })
+    .click();
+}
+
 beforeAll(async () => {
   db = getFirestore(app);
   const seed = spawnSync(
@@ -106,7 +114,9 @@ beforeAll(async () => {
   await page.goto(ADMIN);
   await page.getByLabel("Votre adresse e-mail").fill(OWNER);
   await page.getByRole("button", { name: "Connexion rapide (émulateur local)" }).click();
-  await page.getByRole("heading", { name: "Pages", exact: true }).waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("heading", { name: "Tableau de bord", exact: true })
+    .waitFor({ timeout: 60_000 });
 });
 
 afterAll(async () => {
@@ -117,7 +127,7 @@ afterAll(async () => {
 
 describe("assistant IA (MCP et WebMCP)", () => {
   it("shows the AI entry points and creates an access key", async () => {
-    // Pages view: a card invites the owner to connect an assistant.
+    // Tableau de bord: a card invites the owner to connect an assistant.
     await page.getByRole("button", { name: "Connecter Claude ou ChatGPT" }).click();
     await page.getByRole("heading", { name: "Assistant IA", exact: true }).waitFor();
     // With the emulators the address is the function's (`https://<site>/mcp` in production).
@@ -334,11 +344,13 @@ describe("assistant IA (MCP et WebMCP)", () => {
     const refused = await fetch(authorize, { redirect: "manual" });
     expect(refused.status).toBe(400);
     await page.goto(ADMIN);
-    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor({ timeout: 60_000 });
+    await page
+      .getByRole("heading", { name: "Tableau de bord", exact: true })
+      .waitFor({ timeout: 60_000 });
   });
 
   it("edits the open page live through the MCP server", async () => {
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
     const home = page.locator("li", {
       has: page.getByRole("button", { name: "Accueil", exact: true }),
     });
@@ -410,7 +422,7 @@ describe("assistant IA (MCP et WebMCP)", () => {
   });
 
   it("revokes the key", async () => {
-    await page.getByRole("button", { name: "Assistant IA", exact: true }).click();
+    await nav("Assistant IA");
     await page.getByRole("button", { name: "Révoquer" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Révoquer" }).click();
     await page.getByText("Aucune IA connectée pour l'instant.").waitFor({ timeout: 10_000 });

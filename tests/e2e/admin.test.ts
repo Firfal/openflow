@@ -81,6 +81,14 @@ async function statsTotal() {
   return total;
 }
 
+/** A place of the sidebar (exact name, inside the « Navigation » landmark: no clash with the page). */
+async function nav(name: string) {
+  await page
+    .getByRole("navigation", { name: "Navigation", exact: true })
+    .getByRole("button", { name, exact: true })
+    .click();
+}
+
 async function quickLogin(email: string) {
   await page.getByLabel("Votre adresse e-mail").fill(email);
   await page.getByRole("button", { name: "Connexion rapide (émulateur local)" }).click();
@@ -133,7 +141,14 @@ describe("admin OpenFlow (émulateurs)", () => {
 
   it("lets the owner edit a page inline, with autosave", async () => {
     await quickLogin(OWNER);
-    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor({ timeout: 60_000 });
+    // The owner lands on « Tableau de bord »: the site status and what is left to do.
+    await page
+      .getByRole("heading", { name: "Tableau de bord", exact: true })
+      .waitFor({ timeout: 60_000 });
+    await page.getByRole("heading", { name: "Pour bien démarrer" }).waitFor();
+    await page.screenshot({ path: path.join(SCREENSHOTS, "00-home.png") });
+    await nav("Pages");
+    await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
     await page.screenshot({ path: path.join(SCREENSHOTS, "01-pages.png") });
     const home = page.locator("li", {
       has: page.getByRole("button", { name: "Accueil", exact: true }),
@@ -251,9 +266,8 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Retour aux pages" }).click();
   });
 
-  it("changes a theme colour in Réglages > Thème, with a live preview", async () => {
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Thème", exact: true }).click();
+  it("changes a theme colour in « Couleurs et polices », with a live preview", async () => {
+    await nav("Couleurs et polices");
     // Puck renders the fields panel twice (desktop and mobile layouts): take the visible one.
     const colour = page.getByLabel(/Couleur principale personnalisée/).filter({ visible: true });
     await colour.fill("#123456");
@@ -277,7 +291,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     );
     expect(theme).toBe("#123456");
     await page.screenshot({ path: path.join(SCREENSHOTS, "04-theme.png") });
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("writes a news item in its collection, edited in place like a page", async () => {
@@ -342,7 +356,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.getByRole("button", { name: "Retour à « Actualités »" }).click();
     await list.getByText(ITEM_TITLE).waitFor();
     expect(await list.locator(".of-list__title").first().innerText()).toBe(ITEM_TITLE);
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("opens a news item from its card in a list section", async () => {
@@ -367,7 +381,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       .poll(() => frame.locator("h1").innerText(), { timeout: 60_000 })
       .toContain("Nous ouvrons un second atelier");
     await page.getByRole("button", { name: "Retour à « Actualités »" }).click();
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("schedules an article: hidden until its time, then online on its own", async () => {
@@ -407,13 +421,12 @@ describe("admin OpenFlow (émulateurs)", () => {
       await db.collection("cms_pages").where("slug", "==", "actualites/soldes-de-janvier").get()
     ).docs[0]?.data();
     expect(doc).toMatchObject({ status: "draft", publishAt: when.toISOString() });
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("fills the business profile: hours and an exceptional closure", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Établissement" }).click();
+    await nav("Établissement");
     await page.getByRole("heading", { name: "Horaires d'ouverture" }).waitFor();
     if (await page.getByRole("button", { name: "Indiquer les horaires" }).isVisible()) {
       await page.getByRole("button", { name: "Indiquer les horaires" }).click();
@@ -443,13 +456,12 @@ describe("admin OpenFlow (émulateurs)", () => {
       to: "2099-08-20",
       label: "Congés d'été",
     });
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("fills the legal information, and lists the legal pages written from the site", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Informations légales" }).click();
+    await nav("Informations légales");
     await page.getByRole("heading", { name: "Éditeur du site" }).waitFor();
     await page.getByLabel("Nom ou raison sociale").fill("SARL Boulangerie du Test");
     await page.getByLabel("Immatriculation").fill("RCS Paris 123 456 789");
@@ -484,13 +496,12 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page.screenshot({ path: path.join(SCREENSHOTS, "10-legal-mobile-dark.png") });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.emulateMedia({ colorScheme: "light" });
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("translates the home page and the common content into English", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Site et référencement" }).click();
+    await nav("Langues");
     await page.getByRole("checkbox", { name: "English" }).check();
     await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
     await waitFor(
@@ -503,7 +514,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     );
 
     // The menu and the footer: the site's name in English.
-    await page.getByRole("button", { name: "Contenu commun" }).click();
+    await nav("Menu et pied de page");
     await page.getByRole("combobox", { name: "Langue" }).selectOption("en");
     await page.getByLabel("Nom du site").fill("My business");
     await page.getByRole("button", { name: "Enregistrer la traduction" }).click();
@@ -518,7 +529,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     );
 
     // The home page: same sections, texts in English.
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
     await page.getByRole("button", { name: "Traduire en anglais : Accueil" }).click();
     // Puck renders the panel twice (desktop and mobile layouts): the visible one.
     const panel = page.locator(".of-translate:visible");
@@ -549,12 +560,11 @@ describe("admin OpenFlow (émulateurs)", () => {
 
   it("links Google Search Console: its tag in the settings, the code alone kept", async () => {
     await page.getByRole("heading", { name: "Pages", exact: true }).waitFor();
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Site et référencement" }).click();
+    await nav("Site et référencement");
     const field = page.getByLabel("Validation Google Search Console");
     await field.fill("<script>");
     await page
-      .getByText("Collez la balise meta donnée par Search Console, ou son code (content=…).")
+      .getByText("Collez le code de validation donné par Search Console (ou la balise entière).")
       .waitFor();
     await field.fill('<meta name="google-site-verification" content="Ab12_cd34-EF56gh78" />');
     await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
@@ -567,7 +577,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       30_000,
       "balise Search Console enregistrée",
     );
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("publishes: snapshot, static build, release live", async () => {
@@ -667,7 +677,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await page
       .getByText("Le site est en ligne avec vos dernières modifications.")
       .waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "Historique" }).click();
+    await nav("Historique");
     await page.getByText("En ligne", { exact: true }).first().waitFor();
     await page.screenshot({ path: path.join(SCREENSHOTS, "03-history.png") });
   });
@@ -815,7 +825,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       await visitor.close();
     }
 
-    await page.getByRole("button", { name: "Rendez-vous", exact: true }).click();
+    await nav("Rendez-vous");
     const row = page.locator(".of-booking", { hasText: "Camille Martin" });
     await row.getByText("Rendez-vous conseil").waitFor();
     await page.screenshot({ path: path.join(SCREENSHOTS, "20-bookings.png") });
@@ -842,7 +852,7 @@ describe("admin OpenFlow (émulateurs)", () => {
       30_000,
       "rendez-vous annulé",
     );
-    await page.getByRole("button", { name: "Pages", exact: true }).click();
+    await nav("Pages");
   });
 
   it("counts visits without cookies, the AI assistant named, in « Statistiques »", async () => {
@@ -892,7 +902,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     expect(total.aiPages).toEqual({ "/": 1 });
     expect(total.pages).toEqual({ "/": 1, "/actualites/": 1 });
 
-    await page.getByRole("button", { name: "Statistiques", exact: true }).click();
+    await nav("Statistiques");
     await page.getByRole("heading", { name: "Statistiques" }).waitFor();
     const ai = page.locator(".of-stat", { hasText: "Depuis un assistant IA" });
     await expect.poll(() => ai.textContent()).toContain("100 % des visites");
@@ -966,8 +976,7 @@ describe("admin OpenFlow (émulateurs)", () => {
   });
 
   it("edits global settings (site name)", async () => {
-    await page.getByRole("button", { name: "Réglages" }).click();
-    await page.getByRole("button", { name: "Site et référencement" }).click();
+    await nav("Site et référencement");
     await page.getByLabel("Nom du site").fill("Boulangerie du Test");
     await page.getByRole("button", { name: "Enregistrer" }).click();
     const name = await waitFor(
