@@ -136,13 +136,13 @@ function GettingStarted() {
       >
         <span style={{ width: `${(done / steps.length) * 100}%` }} />
       </div>
-      <ol className="of-steps">
+      <ol className="of-checklist">
         {steps.map((step) => (
           <li key={step.id} className={step.done ? "is-done" : undefined}>
-            <span className="of-steps__check" aria-hidden>
+            <span className="of-checklist__check" aria-hidden>
               {step.done && <Icon name="check" size={14} />}
             </span>
-            <span className="of-steps__text">
+            <span className="of-checklist__text">
               <strong>{step.label}</strong>
               <span className="of-subtle">{step.done ? "Fait" : step.hint}</span>
             </span>
@@ -216,7 +216,7 @@ function ActivityRow({
   return (
     <li>
       <Icon name={icon} />
-      <span className="of-steps__text">
+      <span className="of-checklist__text">
         <strong>{title}</strong>
         <span className="of-subtle">{meta}</span>
       </span>
@@ -239,7 +239,7 @@ function Activity() {
   return (
     <section className="of-card" aria-labelledby="of-activity-title">
       <h2 id="of-activity-title">Activité</h2>
-      <ul className="of-steps of-activity">
+      <ul className="of-checklist of-activity">
         {measured && (
           <ActivityRow
             icon="chart"
@@ -352,13 +352,13 @@ function Advice() {
       ) : findings.length === 0 ? (
         <p className="of-card__lead">Rien à signaler : le site donne tout ce qu'il faut.</p>
       ) : (
-        <ul className="of-steps" aria-label="Conseils">
+        <ul className="of-checklist" aria-label="Conseils">
           {findings.slice(0, 3).map((finding, index) => {
             const target = adviceTarget(finding);
             return (
               <li key={`${finding.code}-${index}`}>
                 <Icon name={finding.severity === "high" ? "circleAlert" : "info"} />
-                <span className="of-steps__text">
+                <span className="of-checklist__text">
                   <strong>{finding.page?.title ?? "Tout le site"}</strong>
                   <span className="of-subtle">{finding.message}</span>
                 </span>
@@ -376,7 +376,7 @@ function Advice() {
             );
           })}
           {findings.length > 3 && (
-            <li className="of-steps__more">
+            <li className="of-checklist__more">
               {findings.length - 3} autre{findings.length - 3 > 1 ? "s" : ""} dans la fenêtre
               Publier.
             </li>
@@ -398,7 +398,7 @@ export function HomeView() {
       <section className="of-view">
         <SiteStatus />
         <GettingStarted />
-        <div className="of-home">
+        <div className="of-home-grid">
           <Activity />
           <Advice />
         </div>

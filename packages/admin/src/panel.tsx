@@ -298,19 +298,34 @@ function SectionOptions() {
       <h3 id={`${id}-title`} className="of-options__title">
         Options de la section
       </h3>
-      {options.map(([key, field]) => (
-        <div key={key} className="of-efield">
-          <span className="of-field__label" id={`${id}-${key}`}>
-            {field.label ?? key}
-          </span>
+      {options.map(([key, field]) => {
+        const labelId = `${id}-${key}`;
+        const control = (
           <AutoField
+            key={key}
             field={{ ...field, label: undefined } as never}
-            id={`${id}-${key}-input`}
+            id={`${labelId}-input`}
             value={selected.props[key]}
             onChange={change(key)}
           />
-        </div>
-      ))}
+        );
+        // A select is named by its label, a group of radios by the group.
+        return field.type === "radio" ? (
+          <div key={key} className="of-efield" role="radiogroup" aria-labelledby={labelId}>
+            <span className="of-field__label" id={labelId}>
+              {field.label ?? key}
+            </span>
+            {control}
+          </div>
+        ) : (
+          <div key={key} className="of-efield">
+            <label className="of-field__label" id={labelId} htmlFor={`${labelId}-input`}>
+              {field.label ?? key}
+            </label>
+            {control}
+          </div>
+        );
+      })}
     </section>
   );
 }

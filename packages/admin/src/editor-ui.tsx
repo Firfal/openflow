@@ -345,6 +345,7 @@ function useAccessiblePuck() {
       // button: a group, so that no button sits inside another (the « + » is the click way).
       for (const item of root.querySelectorAll<HTMLElement>(DRAWER_ITEM)) {
         item.setAttribute("role", "group");
+        item.removeAttribute("aria-pressed");
       }
       // Puck's loaders carry a label: they are status messages.
       for (const loader of root.querySelectorAll<HTMLElement>(LOADER)) {

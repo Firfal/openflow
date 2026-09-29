@@ -2670,12 +2670,15 @@ select.of-input {
   white-space: nowrap;
 }
 
+/* The view's name stays whole; the hint beside it gives way first. */
 .of-ebar__title span {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: none;
 }
 
 .of-ebar__title small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--of-text-3);
   font-weight: 400;
   font-size: var(--of-text-xs);
@@ -4624,7 +4627,7 @@ button.of-style-row__reset:hover {
 
 /* ───────────────────────── Tableau de bord ───────────────────────── */
 
-.of-home {
+.of-home-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 20px;
@@ -4655,7 +4658,7 @@ button.of-style-row__reset:hover {
   background: var(--of-accent);
 }
 
-.of-steps {
+.of-checklist {
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -4663,7 +4666,7 @@ button.of-style-row__reset:hover {
   list-style: none;
 }
 
-.of-steps > li {
+.of-checklist > li {
   --of-icon-color: var(--of-text-3);
   display: flex;
   align-items: center;
@@ -4673,11 +4676,11 @@ button.of-style-row__reset:hover {
   border-top: 1px solid var(--of-border);
 }
 
-.of-steps > li:first-child {
+.of-checklist > li:first-child {
   border-top: 0;
 }
 
-.of-steps__text {
+.of-checklist__text {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -4685,11 +4688,11 @@ button.of-style-row__reset:hover {
   font-size: var(--of-text-sm);
 }
 
-.of-steps__text strong {
+.of-checklist__text strong {
   font-weight: 500;
 }
 
-.of-steps__check {
+.of-checklist__check {
   display: grid;
   place-items: center;
   flex: none;
@@ -4699,18 +4702,18 @@ button.of-style-row__reset:hover {
   border-radius: 50%;
 }
 
-.of-steps > li.is-done .of-steps__check {
+.of-checklist > li.is-done .of-checklist__check {
   --of-icon-color: var(--of-on-accent);
   border-color: var(--of-success);
   background: var(--of-success);
 }
 
-.of-steps > li.is-done strong {
+.of-checklist > li.is-done strong {
   color: var(--of-text-3);
   font-weight: 400;
 }
 
-.of-steps__more {
+.of-checklist__more {
   color: var(--of-text-3);
   font-size: var(--of-text-sm);
 }
@@ -4832,4 +4835,17 @@ button.of-style-row__reset:hover {
   height: 8px;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* A way to another place in a list's meta line: a 24 px target, not an inline link. */
+.of-list__meta .of-link-btn--inline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+/* The « · » before it stays a separator, not underlined with the link. */
+.of-list__meta .of-link-btn--inline::before {
+  display: inline-block;
+  text-decoration: none;
 }
