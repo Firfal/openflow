@@ -10,6 +10,7 @@ import {
   type AdminContextValue,
   AdminProvider,
   type Notice,
+  type NoticeOptions,
   useAdmin,
   useRouter,
 } from "./context.js";
@@ -34,7 +35,7 @@ import { withFirestore } from "./services.js";
 import { SettingsView } from "./settings.js";
 import { Sidebar } from "./shell.js";
 import { StatsView } from "./stats.js";
-import { IconButton, Spinner } from "./ui.js";
+import { Button, IconButton, Spinner } from "./ui.js";
 import { useWebMcp } from "./webmcp.js";
 
 /**
@@ -49,19 +50,62 @@ const NOTICE_ICONS: Record<Notice["kind"], IconName> = {
   info: "info",
 };
 
-function Notices({ notices, dismiss }: { notices: Notice[]; dismiss: (id: number) => void }) {
+/** How long a notice stays: longer for an error or an action, until closed when sticky. */
+function noticeDelay(notice: Notice): number | undefined {
+  if (notice.sticky) return undefined;
+  if (notice.action) return 10_000;
+  return notice.kind === "error" ? 9000 : 5000;
+}
+
+/** One notice. Its countdown pauses while the pointer or the focus is on it (WCAG 2.2.1). */
+function NoticeItem({ notice, dismiss }: { notice: Notice; dismiss: (id: number) => void }) {
+  const [paused, setPaused] = useState(false);
+  const delay = noticeDelay(notice);
+  useEffect(() => {
+    if (paused || delay === undefined) return;
+    const timer = setTimeout(() => dismiss(notice.id), delay);
+    return () => clearTimeout(timer);
+  }, [paused, delay, dismiss, notice.id]);
   return (
-    <div className="of-notices" aria-live="polite">
-      {notices.map((notice) => (
-        <div
-          key={notice.id}
-          className={`of-notice of-notice--${notice.kind}`}
-          role={notice.kind === "error" ? "alert" : undefined}
+    // biome-ignore lint/a11y/noStaticElementInteractions: hover and focus only pause the countdown.
+    <div
+      className={`of-notice of-notice--${notice.kind}`}
+      role={notice.kind === "error" ? "alert" : undefined}
+      onPointerEnter={() => setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <Icon name={NOTICE_ICONS[notice.kind]} className="of-icon--first-line" />
+      <span>{notice.text}</span>
+      {notice.action && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="of-notice__action"
+          onClick={() => {
+            notice.action?.run();
+            dismiss(notice.id);
+          }}
         >
-          <Icon name={NOTICE_ICONS[notice.kind]} className="of-icon--first-line" />
-          <span>{notice.text}</span>
-          <IconButton icon="x" label="Fermer" size="sm" onClick={() => dismiss(notice.id)} />
-        </div>
+          {notice.action.label}
+        </Button>
+      )}
+      <IconButton icon="x" label="Fermer" size="sm" onClick={() => dismiss(notice.id)} />
+    </div>
+  );
+}
+
+function Notices({ notices, dismiss }: { notices: Notice[]; dismiss: (id: number) => void }) {
+  // In the editor, bottom left: the right panel (where the owner works) stays uncovered.
+  const { route } = useAdmin();
+  return (
+    <div
+      className={`of-notices${route.view === "editor" ? " of-notices--start" : ""}`}
+      aria-live="polite"
+    >
+      {notices.map((notice) => (
+        <NoticeItem key={notice.id} notice={notice} dismiss={dismiss} />
       ))}
     </div>
   );
@@ -126,14 +170,10 @@ export function OwnerApp({
     (id: number) => setNotices((all) => all.filter((n) => n.id !== id)),
     [],
   );
-  const notify = useCallback(
-    (kind: Notice["kind"], text: string) => {
-      const id = nextId.current++;
-      setNotices((all) => [...all.slice(-3), { id, kind, text }]);
-      setTimeout(() => dismiss(id), kind === "error" ? 9000 : 5000);
-    },
-    [dismiss],
-  );
+  const notify = useCallback((kind: Notice["kind"], text: string, options?: NoticeOptions) => {
+    const id = nextId.current++;
+    setNotices((all) => [...all.slice(-3), { id, kind, text, ...options }]);
+  }, []);
 
   useEffect(() => {
     const onError = (error: Error) => notify("error", errorMessage(error));

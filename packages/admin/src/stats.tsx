@@ -490,7 +490,7 @@ export function StatsView() {
             <p>{error}</p>
           </EmptyState>
         ) : !summary ? (
-          <Spinner label="Chargement des statistiques…" />
+          <Spinner inline label="Chargement des statistiques…" />
         ) : summary.views === 0 ? (
           <EmptyState icon="chart" title="Aucune visite pour l'instant">
             <p>

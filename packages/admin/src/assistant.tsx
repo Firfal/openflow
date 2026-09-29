@@ -1,6 +1,7 @@
 import { COLLECTIONS, FUNCTION_NAMES, slugify } from "@openflow/core";
 import { deleteDoc, doc } from "firebase/firestore";
 import { type ReactNode, useState } from "react";
+import { useConfirm } from "./confirm.js";
 import { useAdmin } from "./context.js";
 import type { AgentEntry } from "./data.js";
 import { call, errorMessage, type Services } from "./firebase.js";
@@ -263,12 +264,25 @@ const IDEAS = [
 
 function AgentRow({ agent }: { agent: AgentEntry }) {
   const { services, notify } = useAdmin();
+  const [confirmDialog, ask] = useConfirm();
   const oauth = agent.kind === "oauth";
   const disconnect = async () => {
-    const question = oauth
-      ? `Déconnecter « ${agent.label} » ? Il devra se reconnecter pour modifier le site.`
-      : `Révoquer la clé « ${agent.label} » ? L'assistant qui l'utilise perdra l'accès.`;
-    if (!window.confirm(question)) return;
+    const confirmed = await ask(
+      oauth
+        ? {
+            title: `Déconnecter « ${agent.label} » ?`,
+            message: "Il devra se reconnecter pour modifier le site.",
+            confirm: "Déconnecter",
+            danger: true,
+          }
+        : {
+            title: `Révoquer la clé « ${agent.label} » ?`,
+            message: "L'assistant qui l'utilise perdra l'accès au site.",
+            confirm: "Révoquer",
+            danger: true,
+          },
+    );
+    if (!confirmed) return;
     try {
       await deleteDoc(doc(services.db, COLLECTIONS.agentTokens, agent.id));
       notify("success", oauth ? "Assistant déconnecté." : "Clé révoquée.");
@@ -300,6 +314,7 @@ function AgentRow({ agent }: { agent: AgentEntry }) {
       <Button variant="danger-ghost" size="sm" onClick={() => void disconnect()}>
         {oauth ? "Déconnecter" : "Révoquer"}
       </Button>
+      {confirmDialog}
     </li>
   );
 }

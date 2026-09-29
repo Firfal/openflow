@@ -297,8 +297,8 @@ describe("assistant IA (MCP et WebMCP)", () => {
     await page.goto(`${ADMIN}?view=assistant`);
     const row = page.locator(".of-list__item", { hasText: "Claude e2e OAuth" });
     await row.waitFor({ timeout: 60_000 });
-    page.once("dialog", (dialog) => void dialog.accept());
     await row.getByRole("button", { name: "Déconnecter" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Déconnecter" }).click();
     // The list updates before the server confirms: wait for the confirmation.
     await page.getByText("Assistant déconnecté.").waitFor({ timeout: 10_000 });
     expect(await row.count()).toBe(0);
@@ -411,8 +411,8 @@ describe("assistant IA (MCP et WebMCP)", () => {
 
   it("revokes the key", async () => {
     await page.getByRole("button", { name: "Assistant IA", exact: true }).click();
-    page.once("dialog", (dialog) => void dialog.accept());
     await page.getByRole("button", { name: "Révoquer" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Révoquer" }).click();
     await page.getByText("Aucune IA connectée pour l'instant.").waitFor({ timeout: 10_000 });
     expect((await mcp("tools/list")).status).toBe(401);
   });

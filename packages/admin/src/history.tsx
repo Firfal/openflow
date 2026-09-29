@@ -51,7 +51,14 @@ export function HistoryView() {
         </p>
         {releases.length === 0 ? (
           <EmptyState icon="history" title="Aucune publication pour l'instant">
-            <p>Le site n'a pas encore été publié depuis l'admin.</p>
+            <p>Chaque publication apparaîtra ici, et pourra être remise en ligne d'un clic.</p>
+            <Button
+              variant="primary"
+              icon="globe"
+              onClick={() => window.dispatchEvent(new CustomEvent("openflow:publish"))}
+            >
+              Publier le site
+            </Button>
           </EmptyState>
         ) : (
           <ol className="of-timeline" aria-label="Publications">
@@ -88,11 +95,7 @@ export function HistoryView() {
                           <span>restaurée le {formatDate(release.restoredAt)}</span>
                         )}
                       </span>
-                      {release.error && (
-                        <span className="of-error" style={{ fontSize: 12.5 }}>
-                          {release.error}
-                        </span>
-                      )}
+                      {release.error && <span className="of-error of-small">{release.error}</span>}
                     </div>
                     <StatusChip tone={status.tone}>{status.label}</StatusChip>
                     {release.logUrl && (

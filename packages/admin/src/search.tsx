@@ -42,7 +42,7 @@ export function SearchConsoleCard({ days }: { days: number }) {
     <section className="of-card of-gsc" aria-labelledby="of-search-title">
       <h2 id="of-search-title">Recherche Google</h2>
       {!result ? (
-        <Spinner label="Lecture de Search Console…" />
+        <Spinner inline label="Lecture de Search Console…" />
       ) : result.status === "ok" ? (
         <>
           <p className="of-card__lead">

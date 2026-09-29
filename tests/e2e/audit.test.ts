@@ -149,7 +149,13 @@ async function capture(name: string, width: number, theme: "light" | "dark") {
       .analyze();
     metrics.axe = axe.violations
       .filter((v) => v.impact === "serious" || v.impact === "critical")
-      .map((v) => `${v.id} (${v.nodes.length})`);
+      .map(
+        (v) =>
+          `${v.id} (${v.nodes.length}) ${v.nodes
+            .slice(0, 3)
+            .map((node) => node.target.join(" "))
+            .join(" | ")}`,
+      );
   }
   metrics.consoleErrors = consoleErrors - before;
   results[key] = metrics;

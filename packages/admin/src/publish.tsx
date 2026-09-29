@@ -332,7 +332,7 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                 <span>Rien n'a changé depuis la dernière publication : le site est à jour.</span>
               </p>
             )}
-            <p className="of-subtle" style={{ fontSize: 13 }}>
+            <p className="of-subtle of-small">
               La mise en ligne prend généralement 2 à 4 minutes. Chaque version reste restaurable
               depuis l'historique.
             </p>

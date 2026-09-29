@@ -46,22 +46,34 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   Dark values are defined twice (media query and `html[data-of-theme="dark"]`): change both.
 - One accent (OpenFlow cobalt) for primary actions, selection and state. Never on inactive elements.
 - Depth: borders for resting surfaces; shadows (`--of-shadow-md/lg`) only for floating layers (menus,
-  dialogs, toasts, palette).
-- Radii: 6 px controls, 8 px menus and small cards, 12 px cards and dialogs (a child radius ≤ its parent's).
-- Type: Inter (bundled), 13 px in panels, 14 px in dashboard content; hierarchy by weight and colour, not size.
-  `font-variant-numeric: tabular-nums` for numbers. Sentence case, no uppercase tracked labels.
-- Spacing on a 4/8 px grid; controls 32 px (28 px in the style panel, 40 px on touch).
+  dialogs, toasts, palette); `--of-shadow-sm` for the selected segment of a segmented control. No raw
+  `rgb(0 0 0 / …)` shadow: it vanishes in dark mode.
+- Radii through tokens only: `--of-radius-sm` (4 px, badges), `--of-radius` (6 px, controls),
+  `--of-radius-md` (8 px, menus, toasts, small cards), `--of-radius-lg` (12 px, cards and dialogs); a child
+  radius ≤ its parent's. `50%` and `999px` for dots and pills.
+- Type: Inter (bundled), six sizes only, as tokens: `--of-text-xs` 12, `--of-text-sm` 13 (panels),
+  `--of-text-md` 14 (dashboard content), `--of-text-lg` 16 (dialog and card titles), `--of-text-xl` 20
+  (view titles), `--of-text-2xl` 28 (figures). Weights 400, 500, 600. Hierarchy by weight and colour, not
+  size. No inline `fontSize`: `.of-small` (13) and `.of-tiny` (12). `font-variant-numeric: tabular-nums`
+  for numbers. Sentence case, no uppercase tracked labels.
+- Spacing on the 4 px grid (4, 8, 12, 16, 20, 24, 32…; 1–2 px only for hairline nudges); controls 32 px
+  (28 px in the style panel, 40 px on touch). Every view header (`PageHead`) is 60 px high.
 - Icons take their colour from `--of-icon-color` set on the container (no `.x .of-icon { color }` rules).
 
 ## Components and patterns
 
 - Use `Button` (`variant` primary | secondary | ghost | danger | danger-ghost, `size` sm | lg, `icon`, `busy`)
   and `IconButton` (always a `label`: it is the accessible name and the tooltip). Never `div onClick`.
-- Destructive actions: in a `Menu`, `danger: true`, then a `Dialog` to confirm (or undo in Puck).
+- Destructive actions: in a `Menu`, `danger: true`, then a confirmation (`useConfirm()` from
+  `confirm.tsx`, never `window.confirm`) or an undo (`notify(kind, text, { action: { label: "Annuler",
+  run } })`).
 - Row actions: one visible primary action (« Modifier ») plus a « ⋯ » `Menu` for the rest.
 - Status: one `StatusChip` per item (dot + text; colour never alone).
 - Every empty state (`EmptyState`) says what to do next and offers the action.
-- Loading labels end with « … »; async results go through `notify` (toasts are `aria-live`).
+- Loading labels end with « … »: `<Spinner>` for a whole screen, `<Spinner inline>` inside a card.
+- Async results go through `notify(kind, text, options?)`: toasts are `aria-live`, pause while hovered or
+  focused, can carry one action (`action: { label, run }`) and stay until closed when `sticky`. In the
+  editor they sit bottom left, away from the right panel.
 - Dashboard views start with `<PageHead title actions>`; editors get their bar from `EditorBar` through
   `EditorChromeContext` (`kind: "page" | "settings"`).
 - Puck: theme it with its tokens first (`--puck-color-*`, `--puck-field-*`, `--puck-drawer-item-*`); layout
@@ -111,7 +123,8 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
 ## Motion and accessibility
 
 - Animate only `transform` and `opacity`, ≤ 200 ms, ease-out (`--of-ease`); nothing for keyboard-triggered,
-  frequent actions (the palette). `prefers-reduced-motion` is honoured globally.
+  frequent actions (the palette). No `transition` on colours, borders or shadows (hover states switch
+  at once, and a theme change never flashes). `prefers-reduced-motion` is honoured globally.
 - `:focus-visible` rings stay; menus and the palette work with arrows, Enter, Escape, and give focus back.
 - Text contrast AA in light and dark (check both); inputs keep a visible border.
 - French copy, specific labels (« Créer une clé », not « Valider »), errors say how to fix.

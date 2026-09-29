@@ -255,12 +255,18 @@ Pendant la mise en ligne, le bouton affiche le temps écoulé.
 ## Apparence et accessibilité
 
 - Thème **clair** ou **sombre**, en suivant le système par défaut. Le choix est gardé par le navigateur.
-- Une seule police d'interface, **Inter**, livrée avec le site, sans appel à Google Fonts. Le texte des
-  panneaux fait 13 px, les chiffres ont une largeur fixe.
+- Une seule police d'interface, **Inter**, livrée avec le site, sans appel à Google Fonts, en six tailles
+  (12, 13, 14, 16, 20 et 28 px) et trois graisses. Le texte des panneaux fait 13 px, celui du tableau de
+  bord 14 px ; les chiffres ont une largeur fixe. Les espacements suivent une grille de 4 px.
+- Les **notifications** apparaissent en bas à droite (en bas à gauche dans l'éditeur, pour ne pas cacher
+  le panneau de droite). Elles restent tant que le pointeur ou le clavier est dessus, et peuvent proposer
+  une action (« Annuler », « Ouvrir »…).
+- Une action irréversible (supprimer un message, déconnecter une IA, révoquer une clé) demande
+  confirmation dans une fenêtre de l'admin, avec un bouton qui nomme l'action.
 - Contraste AA sur tout le texte, en clair comme en sombre.
 - Focus visible au clavier.
 - Menus et recherche rapide utilisables au clavier : flèches, <kbd>Entrée</kbd>, <kbd>Échap</kbd>.
-- Cibles de 40 px sur écran tactile.
+- Cibles de 24 px au moins partout, de 40 px sur écran tactile.
 - Animations courtes, sur `transform` et `opacity` uniquement, supprimées si le système demande de réduire
   les animations. La recherche rapide, ouverte au clavier et souvent, ne s'anime pas.
 

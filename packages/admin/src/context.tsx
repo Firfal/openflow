@@ -24,7 +24,15 @@ export type Route =
 
 const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "business", "legal"];
 
-export interface Notice {
+/** What a notice can offer besides its text (« Annuler », « Ouvrir »…). */
+export interface NoticeOptions {
+  /** One button in the notice; running it closes the notice. */
+  action?: { label: string; run: () => void };
+  /** Stays until closed (a notice with an action otherwise stays longer than a plain one). */
+  sticky?: boolean;
+}
+
+export interface Notice extends NoticeOptions {
   id: number;
   kind: "info" | "success" | "error";
   text: string;
@@ -43,7 +51,7 @@ export interface AdminContextValue {
   messages: MessageEntry[];
   route: Route;
   navigate: (route: Route) => void;
-  notify: (kind: Notice["kind"], text: string) => void;
+  notify: (kind: Notice["kind"], text: string, options?: NoticeOptions) => void;
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null);

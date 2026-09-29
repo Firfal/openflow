@@ -67,9 +67,10 @@ export function IconButton({
   );
 }
 
-export function Spinner({ label = "Chargement…" }: { label?: string }) {
+/** A loading state: a whole screen, or `inline` inside a card (one line, no room taken). */
+export function Spinner({ label = "Chargement…", inline }: { label?: string; inline?: boolean }) {
   return (
-    <div className="of-center" role="status">
+    <div className={inline ? "of-loading" : "of-center"} role="status">
       <span className="of-spinner" aria-hidden />
       <span>{label}</span>
     </div>

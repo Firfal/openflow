@@ -698,7 +698,7 @@ export function PagesView() {
             })}
           </ul>
         )}
-        <p className="of-subtle" style={{ fontSize: 12.5 }}>
+        <p className="of-subtle of-small">
           Astuce : <kbd className="of-kbd">{MOD_KEY}</kbd> <kbd className="of-kbd">K</kbd> pour
           ouvrir une page ou un réglage au clavier.
         </p>

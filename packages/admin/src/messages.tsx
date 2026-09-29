@@ -1,6 +1,7 @@
 import { COLLECTIONS, MESSAGE_RETENTION_YEARS } from "@openflow/core";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useState } from "react";
+import { useConfirm } from "./confirm.js";
 import { useAdmin } from "./context.js";
 import type { MessageEntry } from "./data.js";
 import { errorMessage } from "./firebase.js";
@@ -29,6 +30,7 @@ function formatDate(iso: string) {
  */
 export function MessagesView() {
   const { messages, services, notify } = useAdmin();
+  const [confirmDialog, ask] = useConfirm();
   const [box, setBox] = useState<"inbox" | "spam">("inbox");
   const [openId, setOpenId] = useState<string>();
   const shown = messages.filter((m) => (box === "spam" ? m.spam : !m.spam));
@@ -47,13 +49,13 @@ export function MessagesView() {
     if (!message.read) void update(message, { read: true });
   };
   const remove = async (message: MessageEntry) => {
-    if (
-      !window.confirm(
-        `Supprimer le message de ${sender(message)} ? Il ne pourra pas être récupéré.`,
-      )
-    ) {
-      return;
-    }
+    const confirmed = await ask({
+      title: `Supprimer le message de ${sender(message)} ?`,
+      message: "Il ne pourra pas être récupéré.",
+      confirm: "Supprimer",
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteDoc(doc(services.db, COLLECTIONS.messages, message.id));
       setOpenId(undefined);
@@ -65,6 +67,7 @@ export function MessagesView() {
 
   return (
     <>
+      {confirmDialog}
       <PageHead
         title="Messages"
         description={`Ce que les visiteurs vous envoient avec les formulaires du site. Chaque message est effacé automatiquement ${MESSAGE_RETENTION_YEARS} ans après sa réception, comme l'annonce votre politique de confidentialité.`}

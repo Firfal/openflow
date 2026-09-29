@@ -741,7 +741,7 @@ export function StylePanel() {
             }}
           />
         )}
-        <p className="of-style-row__hint of-subtle" style={{ fontSize: 11.5 }}>
+        <p className="of-style-row__hint of-subtle of-tiny">
           En pixels (24), ou avec une unité (2rem). ↑ ↓ pour ajuster, ⇧ pour aller plus vite.
         </p>
       </Group>
