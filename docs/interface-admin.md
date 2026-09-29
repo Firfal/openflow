@@ -300,6 +300,14 @@ Pendant la mise en ligne, le bouton affiche le temps écoulé.
   une action (« Annuler », « Ouvrir »…).
 - Une action irréversible (supprimer un message, déconnecter une IA, révoquer une clé) demande
   confirmation dans une fenêtre de l'admin, avec un bouton qui nomme l'action.
+- Les éditeurs (pages, menu et pied de page, couleurs et polices) enregistrent tout seuls. Les
+  formulaires (Site et référencement, Langues, Établissement, Informations légales) s'enregistrent avec
+  **Enregistrer** : tant qu'une modification ne l'est pas, « Modifications non enregistrées » s'affiche à
+  côté du bouton, <kbd>⌘</kbd> <kbd>S</kbd> enregistre, et quitter la vue demande confirmation.
+- Les mots de l'admin : **Assistant IA** pour l'IA du propriétaire, **IA des visiteurs** pour celle de
+  leur navigateur, **moteurs IA** pour ChatGPT, Perplexity… qui lisent le site ; « code de validation »
+  plutôt que « balise meta ». Les termes techniques (MCP, OAuth, WebMCP) ne figurent que dans les notes
+  « Pour les développeurs » et les étapes des outils qui les affichent eux-mêmes.
 - Contraste AA sur tout le texte, en clair comme en sombre.
 - Focus visible au clavier.
 - Menus et recherche rapide utilisables au clavier : flèches, <kbd>Entrée</kbd>, <kbd>Échap</kbd>.

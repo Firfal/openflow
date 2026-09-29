@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAdmin } from "./context.js";
 import { createPage, type FullPage, getAllPages, getIntegrations, saveLegal } from "./data.js";
 import { errorMessage } from "./firebase.js";
+import { UnsavedNote, useUnsavedGuard } from "./form-guard.js";
 import { Button, FormField, StatusChip } from "./ui.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -262,6 +263,9 @@ export function LegalForm() {
   const { config, services, settings, user, notify } = useAdmin();
   const [legal, setLegal] = useState<LegalInfo>(() => settings?.site?.legal ?? {});
   const [busy, setBusy] = useState(false);
+  const current = JSON.stringify(legal);
+  const [saved, setSaved] = useState(current);
+  const dirty = current !== saved;
   const business = settings?.site?.business;
   const siteName = settings?.site?.name ?? config.site.name;
   const set = (patch: Partial<LegalInfo>) => setLegal((l) => ({ ...l, ...patch }));
@@ -275,6 +279,7 @@ export function LegalForm() {
     setBusy(true);
     try {
       await saveLegal(services.db, sanitizeLegal(legal) ?? null, user.email ?? undefined);
+      setSaved(current);
       notify("success", "Informations enregistrées. Publiez pour mettre à jour les pages légales.");
     } catch (error) {
       notify("error", errorMessage(error));
@@ -282,6 +287,10 @@ export function LegalForm() {
       setBusy(false);
     }
   };
+
+  const guard = useUnsavedGuard(dirty && !busy, () => {
+    if (!busy && !emailError) void submit();
+  });
 
   const text = (key: keyof LegalInfo) => ({
     className: "of-input",
@@ -370,10 +379,14 @@ export function LegalForm() {
           ) : (
             <StatusChip tone="green">Mentions légales complètes</StatusChip>
           )}
-          <Button variant="primary" type="submit" busy={busy} disabled={Boolean(emailError)}>
-            Enregistrer
-          </Button>
+          <span className="of-row">
+            <UnsavedNote dirty={dirty && !busy} />
+            <Button variant="primary" type="submit" busy={busy} disabled={Boolean(emailError)}>
+              Enregistrer
+            </Button>
+          </span>
         </div>
+        {guard}
       </form>
       <PolicyFacts />
     </div>

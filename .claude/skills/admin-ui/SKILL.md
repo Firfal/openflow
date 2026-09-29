@@ -25,6 +25,12 @@ motion rules. Full description for owners and contributors: `docs/interface-admi
 | `packages/admin/src/editor-ui.tsx` | Editor bar (Puck `overrides.header`), screens, rail plugins, drawer search |
 | `packages/admin/src/style-controls.tsx` | Style rows (set / inherited labels, scrub), box model, colour, length |
 | `packages/admin/src/command.tsx` | ⌘K palette (`requestPublish`, `requestNewPage`, `requestNewItem` events) |
+| `packages/admin/src/nav.ts` | Every place of the dashboard (label, icon, group, route, keywords): sidebar, phone tabs, ⌘K |
+| `packages/admin/src/home.tsx` | « Tableau de bord »: status, « Pour bien démarrer », activity, audit advice |
+| `packages/admin/src/status.ts` | `pageStatus`, `pendingChanges`, `describeChanges` (one wording for statuses) |
+| `packages/admin/src/confirm.tsx` | `useConfirm()`: the admin's confirmation dialog |
+| `packages/admin/src/form-guard.tsx` | `useUnsavedGuard`, `UnsavedNote`: forms saved with « Enregistrer » |
+| `packages/admin/src/screens.ts` | Width of the fluid « Ordinateur » preview (1024 to 1280 px) |
 | `packages/admin/src/collection.tsx` | A collection's items (`?view=collection&c=…`): filters, search, thumbnails; items open in the page editor |
 | `packages/admin/src/assistant.tsx` | « Assistant IA » view (MCP address, per-assistant steps, connected AIs, keys), Pages card |
 | `packages/admin/src/connect.tsx` | OAuth consent screen of an AI assistant (`?view=connect&request=…`, full screen) |

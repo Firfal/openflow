@@ -452,7 +452,7 @@ export function AssistantSettings() {
           Collez cette adresse dans votre assistant : il vous demandera de vous connecter et
           d'autoriser l'accès. Rien d'autre à copier.
         </p>
-        <CopyField label="Adresse de votre site pour l'IA (serveur MCP)" value={endpoint} />
+        <CopyField label="Adresse de votre site pour l'IA" value={endpoint} />
         <p className="of-callout">
           <Icon name="shieldCheck" className="of-icon--first-line" />
           <span>
@@ -528,24 +528,28 @@ export function AssistantSettings() {
 
       <section className="of-card of-form">
         <div className="of-row of-row--spread">
-          <h2>Assistant du navigateur (WebMCP)</h2>
+          <h2>IA intégrée au navigateur</h2>
           <StatusChip tone={webMcp.status === "active" ? "green" : "grey"}>
             {webMcp.status === "active" ? "Actif" : "Non disponible"}
           </StatusChip>
         </div>
         {webMcp.status === "active" ? (
           <p className="of-muted">
-            {webMcp.tools} outils sont proposés à l'assistant IA de votre navigateur tant que
-            l'admin est ouverte. Il agit avec votre session, et vous confirmez vous-même la
-            publication et les suppressions.
+            {webMcp.tools} outils sont proposés à l'IA de votre navigateur tant que l'admin est
+            ouverte. Il agit avec votre session, et vous confirmez vous-même la publication et les
+            suppressions.
           </p>
         ) : (
           <p className="of-muted">
-            Votre navigateur ne prend pas encore en charge WebMCP (document.modelContext). Avec un
-            navigateur compatible, l'assistant intégré pourra modifier le site depuis cette page,
-            avec les mêmes outils que le serveur MCP.
+            Votre navigateur ne propose pas encore d'IA capable de modifier un site. Quand il le
+            fera, elle pourra modifier le site depuis cette page, avec les mêmes outils que votre
+            assistant.
           </p>
         )}
+        <p className="of-subtle of-tiny">
+          Pour les développeurs : l'adresse du site pour l'IA est un serveur MCP (HTTP, connexion
+          OAuth) ; l'IA du navigateur passe par WebMCP (document.modelContext).
+        </p>
       </section>
     </div>
   );

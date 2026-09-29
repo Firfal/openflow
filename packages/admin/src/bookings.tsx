@@ -178,7 +178,7 @@ export function BookingsView() {
                         )}
                         {booking.price && <span>{booking.price}</span>}
                         <span>réservé {timeAgo(booking.createdAt)}</span>
-                        {booking.agent && <span>par l'assistant IA du visiteur</span>}
+                        {booking.agent && <span>par l'IA du visiteur</span>}
                       </span>
                       {booking.message && (
                         <span className="of-booking__message">« {booking.message} »</span>

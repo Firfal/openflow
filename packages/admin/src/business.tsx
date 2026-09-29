@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useAdmin } from "./context.js";
 import { saveBusiness } from "./data.js";
 import { errorMessage } from "./firebase.js";
+import { UnsavedNote, useUnsavedGuard } from "./form-guard.js";
 import { Icon } from "./icons.js";
 import { Button, FormField, IconButton, StatusChip } from "./ui.js";
 
@@ -172,6 +173,9 @@ export function BusinessForm() {
   const [business, setBusiness] = useState<BusinessInfo>(() => settings?.site?.business ?? {});
   const [links, setLinks] = useState(() => (settings?.site?.business?.links ?? []).join("\n"));
   const [busy, setBusy] = useState(false);
+  const current = JSON.stringify({ business, links });
+  const [saved, setSaved] = useState(current);
+  const dirty = current !== saved;
   const set = (patch: Partial<BusinessInfo>) => setBusiness((b) => ({ ...b, ...patch }));
   const siteName = settings?.site?.name ?? config.site.name;
   const now = today();
@@ -217,6 +221,7 @@ export function BusinessForm() {
         Object.keys(value).length > 0 ? value : null,
         user.email ?? undefined,
       );
+      setSaved(current);
       notify("success", "Fiche enregistrée. Publiez pour la mettre en ligne.");
     } catch (error) {
       notify("error", errorMessage(error));
@@ -224,6 +229,10 @@ export function BusinessForm() {
       setBusy(false);
     }
   };
+
+  const guard = useUnsavedGuard(dirty && !busy, () => {
+    if (!busy && !emailError && !hoursError && !linksError) void submit();
+  });
 
   const preview = businessLines({ name: siteName, business: clean(business, links) }, now);
 
@@ -239,7 +248,7 @@ export function BusinessForm() {
         <div>
           <h2 id="of-business-contact">Activité et coordonnées</h2>
           <p className="of-card__lead">
-            Google, les assistants IA (ChatGPT, Claude, Gemini…) et votre site affichent ces
+            Google, les moteurs IA (ChatGPT, Claude, Gemini…) et votre site affichent ces
             informations quand on cherche à vous joindre.
           </p>
         </div>
@@ -362,8 +371,7 @@ export function BusinessForm() {
         <div>
           <h2 id="of-business-hours">Horaires d'ouverture</h2>
           <p className="of-card__lead">
-            « Êtes-vous ouvert le samedi ? » : Google et les assistants IA répondent avec ces
-            horaires.
+            « Êtes-vous ouvert le samedi ? » : Google et les moteurs IA répondent avec ces horaires.
           </p>
         </div>
         {business.hours ? (
@@ -404,8 +412,8 @@ export function BusinessForm() {
         ) : (
           <div className="of-row">
             <p className="of-subtle" style={{ flex: "1 1 240px" }}>
-              Pas d'horaires indiqués : Google et les assistants IA ne pourront pas dire si vous
-              êtes ouvert.
+              Pas d'horaires indiqués : Google et les moteurs IA ne pourront pas dire si vous êtes
+              ouvert.
             </p>
             <Button icon="plus" onClick={() => set({ hours: structuredClone(DEFAULT_HOURS) })}>
               Indiquer les horaires
@@ -500,7 +508,7 @@ export function BusinessForm() {
 
       {preview.length > 0 && (
         <section className="of-card" aria-labelledby="of-business-preview">
-          <h2 id="of-business-preview">Ce que liront Google et les assistants IA</h2>
+          <h2 id="of-business-preview">Ce que liront Google et les moteurs IA</h2>
           <ul className="of-business-preview">
             {preview.map((line, index) => (
               <li key={index} className={line.startsWith("  ") ? "is-nested" : undefined}>
@@ -512,6 +520,7 @@ export function BusinessForm() {
       )}
 
       <div className="of-row of-form__actions">
+        <UnsavedNote dirty={dirty && !busy} />
         <Button
           variant="primary"
           type="submit"
@@ -521,6 +530,7 @@ export function BusinessForm() {
           Enregistrer la fiche
         </Button>
       </div>
+      {guard}
     </form>
   );
 }

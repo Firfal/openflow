@@ -124,7 +124,7 @@ export function MessagesView() {
                   <span className="of-list__meta">
                     <span>{message.formTitle}</span>
                     <span className="of-mono">{message.page}</span>
-                    {message.agent && <span>Rempli par l'assistant IA du visiteur</span>}
+                    {message.agent && <span>Rempli par l'IA du visiteur</span>}
                   </span>
                 </button>
               </li>
@@ -179,7 +179,7 @@ export function MessagesView() {
             <p className="of-subtle">
               Reçu le {formatDate(open.createdAt)}, depuis la page{" "}
               <span className="of-mono">{open.page}</span> ({open.formTitle})
-              {open.agent ? ", rempli par l'assistant IA du visiteur" : ""}.
+              {open.agent ? ", rempli par l'IA du visiteur" : ""}.
             </p>
             <dl>
               {open.fields.map((field) => (

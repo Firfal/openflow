@@ -54,7 +54,7 @@ function GettingStarted() {
     {
       id: "business",
       label: "Présenter votre établissement",
-      hint: "Adresse, téléphone et horaires, lus par Google et les assistants IA.",
+      hint: "Adresse, téléphone et horaires, lus par Google et les moteurs IA.",
       done: Boolean(business?.name && (business.phone || business.email)),
       action: "Remplir",
       route: { view: "settings", tab: "business" },

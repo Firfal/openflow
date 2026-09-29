@@ -315,6 +315,8 @@ function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
 
 const RAIL_ITEM = '[class*="_NavItem-link_"]';
 const ARRAY_ADD = '[class*="_ArrayField-addButton_"]:not([aria-label])';
+const DRAWER_ITEM = '[data-testid^="drawer-item:"][role="button"]';
+const LOADER = '[class*="_Loader_"][aria-label]:not([role])';
 
 /**
  * Accessibility of Puck's own controls: the rail items (« Ajouter », « Structure »…) are clickable
@@ -338,6 +340,15 @@ function useAccessiblePuck() {
       }
       for (const add of root.querySelectorAll<HTMLElement>(ARRAY_ADD)) {
         add.setAttribute("aria-label", "Ajouter un élément");
+      }
+      // A section of the library is draggable (a « button » for dnd-kit) and holds our « + »
+      // button: a group, so that no button sits inside another (the « + » is the click way).
+      for (const item of root.querySelectorAll<HTMLElement>(DRAWER_ITEM)) {
+        item.setAttribute("role", "group");
+      }
+      // Puck's loaders carry a label: they are status messages.
+      for (const loader of root.querySelectorAll<HTMLElement>(LOADER)) {
+        loader.setAttribute("role", "status");
       }
     };
     const onKey = (event: KeyboardEvent) => {

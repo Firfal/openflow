@@ -162,11 +162,11 @@ export function SearchConsoleCard({ days }: { days: number }) {
               Dans Search Console, ouvrez « Paramètres &gt; Utilisateurs et autorisations » et
               ajoutez cet utilisateur, avec l'autorisation « Restreint » :
               {result.serviceAccount ? (
-                <CopyField label="Compte du site" value={result.serviceAccount} />
+                <CopyField label="Adresse à ajouter" value={result.serviceAccount} />
               ) : (
                 <span className="of-subtle">
                   {" "}
-                  le compte de service du site, affiché ici une fois le site en ligne.
+                  l'adresse à ajouter, affichée ici une fois le site en ligne.
                 </span>
               )}
             </li>

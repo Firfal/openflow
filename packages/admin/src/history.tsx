@@ -95,7 +95,12 @@ export function HistoryView() {
                           <span>restaurée le {formatDate(release.restoredAt)}</span>
                         )}
                       </span>
-                      {release.error && <span className="of-error of-small">{release.error}</span>}
+                      {release.error && (
+                        <span className="of-error of-small">
+                          {release.error} Publiez de nouveau ; si l'échec revient, demandez à votre
+                          assistant IA « Pourquoi la dernière publication a-t-elle échoué ? ».
+                        </span>
+                      )}
                     </div>
                     <StatusChip tone={status.tone}>{status.label}</StatusChip>
                     {release.logUrl && (

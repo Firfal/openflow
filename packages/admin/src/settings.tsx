@@ -11,6 +11,7 @@ import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
 import { saveLanguages, saveSettings } from "./data.js";
 import { errorMessage } from "./firebase.js";
+import { UnsavedNote, useUnsavedGuard } from "./form-guard.js";
 import { LegalForm } from "./legal.js";
 import { PageHead } from "./shell.js";
 import { Button, FormField, Spinner } from "./ui.js";
@@ -43,24 +44,31 @@ function SiteForm() {
     ...settings?.site,
   };
   const [site, setSite] = useState<SiteSettings>(initial);
+  const [saved, setSaved] = useState(() => JSON.stringify(initial));
   const [busy, setBusy] = useState(false);
+  const dirty = JSON.stringify(site) !== saved;
   const urlError =
     site.url && !/^https?:\/\/[^\s]+$/.test(site.url)
       ? "Adresse complète attendue, ex. https://www.monsite.fr"
       : undefined;
   const googleError =
     site.verification?.google && !verificationCode(site.verification.google)
-      ? "Collez la balise meta donnée par Search Console, ou son code (content=…)."
+      ? "Collez le code de validation donné par Search Console (ou la balise entière)."
       : undefined;
   const bingError =
     site.verification?.bing && !verificationCode(site.verification.bing)
-      ? "Collez la balise meta donnée par Bing, ou son code (content=…)."
+      ? "Collez le code de validation donné par Bing (ou la balise entière)."
       : undefined;
   const gaId = site.gaMeasurementId?.trim().toUpperCase() ?? "";
   const gaError =
     gaId && !/^G-[A-Z0-9]{4,20}$/.test(gaId)
       ? "Identifiant de mesure attendu, ex. G-AB12CD34EF (Google Analytics 4)."
       : undefined;
+
+  const invalid = Boolean(urlError || gaError || googleError || bingError);
+  const guard = useUnsavedGuard(dirty && !busy, () => {
+    if (!invalid && !busy) void submit();
+  });
 
   const submit = async () => {
     setBusy(true);
@@ -79,6 +87,7 @@ function SiteForm() {
         },
         user.email ?? undefined,
       );
+      setSaved(JSON.stringify(site));
       notify("success", "Réglages du site enregistrés. Publiez pour les mettre en ligne.");
     } catch (error) {
       notify("error", errorMessage(error));
@@ -160,8 +169,8 @@ function SiteForm() {
           <span>
             Mesurer les visites sans cookie
             <span className="of-field__hint">
-              Pages lues, sources des visites (moteurs, réseaux, assistants IA), appareils. Aucune
-              donnée personnelle.
+              Pages lues, sources des visites (moteurs de recherche, réseaux, moteurs IA),
+              appareils. Aucune donnée personnelle.
             </span>
           </span>
         </label>
@@ -213,8 +222,8 @@ function SiteForm() {
       <div>
         <h2>Robots des IA</h2>
         <p className="of-card__lead">
-          Les assistants IA (ChatGPT, Claude, Perplexity, Copilot…) lisent votre site pour répondre
-          et vous citer : ils restent toujours autorisés. Vous pouvez en revanche refuser que vos
+          Les moteurs IA (ChatGPT, Claude, Perplexity, Copilot…) lisent votre site pour répondre et
+          vous citer : ils restent toujours autorisés. Vous pouvez en revanche refuser que vos
           textes servent à entraîner des modèles d'IA.
         </p>
       </div>
@@ -239,22 +248,19 @@ function SiteForm() {
           <span>
             Refuser l'entraînement des IA
             <span className="of-field__hint">
-              GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot… sont refusés dans
-              robots.txt ; le site reste visible dans les recherches IA.
+              GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot… sont refusés ; le site
+              reste visible dans les recherches des moteurs IA.
             </span>
           </span>
         </label>
       </fieldset>
-      <div className="of-row">
-        <Button
-          variant="primary"
-          type="submit"
-          busy={busy}
-          disabled={Boolean(urlError || gaError || googleError || bingError)}
-        >
+      <div className="of-row of-form__actions">
+        <UnsavedNote dirty={dirty && !busy} />
+        <Button variant="primary" type="submit" busy={busy} disabled={invalid}>
           Enregistrer
         </Button>
       </div>
+      {guard}
     </form>
   );
 }
@@ -268,11 +274,18 @@ function LanguagesForm() {
   );
   const [busy, setBusy] = useState(false);
   const others = siteLocales({ lang, locales });
+  const current = JSON.stringify({ lang, others });
+  const [saved, setSaved] = useState(current);
+  const dirty = current !== saved;
+  const guard = useUnsavedGuard(dirty && !busy, () => {
+    if (!busy) void submit();
+  });
 
   const submit = async () => {
     setBusy(true);
     try {
       await saveLanguages(services.db, lang, others, user.email ?? undefined);
+      setSaved(current);
       notify("success", "Langues enregistrées. Publiez pour les mettre en ligne.");
     } catch (error) {
       notify("error", errorMessage(error));
@@ -340,11 +353,13 @@ function LanguagesForm() {
           de page ».
         </p>
       )}
-      <div className="of-row">
+      <div className="of-row of-form__actions">
+        <UnsavedNote dirty={dirty && !busy} />
         <Button variant="primary" type="submit" busy={busy}>
           Enregistrer
         </Button>
       </div>
+      {guard}
     </form>
   );
 }
@@ -367,7 +382,7 @@ export function SettingsView({ tab }: { tab: SettingsTab }) {
       <>
         <PageHead
           title={TAB_TITLES[tab]}
-          description="Coordonnées, adresse et horaires, lus par Google et les assistants IA."
+          description="Coordonnées, adresse et horaires, lus par Google et les moteurs IA."
         />
         <div className="of-view of-view--narrow">
           <BusinessForm />

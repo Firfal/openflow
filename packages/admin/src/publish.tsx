@@ -250,7 +250,7 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                   <Icon name="sparkles" />
                   <span className="of-disclosure__title">
                     {advice.length} conseil{advice.length > 1 ? "s" : ""} pour être mieux trouvé par
-                    Google et les assistants IA
+                    Google et les moteurs IA
                   </span>
                   <Icon name="chevronDown" className="of-disclosure__chevron" />
                 </summary>

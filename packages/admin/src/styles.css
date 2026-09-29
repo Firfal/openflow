@@ -492,9 +492,12 @@
   color: var(--of-accent-text);
 }
 
+/* Underlined: a link is never told by its colour alone (inside a sentence especially). */
 .of-link {
   color: var(--of-accent-text);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .of-link:hover {
@@ -1339,8 +1342,9 @@ select.of-input {
   margin-right: -4px;
   padding: 0 4px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.22);
-  color: inherit;
+  /* Accent text on white: readable at 12 px (white on a lightened accent was not, AA). */
+  background: var(--of-on-accent);
+  color: var(--of-accent-press);
   font-size: var(--of-text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -4806,4 +4810,26 @@ button.of-style-row__reset:hover {
   color: var(--of-text);
   font-size: var(--of-text-sm);
   font-weight: 600;
+}
+
+/* Forms saved with « Enregistrer »: what is not saved yet, next to the button. */
+.of-form__actions {
+  justify-content: flex-end;
+}
+
+.of-unsaved {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--of-warning);
+  font-size: var(--of-text-sm);
+  font-weight: 500;
+}
+
+.of-unsaved::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
 }

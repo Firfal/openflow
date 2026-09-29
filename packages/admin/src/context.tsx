@@ -121,6 +121,13 @@ function routeToSearch(route: Route): string {
   return search ? `?${search}` : window.location.pathname;
 }
 
+/** A form with unsaved changes asks before the owner leaves its view (`useUnsavedGuard`). */
+let leaveGuard: (() => Promise<boolean>) | null = null;
+
+export function setLeaveGuard(guard: (() => Promise<boolean>) | null) {
+  leaveGuard = guard;
+}
+
 /** Tiny query-string router (`/admin/?view=editor&page=accueil`) with back-button support. */
 export function useRouter(): [Route, (route: Route) => void] {
   const [route, setRoute] = useState<Route>(readRoute);
@@ -130,8 +137,16 @@ export function useRouter(): [Route, (route: Route) => void] {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
   const navigate = useCallback((next: Route) => {
-    window.history.pushState(null, "", routeToSearch(next));
-    setRoute(next);
+    const go = () => {
+      window.history.pushState(null, "", routeToSearch(next));
+      setRoute(next);
+    };
+    if (!leaveGuard) return go();
+    void leaveGuard().then((leave) => {
+      if (!leave) return;
+      leaveGuard = null;
+      go();
+    });
   }, []);
   return [route, navigate];
 }
