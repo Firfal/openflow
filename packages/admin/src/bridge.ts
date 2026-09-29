@@ -8,6 +8,8 @@ export interface EditorBridge {
   pageId: string;
   getData: () => Data;
   setData: (data: Data) => void;
+  /** Undoes the last change (Puck's history), as ⌘Z. */
+  undo: () => void;
 }
 
 let bridge: EditorBridge | null = null;

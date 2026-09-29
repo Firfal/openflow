@@ -26,7 +26,7 @@ export default defineConfig({
     description: "Présentation de l'entreprise en une phrase.",
   },
   categories: {
-    header: { title: "En-têtes", components: ["Hero"] },
+    header: { title: "Introductions", components: ["Hero"] },
     content: {
       title: "Contenu",
       components: ["TextImage", "Features", "Testimonials", "Faq", "ArticleList", "EventList"],

@@ -16,11 +16,13 @@ import { type EditorBridge, getEditorBridge, setEditorBridge } from "./bridge.js
 import { CanvasFrame, SectionOverlay, SettingsCanvasFrame } from "./canvas.js";
 import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
+import { PageDialog } from "./pages.js";
 import { FieldsPanel } from "./panel.js";
 import { PublishControl } from "./publish.js";
 import { DESKTOP_MAX, desktopWidth, fitDesktop, isDesktop } from "./screens.js";
 import { openCommandPalette, useDocumentTitle } from "./shell.js";
-import { Button, IconButton, Menu, MOD_KEY } from "./ui.js";
+import { pageStatus } from "./status.js";
+import { Button, IconButton, Menu, MOD_KEY, StatusChip } from "./ui.js";
 
 /**
  * Editor chrome shared with Puck overrides. Overrides are module constants (Puck rebuilds its
@@ -96,6 +98,7 @@ function AgentBridge({ pageId }: { pageId: string }) {
       pageId,
       getData: () => getPuck().appState.data,
       setData: (data) => getPuck().dispatch({ type: "setData", data }),
+      undo: () => getPuck().history.back(),
     };
     setEditorBridge(bridge);
     return () => {
@@ -237,6 +240,30 @@ function UndoRedo() {
   );
 }
 
+/** The page's publication state, and its settings (address, Google, visibility) at hand. */
+function PageState({ chrome }: { chrome: EditorChrome }) {
+  const { pages, releases } = useAdmin();
+  const [open, setOpen] = useState(false);
+  // « Paramètres de la page » from the command palette.
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener("openflow:page-settings", show);
+    return () => window.removeEventListener("openflow:page-settings", show);
+  }, []);
+  const page = pages.find((p) => p.id === chrome.pageId);
+  if (!page) return null;
+  const status = pageStatus(page, releases);
+  return (
+    <>
+      <span className="of-ebar__status of-ebar__hide-sm" title={status.title}>
+        <StatusChip tone={status.tone}>{status.label}</StatusChip>
+      </span>
+      <IconButton icon="settings" label="Paramètres de la page" onClick={() => setOpen(true)} />
+      <PageDialog page={open ? page : null} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
 /** Current page, with a menu to open another one (Webflow's page selector). */
 function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
   const { pages, config } = useAdmin();
@@ -287,12 +314,13 @@ function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
 }
 
 const RAIL_ITEM = '[class*="_NavItem-link_"]';
+const ARRAY_ADD = '[class*="_ArrayField-addButton_"]:not([aria-label])';
 
 /**
- * Puck's rail items (« Ajouter », « Structure »…) are clickable `div`s: they become toggle buttons
- * for the keyboard (Tab, Enter, Space) and screen readers.
+ * Accessibility of Puck's own controls: the rail items (« Ajouter », « Structure »…) are clickable
+ * `div`s and become toggle buttons (Tab, Enter, Space); the « + » of a list field gets a name.
  */
-function useAccessibleRail() {
+function useAccessiblePuck() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".of-editor");
     if (!root) return;
@@ -307,6 +335,9 @@ function useAccessibleRail() {
         );
         if (item.getAttribute("aria-pressed") !== pressed)
           item.setAttribute("aria-pressed", pressed);
+      }
+      for (const add of root.querySelectorAll<HTMLElement>(ARRAY_ADD)) {
+        add.setAttribute("aria-label", "Ajouter un élément");
       }
     };
     const onKey = (event: KeyboardEvent) => {
@@ -340,7 +371,7 @@ function useAccessibleRail() {
 function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
   const chrome = useContext(EditorChromeContext);
   useDocumentTitle(chrome?.kind === "settings" ? chrome.title : undefined);
-  useAccessibleRail();
+  useAccessiblePuck();
 
   // ⌘S / Ctrl+S: save now (a reflex; autosave already runs).
   // (`openflow:save` comes from the canvas, whose keyboard events stay in its iframe.)
@@ -380,6 +411,7 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
             <span className="of-ebar__sep" aria-hidden />
             <PageSwitcher chrome={chrome} />
             {chrome.languages && <LanguageSwitch chrome={chrome} />}
+            {chrome.languages?.current === chrome.languages?.main && <PageState chrome={chrome} />}
           </>
         ) : (
           <>
@@ -495,6 +527,12 @@ const fold = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 
 function DrawerWithSearch({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
+  // Where a click adds the section: after the selected one, else at the end of the page.
+  const after = usePuck((s) =>
+    s.selectedItem
+      ? (s.config.components[s.selectedItem.type]?.label ?? s.selectedItem.type)
+      : null,
+  );
   return (
     <div className={`of-drawer${query.trim() ? " is-searching" : ""}`}>
       <div className="of-search">
@@ -509,7 +547,14 @@ function DrawerWithSearch({ children }: { children: ReactNode }) {
         />
       </div>
       <p className="of-drawer__hint">
-        Cliquez pour ajouter sous la section sélectionnée, ou glissez à l'endroit voulu de la page.
+        {after ? (
+          <>
+            Un clic ajoute la section après « <strong>{after}</strong> ».
+          </>
+        ) : (
+          "Un clic ajoute la section en bas de la page."
+        )}{" "}
+        Ou glissez-la à l'endroit voulu.
       </p>
       <DrawerQuery.Provider value={fold(query.trim())}>{children}</DrawerQuery.Provider>
     </div>

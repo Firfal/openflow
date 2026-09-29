@@ -77,6 +77,40 @@ export function resolveField(
   return undefined;
 }
 
+/** The list a clicked item belongs to: its concrete path (`items`, `groups[1].items`), field, index. */
+export interface ResolvedList {
+  path: string;
+  field: Extract<Field, { type: "array" }>;
+  index: number;
+}
+
+export function resolveList(
+  fields: Fields | undefined,
+  path: string,
+  index?: string,
+): ResolvedList | undefined {
+  const indices = (index ?? "").split(".").filter(Boolean);
+  let current = fields as Record<string, Field> | undefined;
+  const concrete: string[] = [];
+  let list: ResolvedList | undefined;
+  for (const key of path.split(".").slice(0, -1)) {
+    const field = current?.[key];
+    if (field?.type === "array") {
+      const i = indices.shift();
+      if (i === undefined) return undefined;
+      list = { path: [...concrete, key].join("."), field, index: Number(i) };
+      concrete.push(`${key}[${i}]`);
+      current = field.arrayFields as Record<string, Field>;
+    } else if (field?.type === "object") {
+      concrete.push(key);
+      current = field.objectFields as Record<string, Field>;
+    } else {
+      return undefined;
+    }
+  }
+  return list;
+}
+
 /** Reads `items[1].answer` from an object. */
 export function getDeep(value: unknown, path: string): unknown {
   return path

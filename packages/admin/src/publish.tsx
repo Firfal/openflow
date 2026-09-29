@@ -8,7 +8,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { type Route, useAdmin } from "./context.js";
-import { getAllPages, type ReleaseEntry, subscribeRelease } from "./data.js";
+import { getAllPages, type PageEntry, type ReleaseEntry, subscribeRelease } from "./data.js";
 import { call, errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
 import { describeChanges, pendingChanges } from "./status.js";
@@ -26,6 +26,27 @@ export function adviceTarget(finding: AuditFinding): Route | undefined {
   if (finding.code.startsWith("business-")) return { view: "settings", tab: "business" };
   if (finding.code.startsWith("site-")) return { view: "settings", tab: "site" };
   return undefined;
+}
+
+/** A page or an item changed since the last publication, in the publish dialog. */
+function ChangedPage({ page }: { page: PageEntry }) {
+  const { config } = useAdmin();
+  const collection = page.collection ? config.collections?.[page.collection] : undefined;
+  return (
+    <li>
+      <Icon
+        name={collection ? (collection.icon ?? "layers") : page.slug === "" ? "home" : "fileText"}
+      />
+      <div className="of-list__main">
+        <strong>{page.title}</strong>
+        <span className="of-subtle">
+          {collection ? `${collection.label} · ` : ""}
+          {collection ? "modifié" : "modifiée"} {timeAgo(page.updatedAt)}
+          {page.updatedBy ? ` par ${page.updatedBy}` : ""}
+        </span>
+      </div>
+    </li>
+  );
 }
 
 /**
@@ -49,6 +70,8 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
     .sort((a, b) => (a.publishAt as string).localeCompare(b.publishAt as string));
   const changedPages = pages.filter((page) => !page.publishAt && pageChanged(page, releases));
   const pending = pendingChanges(pages, releases, settings);
+  const visibleChanges = changedPages.filter((page) => page.status === "published");
+  const hiddenChanges = changedPages.filter((page) => page.status !== "published");
   const settingsChanged = pending.settings;
   const changed = pending.total;
   const running = active && (active.status === "queued" || active.status === "building");
@@ -265,7 +288,7 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
             )}
             {scheduledPages.length > 0 && (
               <div>
-                <p className="of-field__label" style={{ marginBottom: 8 }}>
+                <p className="of-field__label of-changes__title">
                   Mise en ligne programmée (restent masquées d'ici là)
                 </p>
                 <ul className="of-changes">
@@ -284,50 +307,41 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
               </div>
             )}
             {changed > 0 ? (
-              <div>
-                <p className="of-field__label" style={{ marginBottom: 8 }}>
-                  Modifié depuis la dernière publication
-                </p>
-                <ul className="of-changes">
-                  {changedPages.map((page) => (
-                    <li key={page.id}>
-                      <Icon
-                        name={
-                          page.collection
-                            ? (config.collections?.[page.collection]?.icon ?? "layers")
-                            : page.slug === ""
-                              ? "home"
-                              : "fileText"
-                        }
-                      />
-                      <div className="of-list__main">
-                        <strong>{page.title}</strong>
-                        <span className="of-subtle">
-                          {page.collection
-                            ? `${config.collections?.[page.collection]?.label ?? "Collection"} · `
-                            : ""}
-                          {page.status === "published"
-                            ? ""
-                            : page.collection
-                              ? "Masqué · "
-                              : "Masquée · "}
-                          {page.collection ? "modifié" : "modifiée"} {timeAgo(page.updatedAt)}
-                          {page.updatedBy ? ` par ${page.updatedBy}` : ""}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                  {settingsChanged && (
-                    <li>
-                      <Icon name="settings" />
-                      <div className="of-list__main">
-                        <strong>Réglages du site</strong>
-                        <span className="of-subtle">modifiés {timeAgo(settings?.updatedAt)}</span>
-                      </div>
-                    </li>
-                  )}
-                </ul>
-              </div>
+              <>
+                {(visibleChanges.length > 0 || settingsChanged) && (
+                  <div>
+                    <p className="of-field__label of-changes__title">Part en ligne</p>
+                    <ul className="of-changes">
+                      {visibleChanges.map((page) => (
+                        <ChangedPage key={page.id} page={page} />
+                      ))}
+                      {settingsChanged && (
+                        <li>
+                          <Icon name="settings" />
+                          <div className="of-list__main">
+                            <strong>Réglages du site</strong>
+                            <span className="of-subtle">
+                              modifiés {timeAgo(settings?.updatedAt)}
+                            </span>
+                          </div>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {hiddenChanges.length > 0 && (
+                  <div>
+                    <p className="of-field__label of-changes__title">
+                      Masqué : reste hors ligne (modifications enregistrées)
+                    </p>
+                    <ul className="of-changes">
+                      {hiddenChanges.map((page) => (
+                        <ChangedPage key={page.id} page={page} />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="of-callout of-callout--success">
                 <Icon name="circleCheck" className="of-icon--first-line" />

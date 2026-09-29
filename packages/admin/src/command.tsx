@@ -40,7 +40,7 @@ export function requestNewItem() {
  * with the keyboard.
  */
 export function CommandPalette() {
-  const { pages, navigate, config } = useAdmin();
+  const { pages, navigate, config, route } = useAdmin();
   const [, setTheme] = useUiTheme();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -129,6 +129,18 @@ export function CommandPalette() {
           setTimeout(requestNewItem, 0);
         }),
       })),
+      ...(route.view === "editor"
+        ? [
+            {
+              id: "page-settings",
+              group: "Actions",
+              label: "Paramètres de la page",
+              icon: "settings" as const,
+              keywords: "adresse référencement google description visibilité masquer programmer",
+              run: () => window.dispatchEvent(new CustomEvent("openflow:page-settings")),
+            },
+          ]
+        : []),
       {
         id: "publish",
         group: "Actions",
@@ -181,7 +193,7 @@ export function CommandPalette() {
       },
     );
     return list;
-  }, [pages, navigate, config, setTheme]);
+  }, [pages, navigate, config, route.view, setTheme]);
 
   const results = useMemo(() => {
     const words = fold(query).split(/\s+/).filter(Boolean);

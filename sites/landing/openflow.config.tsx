@@ -24,7 +24,7 @@ export default defineConfig({
       "Le CMS visuel open source pour les sites Next.js créés avec Claude Code, 100 % Firebase.",
   },
   categories: {
-    header: { title: "En-têtes", components: ["HeroEditor"] },
+    header: { title: "Introductions", components: ["HeroEditor"] },
     story: { title: "Présentation", components: ["Steps", "Showcase", "StandardTerminal"] },
     tech: { title: "Technique", components: ["Architecture", "Comparison", "GetStarted"] },
     closing: { title: "Fin de page", components: ["Faq", "ClosingCta"] },

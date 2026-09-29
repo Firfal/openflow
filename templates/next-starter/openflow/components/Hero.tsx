@@ -24,7 +24,8 @@ export interface HeroProps {
 
 /** Page header: the only section rendering an `h1` (one per page). */
 export const Hero: ComponentConfig<HeroProps> = {
-  label: "En-tête de page",
+  // Not « En-tête » : the site header is something else (« Menu et pied de page »).
+  label: "Introduction de la page",
   fields: {
     eyebrow: { type: "text", label: "Surtitre", contentEditable: true },
     title: { type: "text", label: "Titre principal", contentEditable: true },

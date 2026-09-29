@@ -1,4 +1,10 @@
-import { pageChanged, publishedAt, type SettingsDoc } from "@openflow/core";
+import {
+  formatScheduled,
+  formatTime,
+  pageChanged,
+  publishedAt,
+  type SettingsDoc,
+} from "@openflow/core";
 import type { PageEntry, ReleaseEntry } from "./data.js";
 
 /** What « Publier » would put online, counted the way the owner reads it. */
@@ -46,4 +52,57 @@ export function describeChanges(changes: PendingChanges): string {
   return parts.length > 1
     ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}`
     : (parts[0] ?? "");
+}
+
+/** Publication state of a page, as one status (Webflow's CMS vocabulary, simplified). */
+export function pageStatus(page: PageEntry, releases: ReleaseEntry[]) {
+  if (page.publishAt) {
+    return {
+      tone: "blue" as const,
+      label: `Programmée le ${shortTime(page.publishAt)}`,
+      title: `Mise en ligne toute seule le ${formatScheduled(page.publishAt)}`,
+    };
+  }
+  if (page.status !== "published") {
+    return { tone: "grey" as const, label: "Masquée", title: "N'apparaît pas sur le site" };
+  }
+  if (
+    releases.some(
+      (r) =>
+        (r.status === "queued" || r.status === "building") && r.scheduledPages?.includes(page.id),
+    )
+  ) {
+    return {
+      tone: "blue" as const,
+      label: "Mise en ligne…",
+      title: "Publication programmée en cours",
+    };
+  }
+  // Nothing online yet: the site status says it once, the rows stay quiet.
+  if (!releases.some((release) => release.status === "live")) {
+    return {
+      tone: "grey" as const,
+      label: "Brouillon",
+      title: "Pas encore en ligne : publiez le site pour la mettre en ligne",
+    };
+  }
+  if (pageChanged(page, releases)) {
+    return {
+      tone: "orange" as const,
+      label: "Modifications non publiées",
+      title: "Publiez pour mettre ces modifications en ligne",
+    };
+  }
+  return { tone: "green" as const, label: "En ligne", title: "À jour sur le site" };
+}
+
+/** « 1 oct. à 9 h » (the year when it is not this one). */
+function shortTime(iso: string): string {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "short",
+    ...(date.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}),
+  }).format(date);
+  return `${day} à ${formatTime(`${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`)}`;
 }

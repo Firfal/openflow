@@ -20,7 +20,7 @@ import {
   siteLocales,
   slugToPath,
 } from "@openflow/core";
-import { type Data, Puck } from "@puckeditor/core";
+import { type Data, type OnAction, Puck } from "@puckeditor/core";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAutosave } from "./autosave.js";
@@ -287,6 +287,20 @@ export function EditorView({ pageId, locale }: { pageId: string; locale?: string
   // gets the room (« Ajouter » opens it; a translation adds no section).
   const ui = useMemo(() => editorUi(), []);
 
+  // A deleted section can come back from the notice (as with ⌘Z).
+  const onAction = useCallback<OnAction>(
+    (action, _state, previous) => {
+      if (action.type !== "remove") return;
+      const removed =
+        action.zone === "root:default-zone" ? previous.data.content[action.index] : undefined;
+      const label = removed ? (config.components[removed.type]?.label ?? removed.type) : undefined;
+      notify("info", label ? `Section « ${label} » supprimée.` : "Section supprimée.", {
+        action: { label: "Annuler", run: () => getEditorBridge()?.undo() },
+      });
+    },
+    [config, notify],
+  );
+
   // Changes made by an AI assistant through the MCP server appear live in the editor.
   useEffect(() => {
     if (!page || translating) return;
@@ -330,6 +344,7 @@ export function EditorView({ pageId, locale }: { pageId: string; locale?: string
               config={editorConfig}
               data={initialData!}
               onChange={onChange}
+              onAction={onAction}
               {...(translating ? { permissions: TRANSLATION_PERMISSIONS } : {})}
               dictionary={FR_DICTIONARY}
               headerTitle={page.title}

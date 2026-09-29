@@ -217,7 +217,7 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 - **Panneau de droite** : il indique quoi faire tant que rien n'est sélectionné. Ensuite, il tient **en une
   seule colonne**, comme dans Framer et Figma, de haut en bas :
   1. **Le contenu de l'élément cliqué**, toujours ouvert, et **uniquement ses réglages**, comme dans Webflow.
-     Son en-tête (« Titre principal, dans En-tête de page ») est alors le seul titre du panneau :
+     Son en-tête (« Titre principal, dans Introduction de la page ») est alors le seul titre du panneau :
      - un bouton : son texte et son lien ;
      - un élément de liste (une carte, une question de FAQ…) : les champs de cet élément ;
      - un texte, une image ou une vidéo : ce seul champ.

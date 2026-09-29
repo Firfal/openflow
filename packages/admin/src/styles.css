@@ -4701,3 +4701,60 @@ button.of-style-row__reset:hover {
   color: var(--of-text-3);
   font-size: var(--of-text-sm);
 }
+
+/* ───────────────────────── Lists in the right panel ───────────────────────── */
+
+.of-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.of-item-actions .of-btn {
+  margin-right: auto;
+}
+
+.of-item-actions__delete {
+  --of-icon-color: var(--of-danger);
+}
+
+.of-panel__lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.of-changes__title {
+  margin-bottom: 8px;
+}
+
+/* Puck's list fields: the « + » says what it does; the structure reads like the rest of the panel. */
+.of-root .of-editor [class*="_ArrayField-addButton_"] {
+  --of-icon-color: var(--of-accent-text);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  color: var(--of-accent-text);
+  font-size: var(--of-text-sm);
+  font-weight: 500;
+}
+
+.of-root .of-editor [class*="_ArrayField-addButton_"] svg {
+  width: 16px;
+  height: 16px;
+}
+
+.of-root .of-editor [class*="_ArrayField-addButton_"]::after {
+  content: "Ajouter un élément";
+}
+
+.of-root .of-editor [class*="_Layer-clickable_"] {
+  min-height: 32px;
+  font-size: var(--of-text-sm);
+}
+
+.of-root .of-editor [class*="_Layer--isSelected_"] > [class*="_Layer-inner_"] {
+  background: var(--of-accent-soft);
+  color: var(--of-accent-text);
+}

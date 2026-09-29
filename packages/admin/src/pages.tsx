@@ -1,14 +1,11 @@
 import {
   collectionEntry,
-  formatScheduled,
-  formatTime,
   isValidPublishAt,
   isValidSlug,
   languageName,
   normalizeSlug,
   type PageSeo,
   type PageStatus,
-  pageChanged,
   publishedAt,
   SCHEDULE_STEP_MINUTES,
   siteLocales,
@@ -24,7 +21,6 @@ import {
   deletePage,
   duplicatePage,
   type PageEntry,
-  type ReleaseEntry,
   renameItem,
   subscribeTranslations,
   updatePageMeta,
@@ -33,7 +29,7 @@ import { errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
 import { isLegalPageSlug } from "./legal.js";
 import { PageHead, useSiteUrl } from "./shell.js";
-import { describeChanges, pendingChanges } from "./status.js";
+import { describeChanges, pageStatus, pendingChanges } from "./status.js";
 import { Button, Dialog, EmptyState, FormField, Menu, MOD_KEY, StatusChip, timeAgo } from "./ui.js";
 
 type Visibility = PageStatus | "scheduled";
@@ -404,59 +400,6 @@ function tomorrowAtNine(): string {
   date.setDate(date.getDate() + 1);
   date.setHours(9, 0, 0, 0);
   return date.toISOString();
-}
-
-/** Publication state of a page, as one status (Webflow's CMS vocabulary, simplified). */
-export function pageStatus(page: PageEntry, releases: ReleaseEntry[]) {
-  if (page.publishAt) {
-    return {
-      tone: "blue" as const,
-      label: `Programmée le ${shortTime(page.publishAt)}`,
-      title: `Mise en ligne toute seule le ${formatScheduled(page.publishAt)}`,
-    };
-  }
-  if (page.status !== "published") {
-    return { tone: "grey" as const, label: "Masquée", title: "N'apparaît pas sur le site" };
-  }
-  if (
-    releases.some(
-      (r) =>
-        (r.status === "queued" || r.status === "building") && r.scheduledPages?.includes(page.id),
-    )
-  ) {
-    return {
-      tone: "blue" as const,
-      label: "Mise en ligne…",
-      title: "Publication programmée en cours",
-    };
-  }
-  // Nothing online yet: the site status says it once, the rows stay quiet.
-  if (!releases.some((release) => release.status === "live")) {
-    return {
-      tone: "grey" as const,
-      label: "Brouillon",
-      title: "Pas encore en ligne : publiez le site pour la mettre en ligne",
-    };
-  }
-  if (pageChanged(page, releases)) {
-    return {
-      tone: "orange" as const,
-      label: "Modifications non publiées",
-      title: "Publiez pour mettre ces modifications en ligne",
-    };
-  }
-  return { tone: "green" as const, label: "En ligne", title: "À jour sur le site" };
-}
-
-/** « 1 oct. à 9 h » (the year when it is not this one). */
-function shortTime(iso: string): string {
-  const date = new Date(iso);
-  const day = new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    ...(date.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}),
-  }).format(date);
-  return `${day} à ${formatTime(`${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`)}`;
 }
 
 /**

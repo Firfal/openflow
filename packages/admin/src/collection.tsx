@@ -4,8 +4,9 @@ import { useAdmin } from "./context.js";
 import { deletePage, duplicatePage, type PageEntry } from "./data.js";
 import { errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
-import { LanguageButtons, PageDialog, pageStatus, useTranslated } from "./pages.js";
+import { LanguageButtons, PageDialog, useTranslated } from "./pages.js";
 import { PageHead } from "./shell.js";
+import { pageStatus } from "./status.js";
 import { Button, Dialog, EmptyState, Menu, StatusChip, timeAgo } from "./ui.js";
 
 const fold = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

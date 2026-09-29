@@ -92,7 +92,7 @@ function Cursor() {
  * prefer reduced motion.
  */
 export const HeroEditor: ComponentConfig<HeroEditorProps> = {
-  label: "En-tête avec démo de l'éditeur",
+  label: "Introduction avec démo de l'éditeur",
   fields: {
     title: { type: "text", label: "Titre principal", contentEditable: true },
     subtitle: { type: "textarea", label: "Texte d'introduction", contentEditable: true },
