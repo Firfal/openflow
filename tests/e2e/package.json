@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "test": "node run.mjs",
-    "weight": "node admin-weight.mjs"
+    "weight": "node admin-weight.mjs",
+    "ux-audit": "CMS_AUDIT=1 node run.mjs audit"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@openflow/core": "workspace:*",
     "firebase": "^12.19.0",
