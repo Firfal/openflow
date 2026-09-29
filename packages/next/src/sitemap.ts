@@ -54,7 +54,7 @@ export function createSitemap(config: OpenFlowConfig) {
 
 /**
  * `app/robots.ts`: allows everything except the admin, and points to the sitemap. When the owner
- * refuses AI training (Réglages > Site et référencement), the training crawlers are refused; AI
+ * refuses AI training (« Site et référencement »), the training crawlers are refused; AI
  * search crawlers stay allowed.
  */
 export function createRobots(config: OpenFlowConfig) {

@@ -1,7 +1,7 @@
 import { formatDate } from "./fields.js";
 
 /**
- * The business behind the site (« Fiche établissement », Réglages > Établissement): one source for
+ * The business behind the site (« Fiche établissement », « Établissement »): one source for
  * what Google, AI assistants and visitors ask first — where, when, how to reach it. It feeds the
  * structured data of the home page (`LocalBusiness`), `llms.txt`, the AI tools, and the site's
  * layout (`site.business`, e.g. the footer).

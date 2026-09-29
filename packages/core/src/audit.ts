@@ -136,7 +136,7 @@ export function auditSite(input: {
         code: "site-url",
         severity: "high",
         message: "L'adresse du site n'est pas renseignée.",
-        fix: "Réglages > Site et référencement : « Adresse du site ». Sans elle, pas d'adresses canoniques, de plan du site complet, ni d'annonce IndexNow à Bing et Copilot.",
+        fix: "« Site et référencement » : « Adresse du site ». Sans elle, pas d'adresses canoniques, de plan du site complet, ni d'annonce IndexNow à Bing et Copilot.",
       });
     }
     if (!site.description?.trim()) {
@@ -144,7 +144,7 @@ export function auditSite(input: {
         code: "site-description",
         severity: "medium",
         message: "Le site n'a pas de description par défaut.",
-        fix: "Réglages > Site et référencement : « Description par défaut » (une ou deux phrases sur l'activité et le lieu).",
+        fix: "« Site et référencement » : « Description par défaut » (une ou deux phrases sur l'activité et le lieu).",
       });
     }
     const business = site.business;
@@ -154,7 +154,7 @@ export function auditSite(input: {
         severity: "high",
         message:
           "La fiche établissement est vide : Google et les assistants IA ne connaissent ni vos horaires, ni votre adresse, ni votre téléphone.",
-        fix: "Remplissez Réglages > Établissement, ou demandez à l'IA (outil update_business).",
+        fix: "Remplissez « Établissement », ou demandez à l'IA (outil update_business).",
       });
     } else {
       const place = business.type !== "Organization";
@@ -200,7 +200,7 @@ export function auditSite(input: {
     const shown = new Set(published.flatMap((page) => legalSectionsOf(page.data)));
     const create = (kind: "privacy" | "notice", title: string) =>
       legal
-        ? `Réglages > Informations légales : « Créer la page ». Ou create_page (« ${title} »), puis add_section « ${legal} » avec legalDocument: "${kind}", et publish. Le texte s'écrit tout seul d'après le site.`
+        ? `« Informations légales » : « Créer la page ». Ou create_page (« ${title} »), puis add_section « ${legal} » avec legalDocument: "${kind}", et publish. Le texte s'écrit tout seul d'après le site.`
         : "Le site n'a pas de section « Informations légales » : demandez-la à la personne qui a créé le site.";
     if (!shown.has("privacy")) {
       add({
@@ -230,7 +230,7 @@ export function auditSite(input: {
           severity: "medium",
           page: { id: page.id, title: page.title, path: slugToPath(page.slug) },
           message: `La page « ${page.title} » n'est liée ni depuis le menu ni depuis le bas de page : les visiteurs ne la trouvent pas.`,
-          fix: "Réglages > Contenu commun : ajoutez un lien vers cette page en bas de page (ou update_settings sur le champ de liens du pied de page).",
+          fix: "« Menu et pied de page » : ajoutez un lien vers cette page en bas de page (ou update_settings sur le champ de liens du pied de page).",
         });
       }
     }
@@ -240,7 +240,7 @@ export function auditSite(input: {
         code: "legal-info",
         severity: "medium",
         message: `Informations légales incomplètes : ${gaps.join(", ")}.`,
-        fix: "Réglages > Informations légales, ou update_legal (publisher, registration, director, privacyEmail…).",
+        fix: "« Informations légales », ou update_legal (publisher, registration, director, privacyEmail…).",
       });
     }
   }

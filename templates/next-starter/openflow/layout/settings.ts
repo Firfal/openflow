@@ -7,7 +7,7 @@ import {
 } from "@openflow/core";
 import type { Fields } from "@puckeditor/core";
 
-/** Global content shared by every page, edited in the admin under "Réglages". */
+/** Global content shared by every page, edited in the admin under « Menu et pied de page ». */
 export interface SiteSettingsValues {
   theme: "amber" | "emerald" | "indigo" | "rose" | "slate";
   logo: ImageValue | null;
@@ -28,9 +28,10 @@ const linkItem: Fields<{ label: string; link: LinkValue | null }> = {
 };
 
 export const settingsFields: Fields<SiteSettingsValues> = {
+  // Shown in « Couleurs et polices » (`settings.appearance` in openflow.config.tsx).
   theme: {
     type: "select",
-    label: "Couleur principale du site",
+    label: "Palette de couleurs",
     options: [
       { label: "Ambre", value: "amber" },
       { label: "Émeraude", value: "emerald" },
@@ -50,7 +51,7 @@ export const settingsFields: Fields<SiteSettingsValues> = {
   headerCtaLabel: { type: "text", label: "Bouton de l'en-tête (texte)" },
   headerCtaLink: linkField({ label: "Bouton de l'en-tête (lien)" }),
   footerText: { type: "textarea", label: "Présentation (pied de page)" },
-  // Phone, e-mail, address and hours come from Réglages > Établissement (`site.business`).
+  // Phone, e-mail, address and hours come from « Établissement » (`site.business`).
   hoursLabel: { type: "text", label: "Titre des horaires (pied de page)" },
   mapLabel: { type: "text", label: "Lien vers le plan (texte)" },
   socialLinks: {

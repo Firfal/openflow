@@ -203,6 +203,29 @@ describe("validation", () => {
     expect(rules.filter((rule) => rule === "OF-203").length).toBe(2);
   });
 
+  it("only accepts settings fields as appearance settings (OF-203)", () => {
+    const withPalette = (appearance: string[]) =>
+      defineConfig({
+        site: { name: "Site" },
+        components: {
+          Hero: {
+            fields: { title: { type: "text" } },
+            defaultProps: { title: "Titre" },
+            render: () => null as never,
+          },
+        },
+        settings: {
+          fields: { palette: { type: "text" } },
+          defaultProps: { palette: "amber" },
+          appearance,
+        },
+      });
+    expect(validateConfig(withPalette(["palette"])).filter((i) => i.rule === "OF-203")).toEqual([]);
+    const issues = validateConfig(withPalette(["colour"])).filter((i) => i.rule === "OF-203");
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.message).toContain("« colour »");
+  });
+
   it("validates page data against fields (OF-201)", () => {
     const issues = validatePageData(
       {

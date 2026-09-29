@@ -47,7 +47,7 @@ export default defineConfig({
     defaultProps: settingsDefaults,
   },
   layout: SiteLayout,
-  // Tokens of app/globals.css the owner can change (Réglages > Thème).
+  // Tokens of app/globals.css the owner can change (« Couleurs et polices »).
   theme: {
     colors: [
       { token: "ink", label: "Encre (fonds sombres, texte)", value: "#0f1e33" },

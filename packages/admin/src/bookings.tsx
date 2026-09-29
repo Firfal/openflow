@@ -111,7 +111,7 @@ export function BookingsView() {
           <Button
             icon="clock"
             onClick={() => navigate({ view: "settings", tab: "business" })}
-            title="Réglages > Établissement"
+            title="Établissement : horaires et fermetures"
           >
             Horaires d'ouverture
           </Button>

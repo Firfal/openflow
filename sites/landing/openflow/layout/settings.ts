@@ -7,7 +7,7 @@ import {
 } from "@openflow/core";
 import type { Fields } from "@puckeditor/core";
 
-/** Global content shared by every page, edited in the admin under "Réglages". */
+/** Global content shared by every page, edited in the admin under « Menu et pied de page ». */
 export interface SiteSettingsValues {
   /** Uploaded logo; the drawn OpenFlow mark is used when empty. */
   logo: ImageValue | null;

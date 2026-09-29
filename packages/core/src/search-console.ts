@@ -1,6 +1,6 @@
 /**
  * Google Search Console. The owner proves the site is theirs with the meta tag Search Console gives
- * (Réglages > Site et référencement), then adds the site's service account as a user of the
+ * (« Site et référencement »), then adds the site's service account as a user of the
  * property: `cmsSearchStats` reads the searches that show the site (clicks, impressions, position,
  * queries, pages) with it, and the admin shows them in « Statistiques ». Bing Webmaster Tools, which
  * imports Search Console, takes its own tag too.
@@ -158,7 +158,7 @@ export function summarizeSearch(
 /** What `cmsSearchStats` answers. */
 export type SearchStatsResult =
   | { status: "ok"; stats: SearchStats }
-  /** The site's address is not filled in (Réglages > Site et référencement). */
+  /** The site's address is not filled in (« Site et référencement »). */
   | { status: "no-url" }
   /** The service account cannot read the site's property yet: the owner adds it as a user. */
   | { status: "not-connected"; serviceAccount?: string; properties: number }

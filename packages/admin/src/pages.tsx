@@ -32,6 +32,7 @@ import {
 } from "./data.js";
 import { errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
+import { isLegalPageSlug } from "./legal.js";
 import { PageHead, useSiteUrl } from "./shell.js";
 import { describeChanges, pendingChanges } from "./status.js";
 import { Button, Dialog, EmptyState, FormField, Menu, MOD_KEY, StatusChip, timeAgo } from "./ui.js";
@@ -459,6 +460,42 @@ function shortTime(iso: string): string {
   return `${day} à ${formatTime(`${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`)}`;
 }
 
+/**
+ * What else a page is tied to, as a way there: the list of a collection (its items live in their own
+ * view), or a legal page whose text OpenFlow writes from « Informations légales ».
+ */
+function PageRole({ page }: { page: PageEntry }) {
+  const { config, pages, navigate } = useAdmin();
+  const listed = Object.entries(config.collections ?? {}).find(
+    ([, collection]) => collection.path === page.slug,
+  );
+  if (listed) {
+    const [name, collection] = listed;
+    const count = pages.filter((p) => p.collection === name).length;
+    return (
+      <button
+        type="button"
+        className="of-link-btn of-link-btn--inline"
+        onClick={() => navigate({ view: "collection", collection: name })}
+      >
+        Liste des {collection.label.toLowerCase()} · {count} →
+      </button>
+    );
+  }
+  if (isLegalPageSlug(page.slug)) {
+    return (
+      <button
+        type="button"
+        className="of-link-btn of-link-btn--inline"
+        onClick={() => navigate({ view: "settings", tab: "legal" })}
+      >
+        Texte écrit d'après « Informations légales » →
+      </button>
+    );
+  }
+  return null;
+}
+
 /** Is the live site up to date? (last publication, pending changes). */
 function SiteStatus() {
   const { pages, releases, settings } = useAdmin();
@@ -642,6 +679,7 @@ export function PagesView() {
                     <span className="of-list__meta">
                       <span className="of-mono">{path}</span>
                       <span>Modifiée {timeAgo(page.updatedAt)}</span>
+                      <PageRole page={page} />
                     </span>
                   </div>
                   <span title={status.title}>

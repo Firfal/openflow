@@ -1,8 +1,8 @@
-import { bookingComponentOf } from "@openflow/core";
 import { signOut } from "firebase/auth";
-import { type ReactNode, useEffect } from "react";
-import { type SettingsTab, useAdmin } from "./context.js";
+import { type ReactNode, useEffect, useMemo } from "react";
+import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
+import { isCurrent, type NavEntry, type NavGroup, navEntries } from "./nav.js";
 import { PublishControl } from "./publish.js";
 import { Menu, MOD_KEY, SiteMark } from "./ui.js";
 import { type UiTheme, useUiTheme } from "./ui-theme.js";
@@ -80,14 +80,6 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
   );
 }
 
-const SETTINGS: Array<[SettingsTab, string]> = [
-  ["global", "Contenu commun"],
-  ["theme", "Thème"],
-  ["site", "Site et référencement"],
-  ["business", "Établissement"],
-  ["legal", "Informations légales"],
-];
-
 function NavItem({
   icon,
   label,
@@ -115,15 +107,39 @@ function NavItem({
   );
 }
 
-/** Left navigation of the dashboard (pages, media, settings, history) and the owner menu. */
-export function Sidebar() {
-  const { route, navigate, settings, config, agents, messages } = useAdmin();
+const GROUPS: NavGroup[] = ["Contenu", "Activité", "Réglages"];
+
+/** What an entry shows after its label: unread messages, a connected AI. */
+function useNavBadges(): (entry: NavEntry) => ReactNode {
+  const { agents, messages } = useAdmin();
   const unread = messages.filter((m) => !m.read && !m.spam).length;
+  return (entry) => {
+    if (entry.id === "messages" && unread > 0) {
+      return (
+        <span className="of-nav__count">
+          {unread}
+          <span className="of-sr-only"> non lu{unread > 1 ? "s" : ""}</span>
+        </span>
+      );
+    }
+    if (entry.id === "assistant" && agents.length > 0) {
+      return <span className="of-nav__dot" title="Une IA est connectée" aria-hidden />;
+    }
+    return null;
+  };
+}
+
+/**
+ * Left navigation of the dashboard: every place in three groups (their titles are plain text), the
+ * settings as direct entries, and the owner menu. On a phone, a tab bar replaces it (`MobileTabs`).
+ */
+export function Sidebar() {
+  const { route, navigate, settings, config } = useAdmin();
+  const entries = useMemo(() => navEntries(config), [config]);
+  const badge = useNavBadges();
   const siteName = settings?.site?.name ?? config.site.name;
   const siteUrl = useSiteUrl();
   const host = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const inSettings = route.view === "settings";
-  const tab = inSettings ? (route.tab ?? "global") : undefined;
   return (
     <aside className="of-sidebar" aria-label="Administration">
       <div className="of-site">
@@ -132,7 +148,7 @@ export function Sidebar() {
           <span className="of-site__name">{siteName}</span>
           <a className="of-site__url" href={siteUrl} target="_blank" rel="noreferrer">
             {host}
-            <Icon name="externalLink" size={11} />
+            <Icon name="externalLink" size={12} />
           </a>
         </div>
       </div>
@@ -144,96 +160,84 @@ export function Sidebar() {
             {MOD_KEY} K
           </span>
         </button>
-        <p className="of-nav__title">Site</p>
-        <NavItem
-          icon="fileText"
-          label="Pages"
-          current={route.view === "pages"}
-          onClick={() => navigate({ view: "pages" })}
-        />
-        {Object.entries(config.collections ?? {}).map(([name, collection]) => (
-          <NavItem
-            key={name}
-            icon={collection.icon ?? "layers"}
-            label={collection.label}
-            current={route.view === "collection" && route.collection === name}
-            onClick={() => navigate({ view: "collection", collection: name })}
-          />
-        ))}
-        <NavItem
-          icon="image"
-          label="Médias"
-          current={route.view === "media"}
-          onClick={() => navigate({ view: "media" })}
-        />
-        <NavItem
-          icon="inbox"
-          label="Messages"
-          current={route.view === "messages"}
-          onClick={() => navigate({ view: "messages" })}
-        >
-          {unread > 0 && (
-            <span className="of-nav__count">
-              {unread}
-              <span className="of-sr-only"> non lu{unread > 1 ? "s" : ""}</span>
-            </span>
-          )}
-        </NavItem>
-        {bookingComponentOf(config.components) && (
-          <NavItem
-            icon="calendarCheck"
-            label="Rendez-vous"
-            current={route.view === "bookings"}
-            onClick={() => navigate({ view: "bookings" })}
-          />
-        )}
-        <NavItem
-          icon="chart"
-          label="Statistiques"
-          current={route.view === "stats"}
-          onClick={() => navigate({ view: "stats" })}
-        />
-        <NavItem
-          icon="sparkles"
-          label="Assistant IA"
-          current={route.view === "assistant"}
-          onClick={() => navigate({ view: "assistant" })}
-        >
-          {agents.length > 0 && (
-            <span className="of-nav__dot" title="Une IA est connectée" aria-hidden />
-          )}
-        </NavItem>
-        <NavItem
-          icon="settings"
-          label="Réglages"
-          current={inSettings && !route.tab}
-          onClick={() => navigate({ view: "settings" })}
-        />
-        {inSettings && (
-          <div className="of-nav__sub">
-            {SETTINGS.filter(([value]) => value !== "theme" || config.theme).map(
-              ([value, label]) => (
+        {GROUPS.map((group) => (
+          <div key={group} className="of-nav__group">
+            <p className="of-nav__title">{group}</p>
+            {entries
+              .filter((entry) => entry.group === group)
+              .map((entry) => (
                 <NavItem
-                  key={value}
-                  label={label}
-                  current={tab === value}
-                  onClick={() => navigate({ view: "settings", tab: value })}
-                />
-              ),
-            )}
+                  key={entry.id}
+                  icon={entry.icon}
+                  label={entry.label}
+                  current={isCurrent(entry, route)}
+                  onClick={() => navigate(entry.route)}
+                >
+                  {badge(entry)}
+                </NavItem>
+              ))}
           </div>
-        )}
-        <NavItem
-          icon="history"
-          label="Historique"
-          current={route.view === "history"}
-          onClick={() => navigate({ view: "history" })}
-        />
+        ))}
       </nav>
       <div className="of-sidebar__footer">
         <UserMenu />
       </div>
     </aside>
+  );
+}
+
+/** Tabs of a phone: the most used places with their names, and « Plus » for all the others. */
+const MOBILE_TABS = ["pages", "messages", "stats"];
+
+export function MobileTabs() {
+  const { route, navigate, config } = useAdmin();
+  const entries = useMemo(() => navEntries(config), [config]);
+  const badge = useNavBadges();
+  const tabs = entries.filter((entry) => MOBILE_TABS.includes(entry.id));
+  const others = entries.filter((entry) => !MOBILE_TABS.includes(entry.id));
+  const inOthers = others.some((entry) => isCurrent(entry, route));
+  return (
+    <nav className="of-tabbar" aria-label="Onglets">
+      {tabs.map((entry) => (
+        <button
+          key={entry.id}
+          type="button"
+          className="of-tabbar__item"
+          aria-current={isCurrent(entry, route) ? "page" : undefined}
+          onClick={() => navigate(entry.route)}
+        >
+          <Icon name={entry.icon} />
+          <span>{entry.label}</span>
+          {badge(entry)}
+        </button>
+      ))}
+      <Menu
+        label="Toutes les rubriques"
+        direction="up"
+        items={GROUPS.flatMap((group) => [
+          { heading: group },
+          ...entries
+            .filter((entry) => entry.group === group)
+            .map((entry) => ({
+              label: entry.label,
+              icon: entry.icon,
+              checked: isCurrent(entry, route),
+              onSelect: () => navigate(entry.route),
+            })),
+        ])}
+        trigger={(props) => (
+          <button
+            type="button"
+            className="of-tabbar__item"
+            aria-current={inOthers ? "page" : undefined}
+            {...props}
+          >
+            <Icon name="menu" />
+            <span>Plus</span>
+          </button>
+        )}
+      />
+    </nav>
   );
 }
 

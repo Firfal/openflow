@@ -3,12 +3,19 @@ import type { ComponentType, ReactElement, ReactNode } from "react";
 import type { BusinessInfo } from "./business.js";
 
 /**
- * Global, non-page content edited in the admin under "Réglages" (navigation, footer, contact…).
+ * Global, non-page content edited in the admin under « Menu et pied de page » (navigation, footer, contact…).
  * Values are available to the site layout via the snapshot (`snapshot.settings.values`).
  */
 export interface SettingsConfig<Values extends object = Record<string, any>> {
   fields: Fields<Values & Record<string, any>> | Record<string, unknown>;
   defaultProps: Values;
+  /**
+   * Keys of `fields` about the look of the whole site (a colour palette…). When the config has a
+   * `theme`, the admin shows them in « Couleurs et polices », with the theme's colours and fonts,
+   * instead of « Menu et pied de page »: one place for the site's colours. Stored in the same
+   * settings values either way.
+   */
+  appearance?: Array<keyof Values & string>;
   /**
    * Optional preview shown in the admin while editing settings. Deprecated: declare `layout` in
    * the config instead, the admin then previews the real header and footer.
@@ -35,7 +42,7 @@ export interface SiteDefaults {
 export interface LayoutProps<Values extends object = Record<string, any>> {
   /** Global settings values (defaults merged with the owner's values). */
   settings: Values;
-  /** The site's identity, and its business profile (Réglages > Établissement) when filled. */
+  /** The site's identity, and its business profile (« Établissement ») when filled. */
   site: { name: string; lang?: string; url?: string; business?: BusinessInfo };
   /** The page sections. */
   children: ReactNode;
@@ -50,7 +57,7 @@ export interface LayoutProps<Values extends object = Record<string, any>> {
   homeHref?: string;
 }
 
-/** A theme token editable by the owner (Réglages > Thème). */
+/** A theme token editable by the owner (« Couleurs et polices »). */
 export interface ThemeToken {
   /** Token name: `ink` for the colour variable `--color-ink`, `display` for `--font-display`. */
   token: string;
@@ -157,7 +164,7 @@ export type OpenFlowConfig = Config & {
    * (`createOpenFlowLayout`) and by the admin, so the owner edits pages in their real frame.
    */
   layout?: ComponentType<LayoutProps<any>>;
-  /** Theme tokens (colours, fonts) the owner can change in Réglages > Thème. */
+  /** Theme tokens (colours, fonts) the owner can change in « Couleurs et polices ». */
   theme?: ThemeConfig;
   editor?: EditorOptions;
   /** Collections, by name (stable, stored with each item): `{ actualites: { … } }`. */

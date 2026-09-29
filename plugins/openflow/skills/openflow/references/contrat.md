@@ -132,8 +132,11 @@ Le détail de chaque règle se trouve dans `docs/rules/OF-xxx.md`.
   `createOpenFlowLayout(config)`, et l'admin l'affiche autour de la page éditée : le propriétaire voit sa page
   dans son vrai cadre, avec la couleur du thème. Pas de `useState` ni d'accès au navigateur dans `SiteLayout`.
 - **Réglages globaux.** Ils arrivent dans `SiteLayout` par la prop `settings`. Ailleurs côté serveur :
-  `getSettings(config)` de `@openflow/next`.
-- **Coordonnées et horaires : `site.business`.** Le propriétaire les renseigne dans Réglages > Établissement
+  `getSettings(config)` de `@openflow/next`. Le propriétaire les modifie dans « Menu et pied de page ». Un
+  réglage de l'apparence de tout le site (une palette de couleurs…) se déclare dans
+  `settings.appearance: ["palette"]` : il s'affiche alors dans « Couleurs et polices », à côté des couleurs
+  du thème (`theme`), et plus dans « Menu et pied de page ». Un seul endroit pour les couleurs.
+- **Coordonnées et horaires : `site.business`.** Le propriétaire les renseigne dans « Établissement »
   (Google et les IA les lisent aussi). Ne crée pas de champs « téléphone », « adresse » ou « horaires » dans
   `settings` : affiche `site.business` dans `SiteLayout` avec `formatAddress`, `mapUrl`,
   `formatOpeningHours` et `formatClosure` de `@openflow/core` (les libellés autour, comme « Horaires »,
@@ -285,7 +288,7 @@ render: ({ legalDocument, extra, puck }) => {
 ## Prise de rendez-vous
 
 Une section de rendez-vous porte les prestations et les règles ; les créneaux suivent les horaires et les
-fermetures de la fiche établissement (Réglages > Établissement). Les rendez-vous arrivent dans l'admin
+fermetures de la fiche établissement (« Établissement »). Les rendez-vous arrivent dans l'admin
 (« Rendez-vous ») par la réécriture `/cms/booking` de `firebase.json` (règle OF-306).
 
 ```tsx
@@ -341,7 +344,7 @@ le CSS lui-même : tu n'as rien à coder, mais la section doit s'y prêter.
 Le propriétaire peut aussi confier ces modifications à une IA (serveur MCP et WebMCP) : écris des libellés de
 champs clairs, car l'IA s'en sert pour comprendre les sections.
 
-Le **thème** expose au propriétaire les variables de `app/globals.css` (Réglages > Thème) :
+Le **thème** expose au propriétaire les variables de `app/globals.css` (« Couleurs et polices ») :
 
 ```tsx
 theme: {

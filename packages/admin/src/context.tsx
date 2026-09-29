@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import type { AgentEntry, MessageEntry, PageEntry, ReleaseEntry } from "./data.js";
 import type { Services } from "./firebase.js";
 
-export type SettingsTab = "global" | "theme" | "site" | "business" | "legal";
+export type SettingsTab = "global" | "theme" | "site" | "business" | "legal" | "languages";
 
 export type Route =
   | { view: "pages" }
@@ -22,7 +22,7 @@ export type Route =
   | { view: "connect"; request: string }
   | { view: "history" };
 
-const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "business", "legal"];
+const SETTINGS_TABS: SettingsTab[] = ["global", "theme", "site", "business", "legal", "languages"];
 
 /** What a notice can offer besides its text (« Annuler », « Ouvrir »…). */
 export interface NoticeOptions {
@@ -85,7 +85,7 @@ function readRoute(): Route {
   const collection = params.get("c");
   if (view === "collection" && collection) return { view: "collection", collection };
   if (view === "connect" && request) return { view: "connect", request };
-  // Former address of the assistant page (Réglages > Assistant IA).
+  // Former address of the assistant page (a settings tab once).
   if (view === "assistant" || (view === "settings" && tab === "assistant")) {
     return { view: "assistant" };
   }

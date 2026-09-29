@@ -86,7 +86,7 @@ function itemJsonLd(
   const image = absoluteUrl(site, shareImageUrl(entry.image) ?? page.seo.ogImage ?? "");
   const description = page.seo.description || entry.description;
   const home = absoluteUrl(site, "/");
-  // The business of Réglages > Établissement (its JSON-LD is on the home page), or the site.
+  // The business of « Établissement » (its JSON-LD is on the home page), or the site.
   const organization =
     site.business && home
       ? { "@id": `${home}#business` }
@@ -180,7 +180,7 @@ export function pageJsonLd(
   const out: JsonLd[] = [];
   const url = absoluteUrl(site, slugToPath(page.slug));
   if (page.slug === "") {
-    // The business behind the site (Réglages > Établissement): contact, address, hours, closures.
+    // The business behind the site (« Établissement »): contact, address, hours, closures.
     const booking = bookingPageOf(snapshot.pages);
     const business = businessJsonLd(site, {
       today: snapshot.createdAt.slice(0, 10),
@@ -315,7 +315,7 @@ export function buildRssFeed(snapshot: Snapshot, config: OpenFlowConfig, limit =
 
 /**
  * Crawlers that collect content to train AI models: refused in robots.txt when the owner chooses so
- * (`site.aiTraining: "block"`, Réglages > Site et référencement). Names from each operator's docs.
+ * (`site.aiTraining: "block"`, « Site et référencement »). Names from each operator's docs.
  */
 export const AI_TRAINING_BOTS = [
   "GPTBot",

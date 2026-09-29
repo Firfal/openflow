@@ -21,7 +21,7 @@ export interface SearchDeps {
   request<T>(url: string, body?: unknown): Promise<T>;
   /** E-mail of the service account the owner adds in Search Console. */
   serviceAccount(): Promise<string | undefined>;
-  /** The site's address (Réglages > Site et référencement). */
+  /** The site's address (« Site et référencement »). */
   siteUrl: string | undefined;
   /** `YYYY-MM-DD`. */
   today: string;

@@ -2,6 +2,7 @@ import { applySettingsTranslation, buildPageCss, buildThemeCss, slugToPath } fro
 import { createUsePuck, type Fields } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushAllAutosaves } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { type Focus, resolveField, resolveGroup, useFocus } from "./focus.js";
 import { useTranslation } from "./translate.js";
@@ -15,7 +16,7 @@ const PUCK_UI = "[data-puck-dropzone], [data-puck-overlay], [data-puck-overlay-p
  * - every `<details>` inside a section stays open, so collapsed content (FAQ answers…) is visible
  *   and editable in place;
  * - the site frame (header, footer) is inert: its links would navigate the preview, and its
- *   content is edited in Réglages.
+ *   content is edited in « Menu et pied de page », which the notice opens.
  */
 /** Styles injected in the canvas: clickable elements and the selected one. */
 const CANVAS_CSS = `
@@ -61,7 +62,7 @@ function linkAt(section: Element, target: Element, x: number, y: number): Elemen
 }
 
 function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
-  const { notify, pages } = useAdmin();
+  const { notify, pages, navigate } = useAdmin();
   const { focus, setFocus } = useFocus();
   const lastNotice = useRef(0);
   // Addresses of the collections' items: a click on a card of a list opens the way to its page.
@@ -198,7 +199,15 @@ function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
         lastNotice.current = Date.now();
         notify(
           "info",
-          "L'en-tête et le pied de page sont communs à toutes les pages : modifiez-les dans Réglages.",
+          "L'en-tête et le pied de page sont communs à toutes les pages : modifiez-les dans « Menu et pied de page ».",
+          {
+            action: {
+              label: "Ouvrir",
+              run: () => {
+                void flushAllAutosaves().then(() => navigate({ view: "settings", tab: "global" }));
+              },
+            },
+          },
         );
       }
     };
@@ -207,7 +216,7 @@ function useCanvasBehaviour(doc: Document | undefined, notice: boolean) {
       observer.disconnect();
       doc.removeEventListener("click", onClick, true);
     };
-  }, [doc, notify, notice]);
+  }, [doc, notify, notice, navigate]);
 }
 
 type FrameProps = { children: ReactNode; document?: Document };

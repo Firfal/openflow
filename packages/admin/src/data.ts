@@ -37,6 +37,7 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  FieldPath,
   type Firestore,
   getDoc,
   getDocs,
@@ -308,6 +309,30 @@ export async function saveSettings(
   );
 }
 
+/** Some settings values (those shown in « Couleurs et polices »), keeping the others. */
+export async function saveSettingValues(
+  db: Firestore,
+  values: Record<string, unknown>,
+  by?: string,
+) {
+  const keys = Object.keys(values);
+  if (keys.length === 0) return;
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    { values: JSON.parse(JSON.stringify(values)), updatedAt: now(), updatedBy: by ?? null },
+    { mergeFields: [...keys.map((key) => new FieldPath("values", key)), "updatedAt", "updatedBy"] },
+  );
+}
+
+/** Main language and other languages of the site (`site.lang`, `site.locales`), keeping the rest. */
+export async function saveLanguages(db: Firestore, lang: string, locales: string[], by?: string) {
+  await setDoc(
+    doc(db, COLLECTIONS.site, DOCS.settings),
+    { site: { lang, locales }, updatedAt: now(), updatedBy: by ?? null },
+    { mergeFields: ["site.lang", "site.locales", "updatedAt", "updatedBy"] },
+  );
+}
+
 /** Replaces the business profile (`site.business`), keeping the rest of `site`. */
 export async function saveBusiness(db: Firestore, business: BusinessInfo | null, by?: string) {
   await setDoc(
@@ -391,7 +416,7 @@ export function subscribeTranslations(
   );
 }
 
-/** The common content in one language (Réglages > Contenu commun, in that language). */
+/** The common content in one language (« Menu et pied de page », in that language). */
 export async function saveSettingsTranslation(
   db: Firestore,
   locale: string,

@@ -1847,13 +1847,13 @@ tool({
     if (result.status === "no-url") {
       return {
         connected: false,
-        todo: "Renseignez l'adresse du site (Réglages > Site et référencement), puis reliez Search Console.",
+        todo: "Renseignez l'adresse du site (« Site et référencement »), puis reliez Search Console.",
       };
     }
     if (result.status === "not-connected") {
       return {
         connected: false,
-        todo: `Dans Google Search Console, le propriétaire ajoute le site (validation : la balise se colle dans Réglages > Site et référencement), puis ajoute l'utilisateur ${result.serviceAccount ?? "« compte de service du site » (affiché dans Statistiques)"} avec l'autorisation « Restreint ».`,
+        todo: `Dans Google Search Console, le propriétaire ajoute le site (validation : la balise se colle dans « Site et référencement »), puis ajoute l'utilisateur ${result.serviceAccount ?? "« compte de service du site » (affiché dans Statistiques)"} avec l'autorisation « Restreint ».`,
       };
     }
     throw new AgentError(`Search Console n'a pas répondu : ${result.message}`);
@@ -1969,7 +1969,7 @@ tool({
       })),
       note:
         summary.views === 0
-          ? "Aucune visite mesurée sur la période : le site n'est peut-être pas encore publié, ou la mesure est désactivée (Réglages > Site et référencement)."
+          ? "Aucune visite mesurée sur la période : le site n'est peut-être pas encore publié, ou la mesure est désactivée (« Site et référencement »)."
           : "Une visite commence quand un visiteur arrive d'ailleurs ; sans cookie, un même visiteur revenu deux fois compte deux visites.",
     };
   },

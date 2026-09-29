@@ -164,7 +164,7 @@ function DayHours({
 }
 
 /**
- * « Établissement » (Réglages): the business profile read by Google, AI assistants and the site —
+ * « Établissement »: the business profile read by Google, AI assistants and the site —
  * activity, contact, address, weekly hours, exceptional closures, profiles elsewhere.
  */
 export function BusinessForm() {

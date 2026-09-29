@@ -1,19 +1,20 @@
-// The Puck-based settings editors (« Contenu commun », « Thème »), loaded with the editor.
+// The Puck-based settings editors (« Menu et pied de page », « Couleurs et polices »), loaded with the editor.
 import "@puckeditor/core/no-external.css";
 import {
   applyDefaults,
   buildPageCss,
+  type OpenFlowConfig,
   prepareRenderConfig,
   sanitizeTheme,
   siteLocales,
   type ThemeConfig,
 } from "@openflow/core";
 import { type Config, type CustomField, type Data, type Fields, Puck } from "@puckeditor/core";
-import { createElement, useCallback, useEffect, useId, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useAutosave } from "./autosave.js";
 import { ThemeStyles } from "./canvas.js";
 import { useAdmin } from "./context.js";
-import { getPage, saveSettings, saveTheme } from "./data.js";
+import { getPage, saveSettings, saveSettingValues, saveTheme } from "./data.js";
 import {
   EDITOR_IFRAME,
   EDITOR_VIEWPORTS,
@@ -30,6 +31,26 @@ import { CommonTranslation } from "./translate.js";
 import { EmptyState } from "./ui.js";
 
 const SETTINGS_UI = editorUi({ leftSideBarVisible: false });
+
+/**
+ * Settings about the look of the whole site (`config.settings.appearance`, a colour palette…): shown
+ * in « Couleurs et polices » when the site has a theme, so its colours are set in one place.
+ */
+function appearanceKeys(config: OpenFlowConfig): string[] {
+  return config.theme ? (config.settings?.appearance ?? []) : [];
+}
+
+function pick<T>(record: Record<string, T> | undefined, keys: string[]): Record<string, T> {
+  return Object.fromEntries(Object.entries(record ?? {}).filter(([key]) => keys.includes(key)));
+}
+
+function omit<T>(record: Record<string, T> | undefined, keys: string[]): Record<string, T> {
+  return Object.fromEntries(Object.entries(record ?? {}).filter(([key]) => !keys.includes(key)));
+}
+
+/** The right panel is titled after the view, not « Page » (Puck's name for the root fields). */
+const MENU_DICTIONARY = { ...FR_DICTIONARY, "label-page": "Menu et pied de page" };
+const THEME_DICTIONARY = { ...FR_DICTIONARY, "label-page": "Couleurs et polices" };
 
 /** Global content (navigation, footer…) edited with Puck's root fields, with an optional preview. */
 export function GlobalContent() {
@@ -57,21 +78,30 @@ function GlobalContentEditor({
   const site = settings?.site ?? config.site;
   const settingsConfig = config.settings;
   const Layout = config.layout;
+  const appearance = useMemo(() => appearanceKeys(config), [config]);
+  // The appearance values are edited in « Couleurs et polices »: saved as they are now.
+  const latest = useRef(settings);
+  latest.current = settings;
   const save = useCallback(
     (data: Data) =>
       saveSettings(
         services.db,
-        { values: (data.root.props ?? {}) as Record<string, unknown> },
+        {
+          values: {
+            ...pick(latest.current?.values, appearance),
+            ...omit(data.root.props as Record<string, unknown>, appearance),
+          },
+        },
         user.email ?? undefined,
       ),
-    [services.db, user.email],
+    [services.db, user.email, appearance],
   );
   const autosave = useAutosave(save);
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
     () => ({
       kind: "settings",
-      title: "Contenu commun",
+      title: "Menu et pied de page",
       saveState: autosave.state,
       saveError: autosave.error,
       retry: () => void flush(),
@@ -95,7 +125,9 @@ function GlobalContentEditor({
     () => ({
       components: {},
       root: {
-        fields: mapFields(settingsConfig?.fields as Fields | undefined),
+        fields: mapFields(
+          omit(settingsConfig?.fields as Record<string, unknown> | undefined, appearance) as Fields,
+        ),
         defaultProps: settingsConfig?.defaultProps,
         render: ({ children: _children, puck: _puck, editMode: _editMode, ...values }: any) => {
           if (settingsConfig?.preview) {
@@ -119,7 +151,7 @@ function GlobalContentEditor({
         },
       },
     }),
-    [settingsConfig, stableSite, Layout],
+    [settingsConfig, stableSite, Layout, appearance],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: computed once, Puck owns the state afterwards.
   const data = useMemo<Data>(
@@ -132,7 +164,7 @@ function GlobalContentEditor({
   if (!settingsConfig) {
     return (
       <>
-        <PageHead title="Contenu commun" />
+        <PageHead title="Menu et pied de page" />
         <div className="of-view of-view--narrow">
           <EmptyState icon="panelTop" title="Pas de contenu commun">
             <p>Ce site ne déclare pas de contenu partagé entre les pages (menu, pied de page…).</p>
@@ -148,8 +180,8 @@ function GlobalContentEditor({
           config={puckConfig}
           data={data}
           onChange={autosave.schedule}
-          dictionary={FR_DICTIONARY}
-          headerTitle="Contenu commun à toutes les pages"
+          dictionary={MENU_DICTIONARY}
+          headerTitle="Menu et pied de page, communs à toutes les pages"
           height="100dvh"
           iframe={EDITOR_IFRAME}
           ui={SETTINGS_UI}
@@ -237,7 +269,13 @@ function themeFields(theme: ThemeConfig): Fields {
 }
 
 /** Home page (or first page) of the site with the theme being edited: a live preview. */
-function ThemePreview({ values }: { values: Record<string, unknown> }) {
+function ThemePreview({
+  values,
+  appearance,
+}: {
+  values: Record<string, unknown>;
+  appearance: Record<string, unknown>;
+}) {
   const { config, settings, pages, services } = useAdmin();
   const renderConfig = useMemo(() => prepareRenderConfig(config), [config]);
   const pageId = (pages.find((p) => p.slug === "") ?? pages[0])?.id;
@@ -277,7 +315,11 @@ function ThemePreview({ values }: { values: Record<string, unknown> }) {
       {css && <style>{css}</style>}
       {Layout ? (
         <Layout
-          settings={{ ...(config.settings?.defaultProps ?? {}), ...(settings?.values ?? {}) }}
+          settings={{
+            ...(config.settings?.defaultProps ?? {}),
+            ...(settings?.values ?? {}),
+            ...appearance,
+          }}
           site={{ ...config.site, ...(settings?.site ?? {}) }}
         >
           {content}
@@ -289,20 +331,26 @@ function ThemePreview({ values }: { values: Record<string, unknown> }) {
   );
 }
 
-/** Réglages > Thème: colours and fonts of the site (`config.theme`), with a live preview. */
+/** « Couleurs et polices »: colours and fonts of the site (`config.theme`), with a live preview. */
 export function ThemeEditor({ theme }: { theme: ThemeConfig }) {
-  const { services, settings, user } = useAdmin();
+  const { config, services, settings, user } = useAdmin();
+  const appearance = useMemo(() => appearanceKeys(config), [config]);
   const save = useCallback(
-    (data: Data) =>
-      saveTheme(services.db, sanitizeTheme(data.root.props ?? {}), user.email ?? undefined),
-    [services.db, user.email],
+    async (data: Data) => {
+      const props = (data.root.props ?? {}) as Record<string, unknown>;
+      await Promise.all([
+        saveTheme(services.db, sanitizeTheme(props), user.email ?? undefined),
+        saveSettingValues(services.db, pick(props, appearance), user.email ?? undefined),
+      ]);
+    },
+    [services.db, user.email, appearance],
   );
   const autosave = useAutosave(save);
   const { flush } = autosave;
   const chrome = useMemo<EditorChrome>(
     () => ({
       kind: "settings",
-      title: "Thème",
+      title: "Couleurs et polices",
       saveState: autosave.state,
       saveError: autosave.error,
       retry: () => void flush(),
@@ -313,16 +361,35 @@ export function ThemeEditor({ theme }: { theme: ThemeConfig }) {
     () => ({
       components: {},
       root: {
-        fields: themeFields(theme),
+        fields: {
+          ...mapFields(
+            pick(config.settings?.fields as Record<string, never>, appearance) as Fields,
+          ),
+          ...themeFields(theme),
+        },
         render: ({ children: _children, puck: _puck, editMode: _editMode, ...values }: any) => (
-          <ThemePreview values={values} />
+          <ThemePreview values={values} appearance={pick(values, appearance)} />
         ),
       },
     }),
-    [theme],
+    [theme, config.settings, appearance],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: computed once, Puck owns the state afterwards.
-  const data = useMemo<Data>(() => ({ root: { props: { ...settings?.theme } }, content: [] }), []);
+  const data = useMemo<Data>(
+    () => ({
+      root: {
+        props: {
+          ...pick(
+            { ...(config.settings?.defaultProps ?? {}), ...(settings?.values ?? {}) },
+            appearance,
+          ),
+          ...settings?.theme,
+        },
+      },
+      content: [],
+    }),
+    [],
+  );
   return (
     <EditorChromeContext.Provider value={chrome}>
       <div className="of-editor of-editor--settings">
@@ -330,8 +397,8 @@ export function ThemeEditor({ theme }: { theme: ThemeConfig }) {
           config={puckConfig}
           data={data}
           onChange={autosave.schedule}
-          dictionary={FR_DICTIONARY}
-          headerTitle="Thème : couleurs et polices du site"
+          dictionary={THEME_DICTIONARY}
+          headerTitle="Couleurs et polices du site"
           height="100dvh"
           iframe={EDITOR_IFRAME}
           ui={SETTINGS_UI}

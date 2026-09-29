@@ -83,14 +83,16 @@ export default defineConfig({
   settings: {
     fields: settingsFields,
     defaultProps: settingsDefaults,
+    // The palette is set with the colours and fonts (« Couleurs et polices »), in one place.
+    appearance: ["theme"],
   },
   layout: SiteLayout,
-  // Réglages > Thème: variables of app/globals.css the owner can set.
+  // « Couleurs et polices »: variables of app/globals.css the owner can set.
   theme: {
     colors: [
       {
         token: "brand",
-        label: "Couleur principale personnalisée (remplace la couleur choisie dans Contenu commun)",
+        label: "Couleur principale personnalisée (remplace celle de la palette)",
         value: "#b45309",
       },
     ],

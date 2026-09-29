@@ -10,7 +10,7 @@ import { walkComponents } from "./walk.js";
 /**
  * Appointments. The owner adds a « Prise de rendez-vous » section (its services, durations and
  * booking rules are fields of the section); the free times follow the business's opening hours
- * and exceptional closures (Réglages > Établissement). A visitor picks a service, a day and a
+ * and exceptional closures (« Établissement »). A visitor picks a service, a day and a
  * time, and books: `cmsBooking` checks the time against the published section and the other
  * appointments, in one transaction, so that two visitors never get the same time. The owner sees
  * the appointments in the admin (« Rendez-vous ») and by e-mail.
@@ -355,7 +355,7 @@ export interface BusyRange {
 
 export interface SlotContext {
   rules: BookingRules;
-  /** Opening hours (Réglages > Établissement); a day without ranges is closed. */
+  /** Opening hours (« Établissement »); a day without ranges is closed. */
   hours: Partial<Record<Weekday, TimeRange[]>> | undefined;
   closures?: Closure[];
   busy: BusyRange[];

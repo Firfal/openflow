@@ -95,7 +95,9 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
         }
       }
       for (const issue of validateSettingsValues(settings?.values ?? {}, config)) {
-        if (issue.severity === "error") found.push({ where: "Réglages", message: issue.message });
+        if (issue.severity === "error") {
+          found.push({ where: "Menu et pied de page", message: issue.message });
+        }
       }
       setProblems(found);
       setAdvice(

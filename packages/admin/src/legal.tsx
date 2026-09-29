@@ -81,6 +81,11 @@ const DOCUMENTS: Array<{ kind: LegalDocumentKind; title: string; slug: string; a
   },
 ];
 
+/** Is this page one of the legal pages written by OpenFlow (its usual address, maybe numbered)? */
+export function isLegalPageSlug(slug: string): boolean {
+  return DOCUMENTS.some((document) => new RegExp(`^${document.slug}(-\\d+)?$`).test(slug));
+}
+
 /** The two legal pages: online, hidden, or to create. */
 function LegalPages() {
   const { config, services, pages, user, notify, navigate } = useAdmin();
@@ -252,7 +257,7 @@ function PolicyFacts() {
   );
 }
 
-/** Réglages > Informations légales: the publisher, and the legal pages written from the site. */
+/** « Informations légales »: the publisher, and the legal pages written from the site. */
 export function LegalForm() {
   const { config, services, settings, user, notify } = useAdmin();
   const [legal, setLegal] = useState<LegalInfo>(() => settings?.site?.legal ?? {});

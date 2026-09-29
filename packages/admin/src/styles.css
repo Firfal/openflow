@@ -479,6 +479,15 @@
   text-decoration: none;
 }
 
+/* A link-like button inside a sentence: underlined (not colour alone), no target size of its own. */
+.of-link-btn--inline {
+  min-height: 0;
+  color: var(--of-accent-text);
+  font-weight: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .of-link-btn:hover {
   color: var(--of-accent-text);
 }
@@ -1805,18 +1814,15 @@ select.of-input {
   text-align: center;
 }
 
-.of-nav__sub {
+.of-nav__group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  margin: 2px 0 8px 20px;
-  padding-left: 12px;
-  border-left: 1px solid var(--of-border);
+  gap: 2px;
 }
 
-.of-nav__sub .of-nav__item {
-  height: 30px;
-  font-size: var(--of-text-sm);
+/* Tab bar of a phone (hidden on larger screens, where the sidebar lists everything). */
+.of-tabbar {
+  display: none;
 }
 
 .of-sidebar__footer {
@@ -3883,16 +3889,55 @@ button.of-style-row__reset:hover {
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  .of-nav__sub {
-    flex-basis: 100%;
-    flex-direction: row;
-    margin: 4px 0 0;
-    padding: 0;
-    border: 0;
-    overflow-x: auto;
+  /* The places move to the tab bar at the bottom. */
+  .of-nav__group {
+    display: none;
   }
-  .of-nav__sub .of-nav__item {
-    white-space: nowrap;
+  .of-tabbar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--of-border);
+    background: var(--of-surface);
+  }
+  .of-tabbar__item {
+    --of-icon-color: var(--of-text-3);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-radius: var(--of-radius);
+    background: transparent;
+    color: var(--of-text-2);
+    font-size: var(--of-text-xs);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .of-tabbar__item[aria-current="page"] {
+    --of-icon-color: var(--of-accent-text);
+    color: var(--of-accent-text);
+  }
+  .of-tabbar__item .of-nav__count {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 6px);
+    min-width: 18px;
+    margin: 0;
+    padding: 0 4px;
+  }
+  .of-tabbar .of-menu-anchor {
+    display: flex;
+  }
+  .of-main {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
   .of-sidebar__footer {
     margin: 0;

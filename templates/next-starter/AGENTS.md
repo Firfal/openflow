@@ -13,7 +13,7 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   avec `fields`, `defaultProps` et `render`.
 - `openflow/layout/*` : `SiteLayout` (en-tête, pied de page, thème), déclaré dans `layout` de la config et
   alimenté par les réglages globaux (`settings`) et la fiche établissement (`site.business` : téléphone,
-  e-mail, adresse, horaires, saisis dans Réglages > Établissement). L'admin l'affiche autour de la page éditée.
+  e-mail, adresse, horaires, saisis dans « Établissement »). L'admin l'affiche autour de la page éditée.
 - `openflow/seed/` : le contenu de départ (`settings.json`, `pages/<id>.json`), importé dans Firestore
   à la livraison. Il n'écrase jamais le contenu du propriétaire.
 - `app/(site)/[[...slug]]/page.tsx` : toutes les pages viennent du snapshot publié. `app/admin/` : l'admin.
@@ -36,7 +36,7 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
   « Événements » (`kind: "event"`) : la section `Event` (jour, heure, lieu, tarif, lus par Google et les
   IA) et l'agenda `EventList`. Pour une autre collection (réalisations, prestations, équipe), reprends ces
   modèles (voir « Collections » dans `contrat.md`).
-- Langues : le site peut avoir d'autres langues (Réglages > Site et référencement). Une page traduite vit à
+- Langues : le site peut avoir d'autres langues (« Langues » dans l'admin). Une page traduite vit à
   `/en/…` ; seuls ses textes changent (champs `text`, `textarea`, `richtext` et descriptions d'images).
   Dates et horaires dans la langue de la page : `formatDate(date, pageLang(puck.metadata))`,
   `formatOpeningHours(hours, site.lang)` dans le cadre. Le cadre reçoit `languages` (sélecteur de langue)
@@ -64,7 +64,7 @@ La norme OpenFlow (OFS) est vérifiée automatiquement : lis les retours `OF-xxx
 8. **Ne renomme ni ne supprime** une section ou un champ déjà livré : le contenu du propriétaire en dépend.
    Ajoute plutôt un nouveau champ avec une valeur par défaut.
 9. Styles : classes Tailwind et jetons du thème déclarés dans `app/globals.css` (`@theme`). N'écris pas de couleur
-   en dur quand un jeton existe. Dans le modèle de départ, la couleur principale se règle dans Réglages (`bg-accent`, `text-accent`).
+   en dur quand un jeton existe. Dans le modèle de départ, la couleur principale se règle dans « Couleurs et polices » (`bg-accent`, `text-accent`).
    Le propriétaire peut changer les jetons déclarés dans `theme` (config) et le style de chaque section (onglet
    « Style », prop réservée `_style`) : pas de `!important`, une seule racine par section, aucun champ nommé `_…`.
 10. Aucun accès à Firebase ou Firestore dans `openflow/` ni dans `app/(site)` : le contenu arrive par les props et par `getSettings()`.

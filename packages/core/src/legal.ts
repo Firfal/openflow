@@ -24,7 +24,7 @@ export const LEGAL_DOCUMENT_PROP = "legalDocument";
 /** Messages of the forms are erased this long after they arrive (TTL on `expiresAt`). */
 export const MESSAGE_RETENTION_YEARS = 3;
 
-/** The publisher of the site (Réglages > Informations légales). */
+/** The publisher of the site (« Informations légales »). */
 export interface LegalInfo {
   /** Legal name, or the person's name for a sole trader: « SARL Boulangerie Martin ». */
   publisher?: string;

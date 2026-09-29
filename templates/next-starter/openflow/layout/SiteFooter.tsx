@@ -8,7 +8,7 @@ import {
 import type { SiteSettingsValues } from "./settings";
 
 /**
- * Footer: the business profile (Réglages > Établissement: phone, e-mail, address, hours) next to the
+ * Footer: the business profile (« Établissement »: phone, e-mail, address, hours) next to the
  * common content (presentation, social links, legal line).
  */
 export function SiteFooter({

@@ -75,7 +75,7 @@ function Block({ block }: { block: LegalBlock }) {
 
 /**
  * A legal page (privacy policy or legal notice), written by OpenFlow from what the site does and
- * the publisher's details (Réglages > Informations légales).
+ * the publisher's details (« Informations légales »).
  */
 export const Legal: ComponentConfig<LegalProps> = {
   label: "Page légale (écrite automatiquement)",

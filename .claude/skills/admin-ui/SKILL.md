@@ -80,8 +80,12 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   tweaks only as `.of-root .of-editor [class*="_PuckLayout-…_"]` (Puck is pinned, class prefixes are stable).
   Overrides and plugins are module constants (a new identity remounts the canvas).
 - AI entry points (sidebar « Assistant IA » with a green dot, Pages card, editor ✦ button, ⌘K entry) all lead
-  to the same view. New button names must not contain « Assistant IA », « Réglages » or « Modifier »
-  (substring selectors in the e2e tests).
+  to the same view. New button names must not contain « Assistant IA » or « Modifier » (substring
+  selectors in the e2e tests), nor repeat a sidebar label outside the sidebar.
+- A new place of the dashboard is one entry of `navEntries()` (`nav.ts`): label, icon, group, route,
+  keywords. The sidebar, the phone's tab bar and the ⌘K palette all read it.
+- Site-wide look settings (a palette in `config.settings`) are listed in `settings.appearance`: they show
+  in « Couleurs et polices », not in « Menu et pied de page ».
 - Charts follow the `dataviz` method: one series in `--of-accent` (validated ≥ 3:1 on both surfaces),
   columns ≤ 24 px with a 4 px rounded data end and 2 px between them, hairline grid, text in text tokens,
   a tooltip on hover and keyboard (the plot is a `role="slider"` over the columns), and a table view.
@@ -163,8 +167,10 @@ serious axe violation, trunk test passed on every view.
 
 ## Keep tests and docs in sync
 
-- E2E tests select by accessible names: « Pages », « Médias », « Réglages », « Thème », « Site et
-  référencement », « Assistant IA » (sidebar, exact), « Connecter Claude ou ChatGPT », « Clé d'accès »,
+- E2E tests select by accessible names: sidebar entries through `nav(name)` (scoped to the
+  « Navigation » landmark): « Pages », « Médias », « Couleurs et polices », « Menu et pied de page »,
+  « Site et référencement », « Langues », « Établissement », « Informations légales », « Assistant IA »
+  (exact); the mobile tab bar is the landmark « Onglets », « Connecter Claude ou ChatGPT », « Clé d'accès »,
   « Autoriser », « Refuser », « Déconnecter », « Messages » (sidebar, prefix: the unread count follows),
   lists « Messages reçus » / « Messages indésirables », dialog « Message de … », « Répondre »,
   « Identifiant Google Analytics », « Historique », « Modifier », « Retour aux pages », « Publier… »,

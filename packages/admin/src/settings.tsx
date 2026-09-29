@@ -9,13 +9,13 @@ import {
 import { lazy, Suspense, useState } from "react";
 import { BusinessForm } from "./business.js";
 import { type SettingsTab, useAdmin } from "./context.js";
-import { saveSettings } from "./data.js";
+import { saveLanguages, saveSettings } from "./data.js";
 import { errorMessage } from "./firebase.js";
 import { LegalForm } from "./legal.js";
 import { PageHead } from "./shell.js";
 import { Button, FormField, Spinner } from "./ui.js";
 
-// « Contenu commun » and « Thème » use the visual editor (Puck): loaded when opened.
+// « Menu et pied de page » and « Couleurs et polices » use the visual editor (Puck): loaded when opened.
 const GlobalContent = lazy(() =>
   import("./settings-editors.js").then((m) => ({ default: m.GlobalContent })),
 );
@@ -34,7 +34,7 @@ const LANGS = [
 ] as const;
 
 function SiteForm() {
-  const { config, services, settings, user, notify } = useAdmin();
+  const { config, services, settings, user, notify, navigate } = useAdmin();
   const initial: SiteSettings = {
     name: config.site.name,
     lang: config.site.lang ?? "fr",
@@ -98,7 +98,16 @@ function SiteForm() {
       <div>
         <h2>Identité du site</h2>
         <p className="of-card__lead">
-          Utilisée par Google, les partages sur les réseaux sociaux et l'onglet du navigateur.
+          Utilisée par Google, les partages sur les réseaux sociaux et l'onglet du navigateur. Les
+          résultats de Google (recherches, clics) sont dans{" "}
+          <button
+            type="button"
+            className="of-link-btn of-link-btn--inline"
+            onClick={() => navigate({ view: "stats" })}
+          >
+            Statistiques
+          </button>
+          .
         </p>
       </div>
       <FormField label="Nom du site">
@@ -133,49 +142,6 @@ function SiteForm() {
           onChange={(e) => setSite({ ...site, description: e.target.value })}
         />
       </FormField>
-      <FormField label="Langue du site">
-        <select
-          className="of-input"
-          value={site.lang}
-          onChange={(e) => setSite({ ...site, lang: e.target.value })}
-        >
-          {LANGS.map(([code, label]) => (
-            <option key={code} value={code}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </FormField>
-      <fieldset className="of-choices">
-        <legend className="of-field__label">Autres langues du site</legend>
-        <p className="of-field__hint">
-          Chaque langue a ses pages à part (/en/, /de/…), avec les mêmes sections et images. Vous
-          traduisez les textes dans l'éditeur, en choisissant la langue en haut, ou votre IA les
-          traduit pour vous. Une page non traduite n'existe que dans la langue principale.
-        </p>
-        {LANGUAGES.filter((language) => language.code !== site.lang).map((language) => {
-          const locales = siteLocales(site);
-          const checked = locales.includes(language.code);
-          return (
-            <label key={language.code} className="of-checkbox">
-              <input
-                type="checkbox"
-                checked={checked}
-                disabled={!checked && locales.length >= MAX_LOCALES}
-                onChange={(e) =>
-                  setSite({
-                    ...site,
-                    locales: e.target.checked
-                      ? [...locales, language.code]
-                      : locales.filter((code) => code !== language.code),
-                  })
-                }
-              />
-              <span lang={language.code}>{language.label}</span>
-            </label>
-          );
-        })}
-      </fieldset>
       <div>
         <h2>Mesure d'audience</h2>
         <p className="of-card__lead">
@@ -293,15 +259,107 @@ function SiteForm() {
   );
 }
 
-const TAB_TITLES: Record<SettingsTab, string> = {
-  global: "Contenu commun",
-  theme: "Thème",
+/** « Langues »: the main language of the site and its other languages (each at /<lang>/). */
+function LanguagesForm() {
+  const { config, services, settings, user, notify, navigate } = useAdmin();
+  const [lang, setLang] = useState(settings?.site?.lang ?? config.site.lang ?? "fr");
+  const [locales, setLocales] = useState(() =>
+    siteLocales({ lang, locales: settings?.site?.locales }),
+  );
+  const [busy, setBusy] = useState(false);
+  const others = siteLocales({ lang, locales });
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await saveLanguages(services.db, lang, others, user.email ?? undefined);
+      notify("success", "Langues enregistrées. Publiez pour les mettre en ligne.");
+    } catch (error) {
+      notify("error", errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      className="of-card of-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+    >
+      <FormField label="Langue principale">
+        <select className="of-input" value={lang} onChange={(e) => setLang(e.target.value)}>
+          {LANGS.map(([code, label]) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </FormField>
+      <fieldset className="of-choices">
+        <legend className="of-field__label">Autres langues du site</legend>
+        <p className="of-field__hint">
+          Chaque langue a ses pages à part (/en/, /de/…), avec les mêmes sections et images. Vous
+          traduisez les textes dans l'éditeur, en choisissant la langue en haut, ou votre IA les
+          traduit pour vous. Une page non traduite n'existe que dans la langue principale.
+        </p>
+        {LANGUAGES.filter((language) => language.code !== lang).map((language) => {
+          const checked = others.includes(language.code);
+          return (
+            <label key={language.code} className="of-checkbox">
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={!checked && others.length >= MAX_LOCALES}
+                onChange={(e) =>
+                  setLocales(
+                    e.target.checked
+                      ? [...others, language.code]
+                      : others.filter((code) => code !== language.code),
+                  )
+                }
+              />
+              <span lang={language.code}>{language.label}</span>
+            </label>
+          );
+        })}
+      </fieldset>
+      {others.length > 0 && (
+        <p className="of-field__hint">
+          Les pages se traduisent depuis la liste des{" "}
+          <button
+            type="button"
+            className="of-link-btn of-link-btn--inline"
+            onClick={() => navigate({ view: "pages" })}
+          >
+            Pages
+          </button>{" "}
+          (un bouton par langue sur chaque page) ; le menu et le pied de page, dans « Menu et pied
+          de page ».
+        </p>
+      )}
+      <div className="of-row">
+        <Button variant="primary" type="submit" busy={busy}>
+          Enregistrer
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Titles of the settings views: the words of the sidebar (`nav.ts`). */
+export const TAB_TITLES: Record<SettingsTab, string> = {
+  global: "Menu et pied de page",
+  theme: "Couleurs et polices",
   site: "Site et référencement",
   business: "Établissement",
   legal: "Informations légales",
+  languages: "Langues",
 };
 
-/** Réglages: one view per tab of the sidebar (the tab lives in the address). */
+/** The settings views, one per entry of the sidebar's « Réglages » group (the tab is in the address). */
 export function SettingsView({ tab }: { tab: SettingsTab }) {
   const { config } = useAdmin();
   if (tab === "business") {
@@ -333,9 +391,25 @@ export function SettingsView({ tab }: { tab: SettingsTab }) {
   if (tab === "site") {
     return (
       <>
-        <PageHead title={TAB_TITLES[tab]} />
+        <PageHead
+          title={TAB_TITLES[tab]}
+          description="Nom et adresse du site, mesure d'audience, Google et les robots des IA."
+        />
         <div className="of-view of-view--narrow">
           <SiteForm />
+        </div>
+      </>
+    );
+  }
+  if (tab === "languages") {
+    return (
+      <>
+        <PageHead
+          title={TAB_TITLES[tab]}
+          description="La langue principale du site et ses autres langues, chacune à sa propre adresse."
+        />
+        <div className="of-view of-view--narrow">
+          <LanguagesForm />
         </div>
       </>
     );

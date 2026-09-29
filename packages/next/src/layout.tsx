@@ -22,7 +22,7 @@ export function createOpenFlowLayout(config: OpenFlowConfig) {
       getSnapshot(config),
     ]);
     const recaptchaKey = snapshot.integrations?.recaptchaSiteKey;
-    // Theme tokens chosen by the owner (Réglages > Thème), hoisted into <head> by React.
+    // Theme tokens chosen by the owner (« Couleurs et polices »), hoisted into <head> by React.
     const css = buildThemeCss(theme);
     return (
       <>

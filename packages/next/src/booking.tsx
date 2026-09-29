@@ -84,7 +84,7 @@ const TEXTS = {
     noTime: "Plus de créneau libre ce jour-là : choisissez un autre jour.",
     noDay: "Aucun créneau libre dans les semaines à venir. Contactez-nous directement.",
     noHours:
-      "Renseignez les horaires d'ouverture (Réglages > Établissement) : les créneaux en dépendent.",
+      "Renseignez les horaires d'ouverture (« Établissement ») : les créneaux en dépendent.",
     noServices: "Ajoutez une prestation dans les champs de cette section.",
     closedPublic: "La prise de rendez-vous en ligne n'est pas encore ouverte.",
     loading: "Chargement des disponibilités…",

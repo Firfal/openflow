@@ -148,8 +148,8 @@ export function SearchConsoleCard({ days }: { days: number }) {
                 Google Search Console
               </a>
               , ajoutez votre site (« Préfixe d'URL », avec son adresse). Pour la validation,
-              choisissez « Balise HTML », collez-la dans Réglages &gt; Site et référencement,
-              publiez, puis cliquez sur « Valider ».{" "}
+              choisissez « Balise HTML », collez-la dans « Site et référencement », publiez, puis
+              cliquez sur « Valider ».{" "}
               {verified ? (
                 "Votre balise est déjà enregistrée."
               ) : (

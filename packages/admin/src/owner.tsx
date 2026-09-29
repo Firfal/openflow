@@ -33,7 +33,7 @@ import { MessagesView } from "./messages.js";
 import { PagesView } from "./pages.js";
 import { withFirestore } from "./services.js";
 import { SettingsView } from "./settings.js";
-import { Sidebar } from "./shell.js";
+import { MobileTabs, Sidebar } from "./shell.js";
 import { StatsView } from "./stats.js";
 import { Button, IconButton, Spinner } from "./ui.js";
 import { useWebMcp } from "./webmcp.js";
@@ -129,6 +129,7 @@ function Shell() {
   return (
     <div className="of-shell">
       <Sidebar />
+      <MobileTabs />
       <main className="of-main">
         {route.view === "pages" && <PagesView />}
         {route.view === "collection" && (

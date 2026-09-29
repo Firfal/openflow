@@ -98,7 +98,7 @@ Aucune nouvelle collection Firestore ni règle de sécurité : les fiches resten
 
 ## Fiche établissement (`site.business`)
 
-Écrite dans Réglages > Établissement (ou par l'outil IA `update_business`), publiée dans le snapshot
+Écrite dans « Établissement » (ou par l'outil IA `update_business`), publiée dans le snapshot
 (`site.business`, seules les valeurs valides) :
 
 ```jsonc
@@ -122,7 +122,7 @@ Aucune nouvelle collection Firestore ni règle de sécurité : les fiches resten
 
 ## Informations légales (`site.legal`)
 
-Écrites dans Réglages > Informations légales (ou par l'outil IA `update_legal`), publiées dans le snapshot
+Écrites dans « Informations légales » (ou par l'outil IA `update_legal`), publiées dans le snapshot
 (seuls les textes valides, `sanitizeLegal`) :
 
 ```jsonc

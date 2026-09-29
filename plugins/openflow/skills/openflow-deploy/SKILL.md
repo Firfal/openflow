@@ -83,13 +83,13 @@ Suis le lien Cloud Build affiché : le site doit être en ligne 2 à 4 minutes p
 Console Firebase > Hosting > « Ajouter un domaine personnalisé ». Ensuite :
 - relance `npx openflow setup --project <id> --domain <domaine>` pour autoriser le domaine dans la clé
   reCAPTCHA ;
-- mets à jour l'adresse du site dans l'admin (Réglages > Site et référencement) et publie.
+- mets à jour l'adresse du site dans l'admin (« Site et référencement ») et publie.
 
 ## Mesure d'audience (facultatif)
 
 Le propriétaire crée une propriété **Google Analytics 4** (analytics.google.com > Administration > Créer >
 Propriété, puis un flux de données Web avec l'adresse du site). Il colle l'« ID de mesure » `G-…` dans
-Réglages > Site et référencement > « Identifiant Google Analytics », puis publie. Le site affiche alors une
+« Site et référencement » > « Identifiant Google Analytics », puis publie. Le site affiche alors une
 demande de consentement : rien n'est mesuré sans l'accord du visiteur.
 
 ## 5. Passation au propriétaire
@@ -106,7 +106,7 @@ Rédige une fiche courte, en français et sans jargon :
 - modifier le site en discutant avec son IA : dans Claude ou ChatGPT, « Ajouter un connecteur » avec
   l'adresse `https://<domaine>/mcp`, puis « Se connecter » et « Autoriser » (étapes détaillées dans l'admin,
   rubrique Assistant IA) ;
-- les réglages communs (menu, coordonnées, couleur) : Réglages > Contenu commun, puis Thème ;
+- les réglages communs (menu, coordonnées, couleur) : « Menu et pied de page », puis Thème ;
 - les messages du formulaire de contact : rubrique Messages de l'admin, et par e-mail ;
 - les images et vidéos sont optimisées automatiquement à l'import : il peut importer les originaux.
 

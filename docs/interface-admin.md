@@ -15,30 +15,39 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
 
 ## Tableau de bord
 
-- **Barre latérale** :
-  - le site et son adresse ;
-  - **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
-  - **Pages**, puis une entrée par collection du site (« Actualités », « Réalisations »…), puis **Médias** ;
-  - **Messages**, avec le nombre de messages non lus ;
-  - **Rendez-vous**, quand le site a une section de prise de rendez-vous ;
-  - **Statistiques** ;
-  - **Assistant IA**, avec un point vert quand une IA est connectée ;
-  - **Réglages**, qui se déplie en cinq sous-pages : Contenu commun, Thème, Site et référencement
-    (identité, langue principale et **autres langues du site**, **Mesure d'audience** : les statistiques sans cookie, activées par défaut, et
-    l'identifiant Google Analytics `G-…`, facultatif, les balises de validation **Google Search Console**
-    et **Bing Webmaster Tools** (la balise collée entière ou son code), et **Robots des IA** :
-    autoriser ou refuser l'entraînement des IA, les recherches IA restant autorisées), et
-    **Établissement** et **Informations légales** (voir plus bas) ;
-  - **Historique** ;
+- **Barre latérale**, en trois groupes dont les titres sont du simple texte (ce ne sont pas des boutons) :
+  - le site et son adresse, puis **Rechercher** (<kbd>⌘</kbd> <kbd>K</kbd>) ;
+  - **Contenu** : **Pages**, une entrée par collection du site (« Actualités », « Réalisations »…),
+    **Médias** ;
+  - **Activité** : **Messages** (avec le nombre de messages non lus), **Rendez-vous** (quand le site a une
+    section de prise de rendez-vous), **Statistiques**, **Historique** ;
+  - **Réglages**, chacun en accès direct : **Couleurs et polices** (quand le site a un thème), **Menu et
+    pied de page**, **Établissement**, **Informations légales**, **Site et référencement**, **Langues**,
+    **Assistant IA** (avec un point vert quand une IA est connectée) ;
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
-  Sur mobile, elle devient une barre d'icônes.
+  La recherche rapide (<kbd>⌘</kbd> <kbd>K</kbd>) emploie les mêmes noms. Sur mobile, une barre d'onglets
+  en bas de l'écran propose **Pages**, **Messages**, **Statistiques** et **Plus**, qui ouvre la liste
+  complète.
+- **Site et référencement** : nom, adresse et description du site ; **Mesure d'audience** (les
+  statistiques sans cookie, activées par défaut, et l'identifiant Google Analytics `G-…`, facultatif) ;
+  les balises de validation **Google Search Console** et **Bing Webmaster Tools** (la balise collée
+  entière ou son code) ; **Robots des IA** : autoriser ou refuser l'entraînement des IA, les recherches
+  IA restant autorisées. Un lien mène aux résultats de Google, dans Statistiques.
+- **Langues** : la langue principale du site et ses autres langues (voir plus bas).
+- **Couleurs et polices** : les couleurs et polices du thème, avec un aperçu de la page d'accueil. Les
+  réglages d'apparence du site déclarés par le site (la palette du modèle de départ, par exemple) s'y
+  trouvent aussi : la couleur principale se règle à un seul endroit.
+- **Menu et pied de page** : le logo, le menu, le pied de page, communs à toutes les pages, avec leur
+  aperçu. Le panneau de droite porte ce nom.
 - **En-tête de chaque vue**, de même hauteur partout : le titre, une ligne de description, les actions de
   la vue, « Voir le site » et **Publier**. Le bouton Publier affiche le nombre de modifications en attente,
   et sa bulle les détaille (« 3 pages modifiées, 2 éléments de collection modifiés et réglages
   modifiés »). L'onglet du navigateur porte le nom de la vue, puis celui du site.
 - **Pages** :
   - un bandeau dit si le site en ligne est à jour, ou que rien n'est encore en ligne ;
+  - la page qui liste une collection mène à ses éléments (« Liste des actualités · 3 → »), et une page
+    légale à « Informations légales », d'où son texte est écrit ;
   - tant qu'aucune IA n'est connectée, une carte propose « Connecter Claude ou ChatGPT » (elle se masque) ;
   - chaque page affiche **un seul statut** : Masquée, Programmée le …, Mise en ligne…, Brouillon (tant
     que le site n'a jamais été publié : le bandeau le dit une fois pour toutes), Modifications non
@@ -84,7 +93,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Le menu « ⋯ » propose **Écrire à …** et **Annuler le rendez-vous** : après confirmation, le créneau
     redevient libre sur le site (le visiteur n'est pas prévenu automatiquement : la fenêtre rappelle ses
     coordonnées). Un rendez-vous passé ou annulé peut être **effacé** (demande du visiteur).
-  - Le bouton **Horaires d'ouverture** mène à Réglages > Établissement, dont dépendent les créneaux.
+  - Le bouton **Horaires d'ouverture** mène à « Établissement », dont dépendent les créneaux.
   - Les prestations, leurs durées et prix, l'intervalle entre deux créneaux, le délai minimum, l'horizon de
     réservation et la pause entre deux rendez-vous se règlent dans la section « Prise de rendez-vous »
     de la page, comme n'importe quel champ. Chaque rendez-vous est effacé automatiquement 12 mois après
@@ -114,11 +123,11 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - **Recherche Google** (Google Search Console) : clics, affichages, taux de clic et position moyenne
     sur la période (7, 28 ou 90 jours, avec les deux jours de retard de Google), les recherches qui
     amènent des visiteurs et les pages trouvées. Tant que le site n'est pas relié, la carte donne les trois
-    étapes : ajouter le site dans Search Console et coller sa balise de validation dans Réglages > Site
-    et référencement, puis ajouter comme utilisateur « Restreint » le compte du site (adresse à copier).
+    étapes : ajouter le site dans Search Console et coller sa balise de validation dans « Site et
+    référencement », puis ajouter comme utilisateur « Restreint » le compte du site (adresse à copier).
   - En bas, « Ne pas compter mes visites sur cet appareil », pour que le propriétaire ne gonfle pas ses
     chiffres.
-- **Établissement** (Réglages) : la fiche que lisent Google, les assistants IA et le site.
+- **Établissement** : la fiche que lisent Google, les assistants IA et le site.
   - Activité (boulangerie, restaurant, artisan…), nom, téléphone, e-mail, adresse, zone desservie, gamme
     de prix.
   - Horaires : une ligne par jour (case « Ouvert », une à trois plages, bouton pour recopier une journée
@@ -127,7 +136,7 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Présence en ligne : la fiche Google et les réseaux sociaux, un lien par ligne.
   - En bas, « Ce que liront Google et les assistants IA » montre le résultat, et **Enregistrer la fiche**
     l'enregistre (en ligne à la prochaine publication).
-- **Informations légales** (Réglages) : les pages que la loi demande, écrites par OpenFlow.
+- **Informations légales** : les pages que la loi demande, écrites par OpenFlow.
   - « Vos pages légales » : les mentions légales et la politique de confidentialité, avec leur adresse et
     leur statut (« Visible », « Masquée »), ou « Créer la page » quand elle manque. Leur texte s'écrit d'après
     le site et se met à jour à chaque publication.
@@ -141,15 +150,15 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - Dans l'éditeur, la section « Page légale » affiche le texte tel qu'il sera publié ; le panneau propose le
     choix du document et un champ « Informations complémentaires » pour ce qu'OpenFlow ne connaît pas
     (newsletter, prise de rendez-vous…).
-- **Langues** (sites multilingues) : chaque page et chaque élément de collection montre un bouton par autre
+- **Sites multilingues** : chaque page et chaque élément de collection montre un bouton par autre
   langue (« EN », en couleur quand la page est traduite, en pointillés sinon) qui ouvre sa traduction.
   - L'éditeur a un menu des langues en haut, à côté du nom de la page. Dans une autre langue, la page
     s'ouvre avec les mêmes sections, verrouillées : on ne change que les textes, sur la page ou dans le
     panneau de droite, qui montre chaque texte d'origine au-dessus de sa traduction (« À traduire »,
     « À revoir » quand le texte d'origine a changé depuis), et le titre, l'adresse et la description de la
     page dans cette langue.
-  - « Contenu commun » a le même menu : dans une autre langue, un formulaire traduit le nom du site, sa
-    description, le menu et le pied de page.
+  - « Menu et pied de page » a le même menu : dans une autre langue, un formulaire traduit le nom du
+    site, sa description, le menu et le pied de page.
   - Une page n'existe dans une langue qu'une fois traduite ; ce qui n'est pas traduit reste dans la langue
     principale. L'IA du propriétaire peut tout traduire (« Traduis le site en anglais »).
 - **Messages** : l'en-tête rappelle que chaque message est effacé automatiquement 3 ans après sa réception.

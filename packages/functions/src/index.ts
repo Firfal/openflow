@@ -273,7 +273,7 @@ export const cmsPublish = onCall(
 
 /**
  * Creates an access key for an AI assistant (MCP). The key is returned once; only its SHA-256
- * is stored. The owner revokes it from the admin (Réglages > Assistant IA).
+ * is stored. The owner revokes it from the admin (« Assistant IA »).
  */
 export const cmsCreateAgentToken = onCall({ region, enforceAppCheck }, async (request) => {
   const token = assertOwner(request);

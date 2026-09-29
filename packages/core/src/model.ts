@@ -196,7 +196,7 @@ export interface SiteSettings {
   ogImage?: string;
   /** Google Analytics 4 (`G-XXXXXXX`): loaded only after the visitor's consent. */
   gaMeasurementId?: string;
-  /** The business behind the site (Réglages > Établissement): contact, address, hours. */
+  /** The business behind the site (« Établissement »): contact, address, hours. */
   business?: BusinessInfo;
   /**
    * AI crawlers that train models (GPTBot, ClaudeBot, Google-Extended…): `block` refuses them in
@@ -205,11 +205,11 @@ export interface SiteSettings {
   aiTraining?: "allow" | "block";
   /** `off` stops the audience measurement without cookies (Statistiques). On by default. */
   stats?: "on" | "off";
-  /** The publisher (Réglages > Informations légales), for the legal notice and privacy policy. */
+  /** The publisher (« Informations légales »), for the legal notice and privacy policy. */
   legal?: LegalInfo;
   /** Other languages of the site (`en`, `de`…), each at `/<lang>/`; `lang` is the default one. */
   locales?: string[];
-  /** Codes of the Search Console and Bing Webmaster Tools tags (Réglages > Site et référencement). */
+  /** Codes of the Search Console and Bing Webmaster Tools tags (« Site et référencement »). */
   verification?: SearchVerification;
 }
 

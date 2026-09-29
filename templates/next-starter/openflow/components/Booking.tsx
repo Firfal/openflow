@@ -36,7 +36,7 @@ const choice =
 
 /**
  * Appointments: the owner lists the services and their duration; the free times follow the
- * opening hours of Réglages > Établissement. Visitors book in three steps; the owner sees the
+ * opening hours of « Établissement ». Visitors book in three steps; the owner sees the
  * appointments in the admin (« Rendez-vous ») and by e-mail.
  */
 export const Booking: ComponentConfig<BookingProps> = {

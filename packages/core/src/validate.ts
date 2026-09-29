@@ -95,6 +95,18 @@ export function validateConfig(config: OpenFlowConfig, file = "openflow.config.t
         file,
       ),
     );
+    const fields = Object.keys(config.settings.fields ?? {});
+    for (const key of config.settings.appearance ?? []) {
+      if (!fields.includes(key)) {
+        issues.push({
+          rule: "OF-203",
+          severity: "error",
+          message: `settings.appearance : « ${key} » n'est pas un champ de \`settings.fields\`.`,
+          file,
+          hint: "N'y listez que des champs des réglages (une palette de couleurs…).",
+        });
+      }
+    }
   }
   return issues;
 }

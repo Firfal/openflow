@@ -73,7 +73,7 @@ function Block({ block }: { block: LegalBlock }) {
 
 /**
  * A legal page (privacy policy or legal notice): its text is written by OpenFlow from what the
- * site does and the owner's legal information (Réglages > Informations légales), and stays right
+ * site does and the owner's legal information (« Informations légales »), and stays right
  * at each publication. The owner may add paragraphs of their own below it.
  */
 export const Legal: ComponentConfig<LegalProps> = {

@@ -305,7 +305,7 @@ export function LanguageSelect({
 }
 
 /**
- * « Contenu commun » in another language: the site's name and description, then each text of the
+ * « Menu et pied de page » in another language: the site's name and description, then each text of the
  * menu and footer under its original.
  */
 export function CommonTranslation({
@@ -374,7 +374,7 @@ export function CommonTranslation({
   return (
     <>
       <PageHead
-        title="Contenu commun"
+        title="Menu et pied de page"
         description={`Menu, pied de page et nom du site en ${languageName(locale)}.`}
         actions={
           <LanguageSelect main={main} others={others} current={locale} onChange={onLanguage} />

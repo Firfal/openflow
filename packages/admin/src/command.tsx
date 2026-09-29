@@ -1,8 +1,9 @@
-import { bookingComponentOf, slugToPath } from "@openflow/core";
+import { slugToPath } from "@openflow/core";
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { flushAllAutosaves } from "./autosave.js";
 import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
+import { navEntries } from "./nav.js";
 import { MOD_KEY } from "./ui.js";
 import { useUiTheme } from "./ui-theme.js";
 
@@ -143,118 +144,17 @@ export function CommandPalette() {
         icon: "externalLink",
         run: () => window.open("/", "_blank", "noopener"),
       },
-      {
-        id: "go:pages",
-        group: "Aller à",
-        label: "Toutes les pages",
-        icon: "fileText",
-        run: go(() => navigate({ view: "pages" })),
-      },
-      ...Object.entries(collections).map(([name, collection]) => ({
-        id: `go:collection:${name}`,
-        group: "Aller à",
-        label: collection.label,
-        icon: collection.icon ?? ("layers" as const),
-        keywords: "collection liste",
-        run: go(() => navigate({ view: "collection", collection: name })),
-      })),
-      {
-        id: "go:media",
-        group: "Aller à",
-        label: "Médias",
-        icon: "image",
-        keywords: "images vidéos médiathèque",
-        run: go(() => navigate({ view: "media" })),
-      },
-      {
-        id: "go:global",
-        group: "Aller à",
-        label: "Réglages : contenu commun",
-        icon: "panelTop",
-        keywords: "menu pied de page en-tête",
-        run: go(() => navigate({ view: "settings", tab: "global" })),
-      },
-      ...(config.theme
-        ? [
-            {
-              id: "go:theme",
-              group: "Aller à",
-              label: "Réglages : thème",
-              icon: "palette" as const,
-              keywords: "couleurs polices",
-              run: go(() => navigate({ view: "settings", tab: "theme" })),
-            },
-          ]
-        : []),
-      {
-        id: "go:site",
-        group: "Aller à",
-        label: "Réglages : site et référencement",
-        icon: "globe",
-        keywords: "nom seo google langue",
-        run: go(() => navigate({ view: "settings", tab: "site" })),
-      },
-      {
-        id: "go:business",
-        group: "Aller à",
-        label: "Réglages : établissement (horaires, adresse)",
-        icon: "home",
-        keywords: "horaires ouverture fermeture adresse téléphone congés google",
-        run: go(() => navigate({ view: "settings", tab: "business" })),
-      },
-      {
-        id: "go:legal",
-        group: "Aller à",
-        label: "Réglages : informations légales (mentions, confidentialité)",
-        icon: "shieldCheck",
-        keywords:
-          "mentions légales politique de confidentialité rgpd cnil siret données personnelles cookies",
-        run: go(() => navigate({ view: "settings", tab: "legal" })),
-      },
-      {
-        id: "go:messages",
-        group: "Aller à",
-        label: "Messages reçus",
-        icon: "inbox",
-        keywords: "formulaire contact boîte de réception mail",
-        run: go(() => navigate({ view: "messages" })),
-      },
-      ...(bookingComponentOf(config.components)
-        ? [
-            {
-              id: "go:bookings",
-              group: "Aller à",
-              label: "Rendez-vous",
-              icon: "calendarCheck" as const,
-              keywords: "réservation agenda créneau planning",
-              run: go(() => navigate({ view: "bookings" })),
-            },
-          ]
-        : []),
-      {
-        id: "go:stats",
-        group: "Aller à",
-        label: "Statistiques des visites",
-        icon: "chart",
-        keywords: "audience visites visiteurs trafic chatgpt perplexity sources analytics",
-        run: go(() => navigate({ view: "stats" })),
-      },
-      {
-        id: "go:assistant",
-        group: "Aller à",
-        label: "Connecter une IA (Claude, ChatGPT…)",
-        icon: "sparkles",
-        keywords: "assistant ia mcp claude chatgpt cursor clé connecteur",
-        run: go(() => navigate({ view: "assistant" })),
-      },
-      {
-        id: "go:history",
-        group: "Aller à",
-        label: "Historique des publications",
-        icon: "history",
-        keywords: "versions restaurer",
-        run: go(() => navigate({ view: "history" })),
-      },
+      // The places of the sidebar, with its words (and a few more to search with).
+      ...navEntries(config).map(
+        (entry): Command => ({
+          id: `go:${entry.id}`,
+          group: "Aller à",
+          label: entry.label,
+          icon: entry.icon,
+          keywords: entry.keywords,
+          run: go(() => navigate(entry.route)),
+        }),
+      ),
       {
         id: "theme:light",
         group: "Apparence",
@@ -281,7 +181,7 @@ export function CommandPalette() {
       },
     );
     return list;
-  }, [pages, navigate, config.theme, config.collections, config.components, setTheme]);
+  }, [pages, navigate, config, setTheme]);
 
   const results = useMemo(() => {
     const words = fold(query).split(/\s+/).filter(Boolean);
