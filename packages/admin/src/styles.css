@@ -3470,14 +3470,21 @@ select.of-input {
   padding-bottom: 16px;
 }
 
+/* Label above its control (readable at any panel width), reset at the end of the label line. */
 .of-style-row {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr) 20px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-areas:
+    "label reset"
+    "control control"
+    "hint hint";
+  gap: 4px 8px;
   align-items: center;
 }
 
 .of-style-row__label {
+  grid-area: label;
+  justify-self: start;
   display: flex;
   align-items: center;
   min-height: 24px;
@@ -3500,14 +3507,16 @@ select.of-input {
 }
 
 .of-style-row__control {
+  grid-area: control;
   min-width: 0;
 }
 
 .of-style-row__reset {
+  grid-area: reset;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: var(--of-radius-sm);
@@ -3522,7 +3531,7 @@ button.of-style-row__reset:hover {
 }
 
 .of-style-row__hint {
-  grid-column: 2 / -1;
+  grid-area: hint;
   margin: 0;
 }
 
@@ -4757,4 +4766,44 @@ button.of-style-row__reset:hover {
 .of-root .of-editor [class*="_Layer--isSelected_"] > [class*="_Layer-inner_"] {
   background: var(--of-accent-soft);
   color: var(--of-accent-text);
+}
+
+/* The style's essentials, then « Plus de réglages » for the rest. */
+.of-style-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.of-style__more {
+  --of-icon-color: var(--of-text-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--of-text-2);
+  font-size: var(--of-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.of-style__more:hover {
+  color: var(--of-text);
+}
+
+.of-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+
+.of-options__title {
+  color: var(--of-text);
+  font-size: var(--of-text-sm);
+  font-weight: 600;
 }

@@ -266,6 +266,55 @@ function ItemActions({
   );
 }
 
+/**
+ * « Options de la section »: its choices (layout, columns, visual…), i.e. its top-level select and
+ * radio fields, next to the clicked element instead of behind « Tous les champs de la section ».
+ */
+function SectionOptions() {
+  const selected = usePuck((s) => s.selectedItem);
+  const dispatch = usePuck((s) => s.dispatch);
+  const getSelectorForId = usePuck((s) => s.getSelectorForId);
+  const fields = usePuck((s) =>
+    selected ? (s.config.components[selected.type]?.fields as Fields | undefined) : undefined,
+  );
+  const id = useId();
+  if (!selected || !fields) return null;
+  const options = Object.entries(fields).filter(
+    ([key, field]) => !key.startsWith("_") && (field?.type === "select" || field?.type === "radio"),
+  );
+  if (options.length === 0) return null;
+  const change = (key: string) => (next: unknown) => {
+    const selector = getSelectorForId(selected.props.id as string);
+    if (!selector) return;
+    dispatch({
+      type: "replace",
+      destinationIndex: selector.index,
+      destinationZone: selector.zone,
+      data: { ...selected, props: { ...selected.props, [key]: next } },
+    });
+  };
+  return (
+    <section className="of-block of-options" aria-labelledby={`${id}-title`}>
+      <h3 id={`${id}-title`} className="of-options__title">
+        Options de la section
+      </h3>
+      {options.map(([key, field]) => (
+        <div key={key} className="of-efield">
+          <span className="of-field__label" id={`${id}-${key}`}>
+            {field.label ?? key}
+          </span>
+          <AutoField
+            field={{ ...field, label: undefined } as never}
+            id={`${id}-${key}-input`}
+            value={selected.props[key]}
+            onChange={change(key)}
+          />
+        </div>
+      ))}
+    </section>
+  );
+}
+
 /** The section's lists (questions, cards…): « Ajouter : Questions » adds one at the end. */
 function SectionLists() {
   const { setFocus } = useFocus();
@@ -511,6 +560,7 @@ function ContentPanel({ children }: { children: ReactNode }) {
   return (
     <div className="of-panel">
       <ElementPanel group={group} focus={focus} />
+      <SectionOptions />
       {styles && <StyleBlock />}
       <button
         type="button"

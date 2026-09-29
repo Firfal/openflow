@@ -199,6 +199,10 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 | Centre | Écrans **Ordinateur** (la plus grande largeur qui tient, de 1024 à 1280 px), **Tablette** (768 px), **Mobile** (390 px) |
 | Droite | État de l'enregistrement, annuler et rétablir, recherche, **Connecter une IA** (✦, point vert si une IA est connectée), **Publier** |
 
+À côté du nom de la page, son **statut** (Brouillon, En ligne, Modifications non publiées…) et
+**Paramètres de la page** (adresse, aperçu Google, visibilité, programmation), aussi dans la recherche
+rapide. La fenêtre **Publier** sépare ce qui part en ligne des pages masquées, qui restent hors ligne.
+
 - **Rail de gauche**, dont chaque icône ouvre un panneau :
   - **Ajouter** : les sections du site, avec une recherche. Un clic ajoute une section sous la section
     sélectionnée ; on peut aussi la glisser sur la page. Le panneau est fermé à l'ouverture de l'éditeur,
@@ -224,7 +228,14 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
   2. **Style**, replié par défaut, car on change le contenu bien plus souvent que le style. Son en-tête
      résume ce qui est réglé sur l'écran affiché, par exemple « Mobile · 2 réglages ». Le navigateur retient
      s'il est ouvert ou fermé.
-  3. **Tous les champs de la section**, repliés.
+  3. **Options de la section** (disposition, colonnes, visuel… : ses listes de choix), entre le contenu
+     et le style, quand un élément est cliqué ;
+  4. **Tous les champs de la section**, repliés.
+
+  Un élément de liste (une question de FAQ, une carte…) a ses actions : **Ajouter après**, dupliquer,
+  monter, descendre, supprimer (dans les limites de la liste). Toute la section propose « Ajouter :
+  Questions » pour chacune de ses listes. Une suppression (section ou élément) s'annule depuis la
+  notification (« Annuler »), comme avec <kbd>⌘</kbd> <kbd>Z</kbd>.
 
   Un clic à côté des éléments, ou la croix de l'élément, affiche toute la section : ses champs, puis son
   style, replié de la même façon.
@@ -242,6 +253,14 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 
 ### Bloc Style
 
+- **L'essentiel** d'abord : pour un texte, **Taille du texte** (S, M, L, XL, plus grands pour un titre),
+  **Couleur du texte** (couleurs du thème, avec son contraste) et **Alignement** ; pour une section,
+  **Couleur de fond** et **Espacement** (Serré, Normal, Aéré, en haut et en bas).
+- **Plus de réglages** déplie le reste (police, graisse, interligne, fond en image, marges au détail,
+  dimensions, bordure, visibilité) ; le navigateur retient ce choix, et un point signale des réglages
+  cachés sur l'écran affiché.
+- Chaque libellé est au-dessus de son contrôle ; la flèche circulaire (24 px) réinitialise la valeur.
+
 - Le fil en tête du bloc dit ce qui est stylé : la section, ou la section puis l'élément (« Hero ›
   Bouton principal »). Un clic sur la section passe au style de toute la section.
 - Trois écrans : **Tous les écrans** (le style de base, que la tablette et le mobile reprennent),
@@ -250,7 +269,8 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
   effets, Visibilité. Un point bleu marque les groupes qui ont des réglages sur l'écran affiché.
 - La couleur d'un libellé indique d'où vient sa valeur, comme dans Webflow (sans le rose) :
   - **bleu** : la valeur est réglée sur cet écran, et la flèche circulaire la réinitialise ;
-  - **orange** : la valeur est reprise d'un écran plus grand ; l'infobulle dit lequel.
+  - **orange** : la valeur est reprise d'un écran plus grand ; l'infobulle dit lequel (« Repris de
+    « Tous les écrans » »). Un champ vide affiche « Par défaut ».
 - Les **espacements** se règlent sur un schéma de la boîte : l'espace autour de l'élément, puis ses marges
   intérieures. Chaque côté accepte `24` (pixels), `2rem` ou `0`. Les flèches <kbd>↑</kbd> <kbd>↓</kbd>
   ajustent la valeur, et <kbd>⇧</kbd> la change par pas de 10.

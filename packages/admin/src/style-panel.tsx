@@ -189,6 +189,42 @@ const GROUPS = {
   visibility: ["hidden"],
 } satisfies Record<string, StyleProperty[]>;
 
+const SIZE_NAMES = ["S", "M", "L", "XL"];
+
+/** Text sizes offered at once (px): a title's, or a paragraph's. */
+function sizePresets(heading: boolean): number[] {
+  return heading ? [24, 32, 40, 56] : [14, 16, 18, 20];
+}
+
+/** Space above and below a section. */
+const SPACING_PRESETS: Array<[string, string]> = [
+  ["32px", "Serré"],
+  ["64px", "Normal"],
+  ["112px", "Aéré"],
+];
+
+/** A disclosure the browser remembers (a convenience, never site data). */
+function useStoredToggle(key: string, initial: boolean): [boolean, () => void] {
+  const [open, setOpen] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem(key);
+      return stored === null ? initial : stored === "1";
+    } catch {
+      return initial;
+    }
+  });
+  const toggle = () =>
+    setOpen((value) => {
+      try {
+        window.localStorage.setItem(key, value ? "0" : "1");
+      } catch {
+        // Private mode: the choice lasts for this visit.
+      }
+      return !value;
+    });
+  return [open, toggle];
+}
+
 /** Number and unit of a stored length (`24px` → 24, `px`), for scrubbing. */
 function lengthParts(value: string | undefined): { n: number; unit: string } | undefined {
   const match = /^(-?\d*\.?\d+)(px|rem|em|%|vw|vh)$/.exec(value ?? "");
@@ -229,6 +265,7 @@ export function StylePanel() {
   const viewports = usePuck((s) => s.appState.ui.viewports);
   const [library, setLibrary] = useState(false);
   const [computed, setComputed] = useState<Computed>();
+  const [more, toggleMore] = useStoredToggle("cms:style-more", false);
 
   const selectedId = selected?.props.id as string | undefined;
   const width = typeof viewports.current.width === "number" ? viewports.current.width : DESKTOP_MAX;
@@ -343,7 +380,7 @@ export function StylePanel() {
   const sourceOf = (key: StyleProperty): string | undefined => {
     if (values[key] !== undefined || bp === "base") return undefined;
     if (bp === "mobile" && responsive.tablet?.[key] !== undefined) return "Tablette";
-    return responsive.base?.[key] !== undefined ? "Ordinateur" : undefined;
+    return responsive.base?.[key] !== undefined ? "Tous les écrans" : undefined;
   };
   const sideState = (key: StyleProperty) =>
     values[key] !== undefined
@@ -449,6 +486,17 @@ export function StylePanel() {
     contrast = { ratio, ok: ratio >= (large ? 3 : 4.5), large };
   }
   const isList = Boolean(path && focus?.index);
+  // Size presets of a title are larger than those of a paragraph.
+  const heading =
+    Number.parseFloat(
+      String(values.fontSize ?? inherited.fontSize ?? computed?.fontSize ?? "16"),
+    ) >= 22;
+  const simple: StyleProperty[] = ["fontSize", "color", "textAlign", "backgroundColor"];
+  const moreActive = Object.keys(values).some(
+    (key) =>
+      !simple.includes(key as StyleProperty) &&
+      !(target === "section" && (key === "paddingTop" || key === "paddingBottom")),
+  );
 
   return (
     <div className="of-style">
@@ -496,7 +544,98 @@ export function StylePanel() {
         </span>
       </p>
 
-      {text && (
+      <div className="of-style-simple">
+        {text && (
+          <StyleRow
+            label="Taille du texte"
+            set={values.fontSize !== undefined}
+            inheritedFrom={sourceOf("fontSize")}
+            onReset={() => set("fontSize", undefined)}
+          >
+            {() => (
+              <SegmentedControl
+                label="Taille du texte"
+                value={values.fontSize}
+                options={sizePresets(heading).map(
+                  (size, n) => [`${size}px`, `${SIZE_NAMES[n]} · ${size} px`] as [string, string],
+                )}
+                onChange={(v) => set("fontSize", v)}
+              />
+            )}
+          </StyleRow>
+        )}
+        {text &&
+          row(
+            "color",
+            "Couleur du texte",
+            (id, value) => (
+              <ColorControl
+                id={id}
+                value={value}
+                placeholder={textColor ?? computed?.color}
+                swatches={swatches}
+                onChange={(v) => set("color", v)}
+              />
+            ),
+            contrast && (
+              <span className={`of-contrast ${contrast.ok ? "is-ok" : "is-low"}`}>
+                Contraste {contrast.ratio.toFixed(1).replace(".", ",")}:1 ·{" "}
+                {contrast.ok
+                  ? "lisible (AA)"
+                  : `insuffisant : ${contrast.large ? "3" : "4,5"}:1 minimum`}
+              </span>
+            ),
+          )}
+        {text &&
+          row("textAlign", "Alignement", (_id, value) => (
+            <SegmentedControl
+              label="Alignement"
+              value={value}
+              options={[
+                ["left", "Gauche", "alignLeft"],
+                ["center", "Centre", "alignCenter"],
+                ["right", "Droite", "alignRight"],
+                ["justify", "Justifié", "alignJustify"],
+              ]}
+              onChange={(v) => set("textAlign", v)}
+            />
+          ))}
+        {target === "section" &&
+          row("backgroundColor", "Couleur de fond", (id, value) => (
+            <ColorControl
+              id={id}
+              value={value}
+              placeholder={inherited.backgroundColor}
+              swatches={swatches}
+              onChange={(v) => set("backgroundColor", v)}
+            />
+          ))}
+        {target === "section" && (
+          <StyleRow
+            label="Espacement"
+            set={values.paddingTop !== undefined || values.paddingBottom !== undefined}
+            inheritedFrom={sourceOf("paddingTop")}
+            onReset={() => setMany({ paddingTop: undefined, paddingBottom: undefined })}
+          >
+            {() => (
+              <SegmentedControl
+                label="Espacement en haut et en bas"
+                value={values.paddingTop === values.paddingBottom ? values.paddingTop : undefined}
+                options={SPACING_PRESETS}
+                onChange={(v) => setMany({ paddingTop: v, paddingBottom: v })}
+              />
+            )}
+          </StyleRow>
+        )}
+      </div>
+
+      <button type="button" className="of-style__more" aria-expanded={more} onClick={toggleMore}>
+        <Icon name={more ? "chevronDown" : "chevronRight"} size={14} />
+        Plus de réglages
+        {!more && moreActive && <span className="of-style-group__dot" aria-hidden />}
+      </button>
+
+      {more && text && (
         <Group title="Typographie" active={active(GROUPS.typography)}>
           {row("fontFamily", "Police", (id, value) => (
             <SelectControl
@@ -515,7 +654,9 @@ export function StylePanel() {
               id={id}
               value={value}
               options={WEIGHTS}
-              placeholder={computed?.fontWeight ? `Héritée (${computed.fontWeight})` : "Héritée"}
+              placeholder={
+                computed?.fontWeight ? `Par défaut (${computed.fontWeight})` : "Par défaut"
+              }
               onChange={(v) => set("fontWeight", v)}
             />
           ))}
@@ -542,19 +683,6 @@ export function StylePanel() {
             },
           )}
           {length("letterSpacing", "Lettres", { units: ["em", "px"] })}
-          {row("textAlign", "Alignement", (_id, value) => (
-            <SegmentedControl
-              label="Alignement"
-              value={value}
-              options={[
-                ["left", "Gauche", "alignLeft"],
-                ["center", "Centre", "alignCenter"],
-                ["right", "Droite", "alignRight"],
-                ["justify", "Justifié", "alignJustify"],
-              ]}
-              onChange={(v) => set("textAlign", v)}
-            />
-          ))}
           {row("textTransform", "Casse", (id, value) => (
             <SelectControl
               id={id}
@@ -594,225 +722,216 @@ export function StylePanel() {
         </Group>
       )}
 
-      <Group
-        title={target === "section" ? "Couleurs et fond" : "Couleurs"}
-        active={active(GROUPS.colors)}
-      >
-        {text &&
-          row(
-            "color",
-            "Couleur du texte",
-            (id, value) => (
+      {more && (
+        <Group title={target === "section" ? "Fond" : "Couleurs"} active={active(GROUPS.colors)}>
+          {target !== "section" &&
+            row("backgroundColor", "Couleur de fond", (id, value) => (
               <ColorControl
                 id={id}
                 value={value}
-                placeholder={textColor ?? computed?.color}
+                placeholder={inherited.backgroundColor}
                 swatches={swatches}
-                onChange={(v) => set("color", v)}
+                onChange={(v) => set("backgroundColor", v)}
               />
-            ),
-            contrast && (
-              <span className={`of-contrast ${contrast.ok ? "is-ok" : "is-low"}`}>
-                Contraste {contrast.ratio.toFixed(1).replace(".", ",")}:1 ·{" "}
-                {contrast.ok
-                  ? "lisible (AA)"
-                  : `insuffisant : ${contrast.large ? "3" : "4,5"}:1 minimum`}
-              </span>
-            ),
-          )}
-        {row("backgroundColor", "Couleur de fond", (id, value) => (
-          <ColorControl
-            id={id}
-            value={value}
-            placeholder={inherited.backgroundColor}
-            swatches={swatches}
-            onChange={(v) => set("backgroundColor", v)}
-          />
-        ))}
-        {target === "section" && (
-          <>
-            <StyleRow
-              label="Image de fond"
-              set={values.backgroundImage !== undefined}
-              onReset={() =>
-                setMany({
-                  backgroundImage: undefined,
-                  overlayColor: undefined,
-                  overlayOpacity: undefined,
-                })
-              }
-            >
-              {(id) => (
-                <div className="of-bg-image">
-                  {(values.backgroundImage ?? inherited.backgroundImage) && (
-                    <img src={values.backgroundImage ?? inherited.backgroundImage} alt="" />
-                  )}
-                  <Button id={id} size="sm" icon="image" onClick={() => setLibrary(true)}>
-                    {values.backgroundImage ? "Remplacer le fond" : "Choisir une image"}
-                  </Button>
-                </div>
+            ))}
+          {target === "section" && (
+            <>
+              <StyleRow
+                label="Image de fond"
+                set={values.backgroundImage !== undefined}
+                onReset={() =>
+                  setMany({
+                    backgroundImage: undefined,
+                    overlayColor: undefined,
+                    overlayOpacity: undefined,
+                  })
+                }
+              >
+                {(id) => (
+                  <div className="of-bg-image">
+                    {(values.backgroundImage ?? inherited.backgroundImage) && (
+                      <img src={values.backgroundImage ?? inherited.backgroundImage} alt="" />
+                    )}
+                    <Button id={id} size="sm" icon="image" onClick={() => setLibrary(true)}>
+                      {values.backgroundImage ? "Remplacer le fond" : "Choisir une image"}
+                    </Button>
+                  </div>
+                )}
+              </StyleRow>
+              {(values.backgroundImage ?? inherited.backgroundImage) && (
+                <>
+                  {row("overlayColor", "Voile (couleur)", (id, value) => (
+                    <ColorControl
+                      id={id}
+                      value={value}
+                      placeholder={inherited.overlayColor}
+                      swatches={swatches}
+                      onChange={(v) => set("overlayColor", v)}
+                    />
+                  ))}
+                  {row("overlayOpacity", "Voile (opacité)", (id, value) => (
+                    <RangeControl
+                      id={id}
+                      value={value}
+                      placeholder={inherited.overlayOpacity ?? 0.5}
+                      onChange={(v) => set("overlayOpacity", v)}
+                    />
+                  ))}
+                  {row("backgroundPosition", "Cadrage", (id, value) => (
+                    <SelectControl
+                      id={id}
+                      value={value}
+                      options={[
+                        ["center", "Centré"],
+                        ["top", "En haut"],
+                        ["bottom", "En bas"],
+                        ["left", "À gauche"],
+                        ["right", "À droite"],
+                      ]}
+                      onChange={(v) => set("backgroundPosition", v)}
+                    />
+                  ))}
+                  {row("backgroundSize", "Taille", (id, value) => (
+                    <SelectControl
+                      id={id}
+                      value={value}
+                      options={[
+                        ["cover", "Remplir"],
+                        ["contain", "Adapter"],
+                        ["auto", "Taille réelle"],
+                      ]}
+                      onChange={(v) => set("backgroundSize", v)}
+                    />
+                  ))}
+                </>
               )}
-            </StyleRow>
-            {(values.backgroundImage ?? inherited.backgroundImage) && (
-              <>
-                {row("overlayColor", "Voile (couleur)", (id, value) => (
-                  <ColorControl
-                    id={id}
-                    value={value}
-                    placeholder={inherited.overlayColor}
-                    swatches={swatches}
-                    onChange={(v) => set("overlayColor", v)}
-                  />
-                ))}
-                {row("overlayOpacity", "Voile (opacité)", (id, value) => (
-                  <RangeControl
-                    id={id}
-                    value={value}
-                    placeholder={inherited.overlayOpacity ?? 0.5}
-                    onChange={(v) => set("overlayOpacity", v)}
-                  />
-                ))}
-                {row("backgroundPosition", "Cadrage", (id, value) => (
-                  <SelectControl
-                    id={id}
-                    value={value}
-                    options={[
-                      ["center", "Centré"],
-                      ["top", "En haut"],
-                      ["bottom", "En bas"],
-                      ["left", "À gauche"],
-                      ["right", "À droite"],
-                    ]}
-                    onChange={(v) => set("backgroundPosition", v)}
-                  />
-                ))}
-                {row("backgroundSize", "Taille", (id, value) => (
-                  <SelectControl
-                    id={id}
-                    value={value}
-                    options={[
-                      ["cover", "Remplir"],
-                      ["contain", "Adapter"],
-                      ["auto", "Taille réelle"],
-                    ]}
-                    onChange={(v) => set("backgroundSize", v)}
-                  />
-                ))}
-              </>
-            )}
-            <MediaLibrary
-              open={library}
-              onClose={() => setLibrary(false)}
-              onPick={(media) => {
-                setLibrary(false);
-                const url = media.url.startsWith("/") ? encodeURI(decodeURI(media.url)) : media.url;
-                setMany({
-                  backgroundImage: url,
-                  overlayColor: values.overlayColor ?? inherited.overlayColor ?? "#000000",
-                  overlayOpacity: values.overlayOpacity ?? inherited.overlayOpacity ?? 0.4,
-                });
+              <MediaLibrary
+                open={library}
+                onClose={() => setLibrary(false)}
+                onPick={(media) => {
+                  setLibrary(false);
+                  const url = media.url.startsWith("/")
+                    ? encodeURI(decodeURI(media.url))
+                    : media.url;
+                  setMany({
+                    backgroundImage: url,
+                    overlayColor: values.overlayColor ?? inherited.overlayColor ?? "#000000",
+                    overlayOpacity: values.overlayOpacity ?? inherited.overlayOpacity ?? 0.4,
+                  });
+                }}
+              />
+            </>
+          )}
+        </Group>
+      )}
+
+      {more && (
+        <Group title="Espacements" active={active(GROUPS.spacing)}>
+          {target !== "section" && (
+            <BoxControl
+              label="Espace autour"
+              center="Espace autour"
+              keywords={["auto"]}
+              sides={{
+                top: side("marginTop", "Espace au-dessus"),
+                bottom: side("marginBottom", "Espace au-dessous"),
               }}
             />
-          </>
-        )}
-      </Group>
+          )}
+          {target !== "media" && (
+            <BoxControl
+              label="Marges intérieures"
+              center={target === "section" ? "Section" : "Marges intérieures"}
+              sides={{
+                top: side("paddingTop", "Marge intérieure en haut"),
+                right: side("paddingRight", "Marge intérieure à droite"),
+                bottom: side("paddingBottom", "Marge intérieure en bas"),
+                left: side("paddingLeft", "Marge intérieure à gauche"),
+              }}
+            />
+          )}
+          <p className="of-style-row__hint of-subtle of-tiny">
+            En pixels (24), ou avec une unité (2rem). ↑ ↓ pour ajuster, ⇧ pour aller plus vite.
+          </p>
+        </Group>
+      )}
 
-      <Group title="Espacements" active={active(GROUPS.spacing)}>
-        {target !== "section" && (
-          <BoxControl
-            label="Espace autour"
-            center="Espace autour"
-            keywords={["auto"]}
-            sides={{
-              top: side("marginTop", "Espace au-dessus"),
-              bottom: side("marginBottom", "Espace au-dessous"),
-            }}
-          />
-        )}
-        {target !== "media" && (
-          <BoxControl
-            label="Marges intérieures"
-            center={target === "section" ? "Section" : "Marges intérieures"}
-            sides={{
-              top: side("paddingTop", "Marge intérieure en haut"),
-              right: side("paddingRight", "Marge intérieure à droite"),
-              bottom: side("paddingBottom", "Marge intérieure en bas"),
-              left: side("paddingLeft", "Marge intérieure à gauche"),
-            }}
-          />
-        )}
-        <p className="of-style-row__hint of-subtle of-tiny">
-          En pixels (24), ou avec une unité (2rem). ↑ ↓ pour ajuster, ⇧ pour aller plus vite.
-        </p>
-      </Group>
+      {more && (
+        <Group title="Dimensions" active={active(GROUPS.size)}>
+          {length("maxWidth", "Largeur maximale", {
+            keywords: ["none"],
+            units: ["px", "%", "rem"],
+          })}
+          {target === "section" &&
+            length("minHeight", "Hauteur minimale", { units: ["px", "vh", "rem"] })}
+        </Group>
+      )}
 
-      <Group title="Dimensions" active={active(GROUPS.size)}>
-        {length("maxWidth", "Largeur maximale", { keywords: ["none"], units: ["px", "%", "rem"] })}
-        {target === "section" &&
-          length("minHeight", "Hauteur minimale", { units: ["px", "vh", "rem"] })}
-      </Group>
-
-      <Group title="Bordure et effets" active={active(GROUPS.effects)}>
-        {length("borderWidth", "Épaisseur de bordure", { units: ["px"] })}
-        {row("borderColor", "Couleur de bordure", (id, value) => (
-          <ColorControl
-            id={id}
-            value={value}
-            swatches={swatches}
-            onChange={(v) => set("borderColor", v)}
-          />
-        ))}
-        {length("borderRadius", "Arrondi des coins", { units: ["px", "%", "rem"] })}
-        {row("shadow", "Ombre", (id, value) => (
-          <SelectControl
-            id={id}
-            value={value}
-            options={[
-              ["none", "Aucune"],
-              ["sm", "Légère"],
-              ["md", "Moyenne"],
-              ["lg", "Forte"],
-            ]}
-            onChange={(v) => set("shadow", v)}
-          />
-        ))}
-        {row("opacity", "Opacité", (id, value) => (
-          <RangeControl
-            id={id}
-            value={value}
-            placeholder={inherited.opacity ?? 1}
-            onChange={(v) => set("opacity", v)}
-          />
-        ))}
-        {target === "media" &&
-          row("objectFit", "Recadrage", (id, value) => (
+      {more && (
+        <Group title="Bordure et effets" active={active(GROUPS.effects)}>
+          {length("borderWidth", "Épaisseur de bordure", { units: ["px"] })}
+          {row("borderColor", "Couleur de bordure", (id, value) => (
+            <ColorControl
+              id={id}
+              value={value}
+              swatches={swatches}
+              onChange={(v) => set("borderColor", v)}
+            />
+          ))}
+          {length("borderRadius", "Arrondi des coins", { units: ["px", "%", "rem"] })}
+          {row("shadow", "Ombre", (id, value) => (
             <SelectControl
               id={id}
               value={value}
               options={[
-                ["cover", "Remplir le cadre"],
-                ["contain", "Image entière"],
-                ["fill", "Étirer"],
+                ["none", "Aucune"],
+                ["sm", "Légère"],
+                ["md", "Moyenne"],
+                ["lg", "Forte"],
               ]}
-              onChange={(v) => set("objectFit", v)}
+              onChange={(v) => set("shadow", v)}
             />
           ))}
-      </Group>
+          {row("opacity", "Opacité", (id, value) => (
+            <RangeControl
+              id={id}
+              value={value}
+              placeholder={inherited.opacity ?? 1}
+              onChange={(v) => set("opacity", v)}
+            />
+          ))}
+          {target === "media" &&
+            row("objectFit", "Recadrage", (id, value) => (
+              <SelectControl
+                id={id}
+                value={value}
+                options={[
+                  ["cover", "Remplir le cadre"],
+                  ["contain", "Image entière"],
+                  ["fill", "Étirer"],
+                ]}
+                onChange={(v) => set("objectFit", v)}
+              />
+            ))}
+        </Group>
+      )}
 
-      <Group title="Visibilité" active={active(GROUPS.visibility)}>
-        {row("hidden", `Masquer sur l'écran ${screen.label.toLowerCase()}`, (id, value) => (
-          <input
-            id={id}
-            type="checkbox"
-            className="of-style-check"
-            checked={Boolean(value ?? inherited.hidden)}
-            // Unchecking on a smaller screen shows again what a larger one hides.
-            onChange={(e) =>
-              set("hidden", e.target.checked ? true : inherited.hidden ? false : undefined)
-            }
-          />
-        ))}
-      </Group>
+      {more && (
+        <Group title="Visibilité" active={active(GROUPS.visibility)}>
+          {row("hidden", `Masquer sur l'écran ${screen.label.toLowerCase()}`, (id, value) => (
+            <input
+              id={id}
+              type="checkbox"
+              className="of-style-check"
+              checked={Boolean(value ?? inherited.hidden)}
+              // Unchecking on a smaller screen shows again what a larger one hides.
+              onChange={(e) =>
+                set("hidden", e.target.checked ? true : inherited.hidden ? false : undefined)
+              }
+            />
+          ))}
+        </Group>
+      )}
 
       <div className="of-style__footer">
         <Button

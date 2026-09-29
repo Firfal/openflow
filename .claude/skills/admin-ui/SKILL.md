@@ -93,9 +93,15 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   columns ≤ 24 px with a 4 px rounded data end and 2 px between them, hairline grid, text in text tokens,
   a tooltip on hover and keyboard (the plot is a `role="slider"` over the columns), and a table view.
   Ranked lists (`.of-rank`) use the same hue for every bar; figures are `.of-stat` tiles.
-- Right panel: one column, no tabs. The clicked element's content first (only its fields), then « Style »
-  closed by default with a summary in its header (« Mobile · 2 réglages »), then the section's other fields.
-  Open/closed states the owner chooses are remembered in `localStorage` (inside `try`/`catch`).
+- Right panel: one column, no tabs. The clicked element's content first (only its fields; a list item
+  adds « Ajouter après », duplicate, move, delete), then « Options de la section » (its select and
+  radio fields), then « Style » closed by default with a summary in its header (« Mobile · 2 réglages »),
+  then the section's other fields. Open/closed states the owner chooses are remembered in
+  `localStorage` (inside `try`/`catch`).
+- Style: the essentials first (text size presets, text colour, alignment; a section's background colour
+  and spacing presets), everything else behind « Plus de réglages ». Labels sit above their control;
+  targets are 24 px at least. Never « Hérité »: « Par défaut », « Repris de « Tous les écrans » ».
+- Destructive edits in the editor are undoable from their notice (« Annuler », `getEditorBridge().undo`).
 
 ## Navigation and information architecture
 

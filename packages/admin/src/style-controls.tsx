@@ -66,7 +66,7 @@ export function StyleRow({
 }: {
   label: string;
   set: boolean;
-  /** Screen the value comes from (« Ordinateur »…), when this one does not set it. */
+  /** Screen the value comes from (« Tous les écrans »…), when this one does not set it. */
   inheritedFrom?: string;
   onReset: () => void;
   children: (id: string) => ReactNode;
@@ -85,7 +85,7 @@ export function StyleRow({
           set
             ? "Réglé sur cet écran"
             : inherited
-              ? `Hérité de l'écran ${inheritedFrom}`
+              ? `Repris de « ${inheritedFrom} »`
               : scrub
                 ? "Glisser pour changer la valeur"
                 : undefined
@@ -100,7 +100,7 @@ export function StyleRow({
           type="button"
           className="of-style-row__reset"
           onClick={onReset}
-          title="Revenir à la valeur héritée"
+          title="Revenir à la valeur de départ"
           aria-label={`Réinitialiser : ${label}`}
         >
           <Icon name="reset" size={12} />
@@ -283,7 +283,7 @@ export function SelectControl<T extends string | number>({
   id,
   value,
   options,
-  placeholder = "Hérité",
+  placeholder = "Par défaut",
   onChange,
 }: {
   id: string;
@@ -406,7 +406,7 @@ export function ColorControl({
           id={id}
           className="of-input"
           value={draft}
-          placeholder={toHex6(placeholder) ?? "Héritée"}
+          placeholder={toHex6(placeholder) ?? "Par défaut"}
           onChange={(e) => {
             setDraft(e.target.value);
             const v = e.target.value.trim();
