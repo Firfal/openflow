@@ -283,10 +283,9 @@ export function EditorView({ pageId, locale }: { pageId: string; locale?: string
       translating,
     ],
   );
-  // Read once by Puck (initial screen: the closest to this device). No sections to add in a
-  // translation: the left panel stays closed.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: read once, like the rest of the UI.
-  const ui = useMemo(() => editorUi(translating ? { leftSideBarVisible: false } : undefined), []);
+  // Read once by Puck: the screen closest to this device, and the left panel closed so the page
+  // gets the room (« Ajouter » opens it; a translation adds no section).
+  const ui = useMemo(() => editorUi(), []);
 
   // Changes made by an AI assistant through the MCP server appear live in the editor.
   useEffect(() => {

@@ -281,5 +281,5 @@ export function CollectionView({ name }: { name: string }) {
 /** Page statuses are feminine (« Masquée ») ; items are named without gender. */
 function itemStatusLabel(label: string): string {
   if (label.startsWith("Programmée")) return label.replace("Programmée", "Programmé");
-  return label === "Masquée" ? "Masqué" : label === "Jamais publiée" ? "Jamais publié" : label;
+  return label === "Masquée" ? "Masqué" : label;
 }

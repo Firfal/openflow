@@ -33,6 +33,7 @@ import {
 import { errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
 import { PageHead, useSiteUrl } from "./shell.js";
+import { describeChanges, pendingChanges } from "./status.js";
 import { Button, Dialog, EmptyState, FormField, Menu, MOD_KEY, StatusChip, timeAgo } from "./ui.js";
 
 type Visibility = PageStatus | "scheduled";
@@ -429,11 +430,12 @@ export function pageStatus(page: PageEntry, releases: ReleaseEntry[]) {
       title: "Publication programmée en cours",
     };
   }
+  // Nothing online yet: the site status says it once, the rows stay quiet.
   if (!releases.some((release) => release.status === "live")) {
     return {
-      tone: "orange" as const,
-      label: "Jamais publiée",
-      title: "Publiez pour la mettre en ligne",
+      tone: "grey" as const,
+      label: "Brouillon",
+      title: "Pas encore en ligne : publiez le site pour la mettre en ligne",
     };
   }
   if (pageChanged(page, releases)) {
@@ -463,13 +465,7 @@ function SiteStatus() {
   const siteUrl = useSiteUrl();
   const lastLive = releases.find((release) => release.status === "live");
   const running = releases.find((r) => r.status === "queued" || r.status === "building");
-  // A scheduled page goes online on its own: nothing to publish for it.
-  const changedAll = pages.filter((page) => !page.publishAt && pageChanged(page, releases));
-  const changed = changedAll.filter((page) => !page.collection).length;
-  const changedItems = changedAll.length - changed;
-  const settingsChanged = Boolean(
-    lastLive && settings?.updatedAt && settings.updatedAt > publishedAt(lastLive),
-  );
+  const pending = pendingChanges(pages, releases, settings);
   const host = siteUrl.replace(/^https?:\/\//, "");
   let text: string;
   let tone: "green" | "orange" | "blue";
@@ -477,20 +473,11 @@ function SiteStatus() {
     text = "Publication en cours…";
     tone = "blue";
   } else if (!lastLive) {
-    text = "Le site n'a pas encore été publié depuis l'admin.";
+    text = "Rien n'est encore en ligne : publiez le site pour mettre vos pages en ligne.";
     tone = "orange";
-  } else if (changedAll.length > 0 || settingsChanged) {
-    const s = (n: number) => (n > 1 ? "s" : "");
-    const parts = [
-      changed > 0 ? `${changed} page${s(changed)} modifiée${s(changed)}` : "",
-      changedItems > 0
-        ? `${changedItems} élément${s(changedItems)} de collection modifié${s(changedItems)}`
-        : "",
-      settingsChanged ? "réglages modifiés" : "",
-    ].filter(Boolean);
-    const list =
-      parts.length > 1 ? `${parts.slice(0, -1).join(", ")} et ${parts.at(-1)}` : parts[0];
-    text = `${list} depuis la dernière publication (${timeAgo(publishedAt(lastLive))}).`;
+  } else if (pending.total > 0) {
+    const list = describeChanges(pending);
+    text = `${list.charAt(0).toUpperCase()}${list.slice(1)} depuis la dernière publication (${timeAgo(publishedAt(lastLive))}).`;
     tone = "orange";
   } else {
     text = `Tout est en ligne. Dernière publication ${timeAgo(publishedAt(lastLive))}.`;

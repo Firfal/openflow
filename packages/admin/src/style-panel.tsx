@@ -15,6 +15,7 @@ import { useAdmin } from "./context.js";
 import { resolveField, resolveGroup, useFocus } from "./focus.js";
 import { Icon, type IconName } from "./icons.js";
 import { MediaLibrary } from "./media.js";
+import { DESKTOP_MAX, desktopWidth } from "./screens.js";
 import {
   BoxControl,
   ColorControl,
@@ -33,9 +34,12 @@ import { Button } from "./ui.js";
 
 const usePuck = createUsePuck();
 
-/** Screens of the editor (Puck viewports): the style panel edits the one shown. */
+/**
+ * Screens of the style (Puck viewports): the style panel edits the one shown. The base values apply to
+ * every screen (tablet and mobile only override them): « Tous les écrans », not « Ordinateur ».
+ */
 export const SCREENS: Array<{ bp: Breakpoint; label: string; width: number; icon: IconName }> = [
-  { bp: "base", label: "Ordinateur", width: 1280, icon: "monitor" },
+  { bp: "base", label: "Tous les écrans", width: DESKTOP_MAX, icon: "monitor" },
   { bp: "tablet", label: "Tablette", width: 768, icon: "tablet" },
   { bp: "mobile", label: "Mobile", width: 390, icon: "smartphone" },
 ];
@@ -197,7 +201,7 @@ export function useStyleSummary(): { screen: string; count: number } {
   const { focus } = useFocus();
   const selected = usePuck((s) => s.selectedItem);
   const viewports = usePuck((s) => s.appState.ui.viewports);
-  const width = typeof viewports.current.width === "number" ? viewports.current.width : 1280;
+  const width = typeof viewports.current.width === "number" ? viewports.current.width : DESKTOP_MAX;
   const bp = breakpointForWidth(width);
   const selectedId = selected?.props.id as string | undefined;
   const path =
@@ -227,7 +231,7 @@ export function StylePanel() {
   const [computed, setComputed] = useState<Computed>();
 
   const selectedId = selected?.props.id as string | undefined;
-  const width = typeof viewports.current.width === "number" ? viewports.current.width : 1280;
+  const width = typeof viewports.current.width === "number" ? viewports.current.width : DESKTOP_MAX;
   const bp = breakpointForWidth(width);
   // A link alone (button without editable text) has no element to style: its section is styled.
   const onElement = Boolean(
@@ -419,7 +423,12 @@ export function StylePanel() {
   const setScreen = (next: (typeof SCREENS)[number]) =>
     dispatch({
       type: "setUi",
-      ui: { viewports: { ...viewports, current: { width: next.width, height: "auto" } } },
+      ui: {
+        viewports: {
+          ...viewports,
+          current: { width: next.bp === "base" ? desktopWidth() : next.width, height: "auto" },
+        },
+      },
     });
 
   const sectionLabel = component?.label ?? selected.type;

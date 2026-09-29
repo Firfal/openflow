@@ -3,7 +3,6 @@ import {
   FUNCTION_NAMES,
   formatScheduled,
   pageChanged,
-  publishedAt,
   statsDay,
 } from "@openflow/core";
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +11,7 @@ import { type Route, useAdmin } from "./context.js";
 import { getAllPages, type ReleaseEntry, subscribeRelease } from "./data.js";
 import { call, errorMessage } from "./firebase.js";
 import { Icon } from "./icons.js";
+import { describeChanges, pendingChanges } from "./status.js";
 import { Button, Dialog, timeAgo } from "./ui.js";
 
 interface Problem {
@@ -43,16 +43,14 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
   const [active, setActive] = useState<ReleaseEntry>();
   const [elapsed, setElapsed] = useState(0);
 
-  const lastLive = releases.find((release) => release.status === "live");
   // Scheduled pages go online on their own, at their time: this publication leaves them hidden.
   const scheduledPages = pages
     .filter((page) => page.publishAt)
     .sort((a, b) => (a.publishAt as string).localeCompare(b.publishAt as string));
   const changedPages = pages.filter((page) => !page.publishAt && pageChanged(page, releases));
-  const settingsChanged = Boolean(
-    lastLive && settings?.updatedAt && settings.updatedAt > publishedAt(lastLive),
-  );
-  const changed = changedPages.length + (settingsChanged ? 1 : 0);
+  const pending = pendingChanges(pages, releases, settings);
+  const settingsChanged = pending.settings;
+  const changed = pending.total;
   const running = active && (active.status === "queued" || active.status === "building");
 
   useEffect(() => {
@@ -158,7 +156,7 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
           onClick={open}
           title={
             changed > 0
-              ? `${changed} modification(s) à mettre en ligne`
+              ? `À mettre en ligne : ${describeChanges(pending)}`
               : "Le site est à jour : publier de nouveau"
           }
         >
@@ -306,8 +304,12 @@ export function PublishControl({ compact = false }: { compact?: boolean }) {
                           {page.collection
                             ? `${config.collections?.[page.collection]?.label ?? "Collection"} · `
                             : ""}
-                          {page.status === "published" ? "" : "Masquée · "}
-                          modifiée {timeAgo(page.updatedAt)}
+                          {page.status === "published"
+                            ? ""
+                            : page.collection
+                              ? "Masqué · "
+                              : "Masquée · "}
+                          {page.collection ? "modifié" : "modifiée"} {timeAgo(page.updatedAt)}
                           {page.updatedBy ? ` par ${page.updatedBy}` : ""}
                         </span>
                       </div>

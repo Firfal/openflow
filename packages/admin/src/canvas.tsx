@@ -286,6 +286,23 @@ interface Badge {
   left: number;
   top: number;
   label: string;
+  /** No room above the text (top of the page): the badge goes under it. */
+  below: boolean;
+}
+
+/** Height of the badge before scaling (11 px text, 2 px padding) and its gap to the text. */
+const BADGE_HEIGHT = 20;
+const BADGE_GAP = 3;
+
+/**
+ * Puck shrinks the page to fit the canvas (`transform: scale` on the frame). The labels drawn in the
+ * page are scaled back by the inverse factor, so they keep their real size at any zoom.
+ */
+function inverseZoom(view: Window | null): number {
+  const frame = view?.frameElement;
+  if (!frame || !view?.innerWidth) return 1;
+  const zoom = frame.getBoundingClientRect().width / view.innerWidth;
+  return zoom > 0.2 && zoom < 1 ? 1 / zoom : 1;
 }
 
 /**
@@ -325,6 +342,7 @@ export function SectionOverlay({
   const ref = useRef<HTMLDivElement>(null);
   const [hints, setHints] = useState<Hint[]>([]);
   const [badge, setBadge] = useState<Badge | null>(null);
+  const [scale, setScale] = useState(1);
   const { focus } = useFocus();
   const type = usePuck((s) => s.getItemById(componentId)?.type);
   const fields = usePuck((s) =>
@@ -356,6 +374,8 @@ export function SectionOverlay({
     if (!section) return;
     const measure = () => {
       const base = section.getBoundingClientRect();
+      const k = inverseZoom(doc.defaultView);
+      setScale(k);
       setHints(
         [...section.querySelectorAll("img[data-of], video[data-of]")]
           .map((media) => ({ r: media.getBoundingClientRect(), video: media.tagName === "VIDEO" }))
@@ -370,9 +390,14 @@ export function SectionOverlay({
       const index = focused.index ? `[data-of-i="${attr(focused.index)}"]` : ":not([data-of-i])";
       const element = section.querySelector(`[data-of="${attr(focused.path)}"]${index}`);
       const r = element ? visibleRect(element) : undefined;
-      setBadge(
-        r ? { left: Math.max(0, r.left - base.left - 5), top: r.top - base.top - 27, label } : null,
-      );
+      if (!r) return setBadge(null);
+      const below = r.top < (BADGE_HEIGHT + BADGE_GAP) * k;
+      setBadge({
+        left: Math.max(0, r.left - base.left - 5 * k),
+        top: (below ? r.bottom : r.top) - base.top,
+        label,
+        below,
+      });
     };
     measure();
     const view = doc.defaultView;
@@ -393,6 +418,8 @@ export function SectionOverlay({
               position: "absolute",
               left: hint.left,
               top: hint.top,
+              transform: scale === 1 ? undefined : `scale(${scale})`,
+              transformOrigin: "left top",
               padding: "4px 8px",
               borderRadius: 6,
               background: "rgb(24 24 27 / 0.82)",
@@ -409,8 +436,10 @@ export function SectionOverlay({
             style={{
               position: "absolute",
               left: badge.left,
-              top: Math.max(-20, badge.top),
-              maxWidth: "calc(100% - 8px)",
+              top: badge.top,
+              transform: `scale(${scale}) translateY(${badge.below ? `${BADGE_GAP}px` : `calc(-100% - ${BADGE_GAP}px)`})`,
+              transformOrigin: "left top",
+              maxWidth: `calc((100% - 8px) / ${scale})`,
               padding: "2px 6px",
               borderRadius: 4,
               background: "var(--of-accent, #2f5bff)",

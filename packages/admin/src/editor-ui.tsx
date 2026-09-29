@@ -18,8 +18,9 @@ import { useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
 import { FieldsPanel } from "./panel.js";
 import { PublishControl } from "./publish.js";
-import { openCommandPalette } from "./shell.js";
-import { Button, IconButton, Menu, MOD_KEY, SiteMark } from "./ui.js";
+import { DESKTOP_MAX, desktopWidth, fitDesktop, isDesktop } from "./screens.js";
+import { openCommandPalette, useDocumentTitle } from "./shell.js";
+import { Button, IconButton, Menu, MOD_KEY } from "./ui.js";
 
 /**
  * Editor chrome shared with Puck overrides. Overrides are module constants (Puck rebuilds its
@@ -67,9 +68,10 @@ export function SaveIndicator({
   onRetry: () => void;
 }) {
   return (
+    // Not a live region: autosave runs on every keystroke. Only a failure is announced.
     <span
       className={`of-save of-save--${state}`}
-      role="status"
+      role={state === "error" ? "alert" : undefined}
       title={error ?? "Vos modifications sont enregistrées automatiquement (brouillon)."}
     >
       {state === "saving" && <span className="of-spinner of-spinner--small" aria-hidden />}
@@ -107,7 +109,8 @@ const usePuck = createUsePuck();
 
 /**
  * Screens of the editor, matching the breakpoints of the free style (tablet ≤ 1023 px,
- * mobile ≤ 767 px). No « full width » option: the canvas always shows a real screen size.
+ * mobile ≤ 767 px). « Ordinateur » is fluid (1024 to 1280 px, see `FluidDesktop`): always a real
+ * desktop layout, at the size the canvas allows.
  */
 export const EDITOR_VIEWPORTS: Viewports = [
   { width: 1280, height: "auto", label: "Ordinateur", icon: "Monitor" },
@@ -116,17 +119,21 @@ export const EDITOR_VIEWPORTS: Viewports = [
 ];
 
 const SCREENS: Array<{ width: number; label: string; icon: IconName }> = [
-  { width: 1280, label: "Ordinateur", icon: "monitor" },
+  { width: DESKTOP_MAX, label: "Ordinateur", icon: "monitor" },
   { width: 768, label: "Tablette", icon: "tablet" },
   { width: 390, label: "Mobile", icon: "smartphone" },
 ];
 
-/** Initial UI of the editors: the screens live in the editor bar, not above the canvas. */
+/**
+ * Initial UI of the editors: the screens live in the editor bar, not above the canvas, and the left
+ * panel starts closed so that the page has the room (« Ajouter » opens it, an insert closes it).
+ */
 export function editorUi(extra: Partial<UiState> = {}): Partial<UiState> {
   const phone = typeof window !== "undefined" && window.innerWidth < 640;
   return {
+    leftSideBarVisible: false,
     viewports: {
-      current: { width: phone ? 390 : 1280, height: "auto" },
+      current: { width: phone ? 390 : desktopWidth(), height: "auto" },
       controlsVisible: false,
       options: [],
     },
@@ -134,34 +141,78 @@ export function editorUi(extra: Partial<UiState> = {}): Partial<UiState> {
   };
 }
 
+/**
+ * Keeps the « Ordinateur » preview as wide as the canvas allows (1024 to 1280 px): the page shows at
+ * (nearly) its real size, and grows or shrinks with the panels, as Webflow's base breakpoint.
+ */
+function FluidDesktop() {
+  const getPuck = useGetPuck();
+  const current = usePuck((s) => s.appState.ui.viewports.current.width);
+  const desktop = isDesktop(current);
+  useEffect(() => {
+    if (!desktop) return;
+    const room = document.querySelector<HTMLElement>('.of-editor [class*="_PuckCanvas-inner_"]');
+    if (!room || typeof ResizeObserver === "undefined") return;
+    const apply = () => {
+      // Puck zooms out when the preview is wider than this box's content (padding excluded).
+      const style = getComputedStyle(room);
+      const content =
+        room.clientWidth -
+        Number.parseFloat(style.paddingLeft) -
+        Number.parseFloat(style.paddingRight);
+      const width = fitDesktop(content);
+      const { appState, dispatch } = getPuck();
+      const viewports = appState.ui.viewports;
+      const now = viewports.current.width;
+      if (isDesktop(now) && now !== width) {
+        dispatch({
+          type: "setUi",
+          ui: { viewports: { ...viewports, current: { width, height: "auto" } } },
+        });
+      }
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(room);
+    return () => observer.disconnect();
+  }, [getPuck, desktop]);
+  return null;
+}
+
 /** Screen switcher (Ordinateur / Tablette / Mobile), as Webflow's breakpoint icons. */
 function Screens() {
   const dispatch = usePuck((s) => s.dispatch);
   const viewports = usePuck((s) => s.appState.ui.viewports);
   const current = viewports.current.width;
+  const shown = (screen: (typeof SCREENS)[number]) =>
+    screen.width === DESKTOP_MAX ? isDesktop(current) : current === screen.width;
   return (
     <fieldset className="of-breakpoints">
       <legend className="of-sr-only">Écran</legend>
-      {SCREENS.map((screen) => (
-        <button
-          key={screen.width}
-          type="button"
-          aria-pressed={current === screen.width}
-          title={`${screen.label} (${screen.width} px)`}
-          onClick={() =>
-            dispatch({
-              type: "setUi",
-              ui: { viewports: { ...viewports, current: { width: screen.width, height: "auto" } } },
-            })
-          }
-        >
-          <Icon name={screen.icon} />
-          <span className="of-breakpoints__label">{screen.label}</span>
-          {current === screen.width && (
-            <span className="of-breakpoints__width">{screen.width}</span>
-          )}
-        </button>
-      ))}
+      <FluidDesktop />
+      {SCREENS.map((screen) => {
+        const width = screen.width === DESKTOP_MAX ? desktopWidth() : screen.width;
+        return (
+          <button
+            key={screen.width}
+            type="button"
+            aria-pressed={shown(screen)}
+            title={`${screen.label} (${width} px)`}
+            onClick={() =>
+              dispatch({
+                type: "setUi",
+                ui: { viewports: { ...viewports, current: { width, height: "auto" } } },
+              })
+            }
+          >
+            <Icon name={screen.icon} />
+            <span className="of-breakpoints__label">{screen.label}</span>
+            {shown(screen) && typeof current === "number" && (
+              <span className="of-breakpoints__width">{current}</span>
+            )}
+          </button>
+        );
+      })}
     </fieldset>
   );
 }
@@ -190,6 +241,7 @@ function UndoRedo() {
 function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
   const { pages, config } = useAdmin();
   const page = pages.find((p) => p.id === chrome.pageId);
+  useDocumentTitle(page?.title);
   if (!page) return null;
   const collection = chrome.collection ? config.collections?.[chrome.collection] : undefined;
   const entry = (p: (typeof pages)[number], icon: IconName) => ({
@@ -234,14 +286,61 @@ function PageSwitcher({ chrome }: { chrome: EditorChrome }) {
   );
 }
 
+const RAIL_ITEM = '[class*="_NavItem-link_"]';
+
+/**
+ * Puck's rail items (« Ajouter », « Structure »…) are clickable `div`s: they become toggle buttons
+ * for the keyboard (Tab, Enter, Space) and screen readers.
+ */
+function useAccessibleRail() {
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>(".of-editor");
+    if (!root) return;
+    const upgrade = () => {
+      for (const item of root.querySelectorAll<HTMLElement>(RAIL_ITEM)) {
+        if (item.getAttribute("role") !== "button") {
+          item.setAttribute("role", "button");
+          item.tabIndex = 0;
+        }
+        const pressed = String(
+          item.parentElement?.className.includes("_NavItem--active_") ?? false,
+        );
+        if (item.getAttribute("aria-pressed") !== pressed)
+          item.setAttribute("aria-pressed", pressed);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if ((event.key === "Enter" || event.key === " ") && target?.matches?.(RAIL_ITEM)) {
+        event.preventDefault();
+        target.click();
+      }
+    };
+    upgrade();
+    // The active item changes by class; new items come with the plugins.
+    const observer = new MutationObserver(upgrade);
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    root.addEventListener("keydown", onKey);
+    return () => {
+      observer.disconnect();
+      root.removeEventListener("keydown", onKey);
+    };
+  }, []);
+}
+
 /**
  * The only bar of the editors (Puck `overrides.header`): back to the dashboard and page switcher,
  * screens, undo/redo, save state and « Publier ».
  */
 function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
   const chrome = useContext(EditorChromeContext);
-  const { settings, config } = useAdmin();
-  const siteName = settings?.site?.name ?? config.site.name;
+  useDocumentTitle(chrome?.kind === "settings" ? chrome.title : undefined);
+  useAccessibleRail();
 
   // ⌘S / Ctrl+S: save now (a reflex; autosave already runs).
   // (`openflow:save` comes from the canvas, whose keyboard events stay in its iframe.)
@@ -276,7 +375,7 @@ function EditorBar(_props: { actions: ReactNode; children: ReactNode }) {
               title={chrome.back ?? "Retour aux pages"}
             >
               <Icon name="arrowLeft" />
-              <SiteMark name={siteName} />
+              <span>Pages</span>
             </button>
             <span className="of-ebar__sep" aria-hidden />
             <PageSwitcher chrome={chrome} />
@@ -373,8 +472,19 @@ function useInsertSection() {
       destinationZone: ROOT_ZONE,
       id,
     });
-    dispatch({ type: "setUi", ui: { itemSelector: { index, zone: ROOT_ZONE } } });
+    // The new section is selected, and the library closes to give the page its room back.
+    dispatch({
+      type: "setUi",
+      ui: { itemSelector: { index, zone: ROOT_ZONE }, leftSideBarVisible: false },
+    });
     resolveDataById(id, "insert");
+    // Brings the new section into view (it may land below the fold).
+    setTimeout(() => {
+      const doc = document.querySelector<HTMLIFrameElement>("#preview-frame")?.contentDocument;
+      doc
+        ?.querySelector(`[data-puck-component="${CSS.escape(id)}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 150);
   };
 }
 
@@ -544,8 +654,14 @@ function PagesPanel() {
 const TIPS: Array<{ icon: IconName; text: string }> = [
   { icon: "pointer", text: "Cliquez sur un texte de la page pour l'écrire directement." },
   { icon: "image", text: "Cliquez sur une image pour la remplacer." },
-  { icon: "palette", text: "Onglet « Style » à droite : couleurs, tailles, espacements." },
-  { icon: "smartphone", text: "Changez d'écran en haut pour régler la tablette ou le mobile." },
+  {
+    icon: "palette",
+    text: "Bouton « Style », dans le panneau de droite : couleurs, tailles, espacements.",
+  },
+  {
+    icon: "smartphone",
+    text: "« Mobile », en haut : la page sur téléphone, et ses réglages de style propres.",
+  },
   { icon: "globe", text: "Tout est enregistré en brouillon : « Publier » met le site en ligne." },
 ];
 

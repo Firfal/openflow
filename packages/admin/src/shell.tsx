@@ -1,6 +1,6 @@
 import { bookingComponentOf } from "@openflow/core";
 import { signOut } from "firebase/auth";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { type SettingsTab, useAdmin } from "./context.js";
 import { Icon, type IconName } from "./icons.js";
 import { PublishControl } from "./publish.js";
@@ -10,6 +10,15 @@ import { type UiTheme, useUiTheme } from "./ui-theme.js";
 /** Opens the command palette (listened to by `CommandPalette`). */
 export function openCommandPalette() {
   window.dispatchEvent(new CustomEvent("openflow:palette"));
+}
+
+/** Title of the browser tab: the view, then the site (« Pages · Mon site »). */
+export function useDocumentTitle(title: string | undefined) {
+  const { config, settings } = useAdmin();
+  const site = settings?.site?.name ?? config.site.name;
+  useEffect(() => {
+    if (title) document.title = `${title} · ${site}`;
+  }, [title, site]);
 }
 
 /** Address of the live site: the admin is served by the site itself, at `/admin`. */
@@ -239,6 +248,7 @@ export function PageHead({
   actions?: ReactNode;
 }) {
   const siteUrl = useSiteUrl();
+  useDocumentTitle(title);
   return (
     <header className="of-pagehead">
       <div className="of-pagehead__title">

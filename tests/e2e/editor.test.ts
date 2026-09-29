@@ -91,8 +91,28 @@ afterAll(async () => {
   server?.kill("SIGINT");
 });
 
+/** The section library (« Ajouter »), closed when the editor opens and after each insertion. */
+async function openLibrary() {
+  if (await page.locator(".of-drawer-item").first().isVisible()) return;
+  await page.getByRole("button", { name: "Ajouter", exact: true }).first().click();
+  await page.locator(".of-drawer-item").first().waitFor();
+}
+
 describe("éditeur de page", () => {
+  it("opens with the section library closed, so the page gets the room", async () => {
+    expect(await page.locator(".of-drawer-item").first().isVisible()).toBe(false);
+    // « Ordinateur » fills the canvas (1024 to 1280 px): at 1440 px, the page is barely scaled.
+    const scale = await page
+      .locator("#preview-frame")
+      .evaluate(
+        (el) =>
+          el.getBoundingClientRect().width / (el as HTMLIFrameElement).contentWindow!.innerWidth,
+      );
+    expect(scale).toBeGreaterThan(0.95);
+  });
+
   it("adds a section by dragging it from the library onto the page", async () => {
+    await openLibrary();
     const before = (await sections()).length;
     const items = page.locator(".of-drawer-item");
     let index = (await items.count()) - 1;
@@ -109,11 +129,14 @@ describe("éditeur de page", () => {
   });
 
   it("adds a section with a click on the library item", async () => {
+    await openLibrary();
     const before = (await sections()).length;
     const plus = page.locator(".of-drawer-item__plus").first();
     const { x, y } = await center(plus);
     await page.mouse.click(x, y);
     await expect.poll(async () => (await sections()).length, { timeout: 10_000 }).toBe(before + 1);
+    // The library closes: the new section is on screen, selected.
+    await expect.poll(() => page.locator(".of-drawer-item").first().isVisible()).toBe(false);
   });
 
   it("reorders sections by dragging them on the page", async () => {
@@ -258,7 +281,8 @@ describe("éditeur de page", () => {
     const hero = frame.locator("[data-puck-component]:has(h1)").first();
     await hero.scrollIntoViewIfNeeded();
     const { box } = await center(hero);
-    await page.mouse.click(box.x + 20, box.y + 20);
+    // In the left margin, halfway down: the top of the hero can sit under a sticky site header.
+    await page.mouse.click(box.x + 12, box.y + box.height / 2);
     await page.waitForTimeout(500);
     await showSectionFields();
     const option = page.locator("label:visible", { hasText: /^Vidéo$/ });

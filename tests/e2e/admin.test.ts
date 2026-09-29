@@ -237,7 +237,7 @@ describe("admin OpenFlow (émulateurs)", () => {
     await expect.poll(color, { timeout: 10_000 }).toBe("rgb(255, 0, 0)");
     await expect.poll(() => toggle.textContent()).toContain("Mobile · 1 réglage");
     await page.screenshot({ path: path.join(SCREENSHOTS, "02b-style.png") });
-    await panel.getByRole("button", { name: "Ordinateur", exact: true }).click();
+    await panel.getByRole("button", { name: "Tous les écrans", exact: true }).click();
     await expect.poll(color, { timeout: 10_000 }).not.toBe("rgb(255, 0, 0)");
     const saved = await waitFor(
       async () => {

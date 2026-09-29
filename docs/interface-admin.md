@@ -33,13 +33,16 @@ Elles sont résumées dans le skill du dépôt `.claude/skills/admin-ui/SKILL.md
   - en bas, le compte : apparence de l'admin (système, clair, sombre) et déconnexion.
 
   Sur mobile, elle devient une barre d'icônes.
-- **En-tête de chaque vue** : le titre, les actions de la vue, « Voir le site » et **Publier**. Le bouton
-  Publier affiche le nombre de modifications en attente.
+- **En-tête de chaque vue**, de même hauteur partout : le titre, une ligne de description, les actions de
+  la vue, « Voir le site » et **Publier**. Le bouton Publier affiche le nombre de modifications en attente,
+  et sa bulle les détaille (« 3 pages modifiées, 2 éléments de collection modifiés et réglages
+  modifiés »). L'onglet du navigateur porte le nom de la vue, puis celui du site.
 - **Pages** :
-  - un bandeau dit si le site en ligne est à jour ;
+  - un bandeau dit si le site en ligne est à jour, ou que rien n'est encore en ligne ;
   - tant qu'aucune IA n'est connectée, une carte propose « Connecter Claude ou ChatGPT » (elle se masque) ;
-  - chaque page affiche **un seul statut** : Masquée, Programmée le …, Mise en ligne…, Jamais publiée,
-    Modifications non publiées ou En ligne ;
+  - chaque page affiche **un seul statut** : Masquée, Programmée le …, Mise en ligne…, Brouillon (tant
+    que le site n'a jamais été publié : le bandeau le dit une fois pour toutes), Modifications non
+    publiées ou En ligne ;
   - le bouton « Modifier » ouvre l'éditeur ;
   - le menu « ⋯ » propose Paramètres et référencement, Dupliquer, Voir en ligne et Supprimer ;
   - les paramètres d'une page montrent un **aperçu du résultat Google** et le nombre de caractères du titre et
@@ -175,24 +178,29 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 
 | Zone | Contenu |
 |---|---|
-| Gauche | Retour aux pages, sélecteur de page (ouvre une autre page sans repasser par la liste) |
-| Centre | Écrans **Ordinateur** (1280 px), **Tablette** (768 px), **Mobile** (390 px) |
+| Gauche | **Pages** (retour à la liste), sélecteur de page (ouvre une autre page sans repasser par la liste ; son adresse se masque la première quand la place manque) |
+| Centre | Écrans **Ordinateur** (la plus grande largeur qui tient, de 1024 à 1280 px), **Tablette** (768 px), **Mobile** (390 px) |
 | Droite | État de l'enregistrement, annuler et rétablir, recherche, **Connecter une IA** (✦, point vert si une IA est connectée), **Publier** |
 
 - **Rail de gauche**, dont chaque icône ouvre un panneau :
   - **Ajouter** : les sections du site, avec une recherche. Un clic ajoute une section sous la section
-    sélectionnée ; on peut aussi la glisser sur la page.
+    sélectionnée ; on peut aussi la glisser sur la page. Le panneau est fermé à l'ouverture de l'éditeur,
+    pour laisser la place à la page, et se referme après un ajout : la page défile jusqu'à la nouvelle
+    section, sélectionnée.
   - **Structure** : l'ordre des sections, par glisser-déposer.
   - **Pages** : les pages du site.
   - **Aide** : le mode d'emploi et les raccourcis clavier.
 - **Page au centre** :
-  - un texte cliqué est entouré, et son nom s'affiche au-dessus, comme dans Webflow ;
+  - un texte cliqué est entouré, et son nom s'affiche au-dessus (en dessous en haut de la page), comme
+    dans Webflow. Ce nom et les consignes « Cliquer pour remplacer l'image » gardent leur taille réelle,
+    même quand la page est réduite pour tenir dans l'écran ;
   - le texte s'écrit directement sur la page ;
   - une image ou une vidéo se remplace d'un clic ;
   - la barre de la section propose monter, descendre, dupliquer et supprimer.
 - **Panneau de droite** : il indique quoi faire tant que rien n'est sélectionné. Ensuite, il tient **en une
   seule colonne**, comme dans Framer et Figma, de haut en bas :
-  1. **Le contenu de l'élément cliqué**, toujours ouvert, et **uniquement ses réglages**, comme dans Webflow :
+  1. **Le contenu de l'élément cliqué**, toujours ouvert, et **uniquement ses réglages**, comme dans Webflow.
+     Son en-tête (« Titre principal, dans En-tête de page ») est alors le seul titre du panneau :
      - un bouton : son texte et son lien ;
      - un élément de liste (une carte, une question de FAQ…) : les champs de cet élément ;
      - un texte, une image ou une vidéo : ce seul champ.
@@ -219,6 +227,8 @@ L'éditeur occupe tout l'écran et n'a qu'**une seule barre** :
 
 - Le fil en tête du bloc dit ce qui est stylé : la section, ou la section puis l'élément (« Hero ›
   Bouton principal »). Un clic sur la section passe au style de toute la section.
+- Trois écrans : **Tous les écrans** (le style de base, que la tablette et le mobile reprennent),
+  **Tablette** et **Mobile** (ce qui ne change que sur cet écran).
 - Les réglages sont rangés en groupes repliables : Typographie, Couleurs, Espacements, Dimensions, Bordure et
   effets, Visibilité. Un point bleu marque les groupes qui ont des réglages sur l'écran affiché.
 - La couleur d'un libellé indique d'où vient sa valeur, comme dans Webflow (sans le rose) :

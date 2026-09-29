@@ -375,6 +375,7 @@ const RATINGS: Record<VitalRating, { label: string; tone: Tone }> = {
  * (a status chip: dot and word) and the share of fast page loads (a meter in the accent).
  */
 function Speed({ vitals }: { vitals: StatsSummary["vitals"] }) {
+  const loads = Math.max(0, ...vitals.map((v) => v.total));
   return (
     <div className="of-card">
       <h2>Vitesse ressentie par les visiteurs</h2>
@@ -410,8 +411,8 @@ function Speed({ vitals }: { vitals: StatsSummary["vitals"] }) {
             ))}
           </ul>
           <p className="of-subtle of-speed__note">
-            Selon les seuils de Google, sur {number(Math.max(...vitals.map((v) => v.total)))}{" "}
-            chargements de page mesurés. « Bon » : au moins trois chargements sur quatre le sont.
+            Selon les seuils de Google, sur {number(loads)} chargement{loads > 1 ? "s" : ""} de page
+            mesuré{loads > 1 ? "s" : ""}. « Bon » : au moins trois chargements sur quatre le sont.
           </p>
         </>
       )}

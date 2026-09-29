@@ -1874,8 +1874,9 @@ select.of-input {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 60px;
-  padding: 10px 32px;
+  /* One height for every view: « Publier » never moves from one view to the next. */
+  height: 60px;
+  padding: 0 32px;
   background: color-mix(in srgb, var(--of-bg) 88%, transparent);
   backdrop-filter: saturate(1.4) blur(10px);
   border-bottom: 1px solid var(--of-border);
@@ -1890,9 +1891,16 @@ select.of-input {
 
 .of-pagehead h1 {
   font-size: 18px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.015em;
+}
+
+.of-pagehead h1,
+.of-pagehead__title .of-subtle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .of-pagehead__actions {
@@ -2664,11 +2672,8 @@ select.of-input {
   color: var(--of-text);
 }
 
-.of-home .of-site__mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  font-size: 12px;
+.of-home span {
+  font-weight: 500;
 }
 
 .of-switcher {
@@ -2676,6 +2681,7 @@ select.of-input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   max-width: 280px;
   height: 32px;
   padding: 0 8px;
@@ -2743,8 +2749,10 @@ select.of-input {
   font-variant-numeric: tabular-nums;
 }
 
+/* The path of the page goes first, before its title. */
 @media (max-width: 1180px) {
   .of-breakpoints__width,
+  .of-switcher__path,
   .of-ebar .of-save__label {
     display: none;
   }
@@ -2752,7 +2760,6 @@ select.of-input {
 
 @media (max-width: 900px) {
   .of-breakpoints__label,
-  .of-switcher__path,
   .of-ebar__hide-sm {
     display: none;
   }
@@ -3070,6 +3077,14 @@ select.of-input {
 .of-root .of-editor [class*="_SidebarSection-heading_"] h2,
 .of-root .of-editor [class*="_SidebarSection-breadcrumbLabel_"] {
   font-size: 13px;
+}
+
+/* A clicked element has its own header (« Titre principal, dans … »): one title, not two. */
+.of-root
+  .of-editor
+  [class*="_SidebarSection_"]:has(.of-selected)
+  > [class*="_SidebarSection-title_"] {
+  display: none;
 }
 
 .of-root .of-editor [class*="_PuckFields--wrapFields_"] [class*="_PuckFields-field_"] {
@@ -3875,7 +3890,11 @@ button.of-style-row__reset:hover {
   .of-pagehead {
     position: static;
     flex-wrap: wrap;
+    height: auto;
     padding: 12px 16px;
+  }
+  .of-pagehead__title .of-subtle {
+    white-space: normal;
   }
   .of-pagehead__actions {
     flex-wrap: wrap;

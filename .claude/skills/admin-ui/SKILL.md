@@ -10,8 +10,9 @@ metadata:
 The admin is used by non-technical site owners. It borrows the layout of Webflow and Framer (one top bar,
 left rail, right panel, canvas in the middle) and leaves out what would overwhelm them (classes, many
 breakpoints, absolute positioning, interactions, custom code). Rules below distil the Vercel Web Interface
-Guidelines, interface-design, impeccable and Emil Kowalski's motion rules. Full description for owners and
-contributors: `docs/interface-admin.md`.
+Guidelines, interface-design, impeccable (critique and audit), OneRedOak's design review, Krug and Nielsen's
+heuristics (wondelai/ux-heuristics), szilu's ux-designer skill (navigation, onboarding) and Emil Kowalski's
+motion rules. Full description for owners and contributors: `docs/interface-admin.md`.
 
 ## Where things live
 
@@ -77,6 +78,36 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   closed by default with a summary in its header (« Mobile · 2 réglages »), then the section's other fields.
   Open/closed states the owner chooses are remembered in `localStorage` (inside `try`/`catch`).
 
+## Navigation and information architecture
+
+- The sidebar holds 5 to 7 destinations per group, grouped by task (« Contenu », « Activité », « Réglages »),
+  labels of 1 to 3 words, always visible (no sub-menu that appears only once inside). One source for the
+  sidebar and the ⌘K palette (`nav.ts`): same words everywhere.
+- Trunk test on every screen: the owner can tell which site, which view (the `PageHead` title matches the
+  sidebar label and `document.title`), where they are (`aria-current`), where search is (⌘K).
+- One thing, one place, one name. If a thing shows in two places (a collection's list page, the legal pages),
+  the second place says so and links to the first. The glossary below is the vocabulary.
+- The URL holds the view and its tab (`?view=…&tab=…`); Back returns to the previous view.
+- Home is « Tableau de bord »: what is live, what to do next (a checklist that can be dismissed), today's
+  activity. Never « Accueil » (a page name).
+
+## Editing (progressive disclosure)
+
+- Edit where you click: the canvas element, its fields on the right, its actions next to it (list items:
+  add after, duplicate, move, delete). No action only reachable in a collapsed block.
+- At most 4 visible choices at a decision point; advanced settings behind « Plus de réglages ». Presets
+  (Petit / Moyen / Grand, Serré / Normal / Aéré) before raw values; units only in the advanced mode.
+- Modal for 1 to 3 fields, the right panel to edit while keeping the page in view, a full view for complex
+  objects. Try inline first.
+- The canvas stays readable: panels close after use, the desktop screen fills the room it has (≥ 1024 px),
+  labels drawn over the canvas never shrink with it nor hide the text they label.
+- Every destructive action can be undone (toast « … · Annuler ») or is confirmed in a `Dialog` (never
+  `window.confirm`). Drag and drop always has a click alternative (WCAG 2.5.7).
+- Saving: the canvas editors save on their own (« Enregistré »); forms have « Enregistrer », a sticky
+  « Modifications non enregistrées » bar and a warning before leaving. Never lose typed text silently.
+- Draft or live is always visible: the page's status in the editor bar, and the publish dialog says what goes
+  online and what stays hidden.
+
 ## Motion and accessibility
 
 - Animate only `transform` and `opacity`, ≤ 200 ms, ease-out (`--of-ease`); nothing for keyboard-triggered,
@@ -84,6 +115,38 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
 - `:focus-visible` rings stay; menus and the palette work with arrows, Enter, Escape, and give focus back.
 - Text contrast AA in light and dark (check both); inputs keep a visible border.
 - French copy, specific labels (« Créer une clé », not « Valider »), errors say how to fix.
+
+## Glossary (owner-facing words)
+
+| Say | Not |
+|---|---|
+| page, section, élément | composant, bloc, node |
+| publier / mettre en ligne (le bouton dit « Publier ») | déployer, release, snapshot, build |
+| brouillon, en ligne, masquée | draft, live, unpublished |
+| Tous les écrans / Tablette / Mobile | base, breakpoint, desktop |
+| adresse (de la page) | slug, URL, path |
+| Menu et pied de page | contenu commun, layout, settings |
+| Couleurs et polices | thème, tokens |
+| Assistant IA (l'IA du propriétaire), IA des visiteurs, moteurs IA | MCP, OAuth, agent, WebMCP (sauf « Pour les développeurs ») |
+| code de validation | balise meta |
+| comme sur ordinateur / par défaut | hérité |
+
+## Auditing (before and after every visible change)
+
+1. Captures and measures: `CMS_AUDIT_TAG=<tag> pnpm --filter @openflow/e2e ux-audit` (every view, dialog and
+   editor state at 1440, 1366, 1280 and 390 px, light and dark; `metrics.json`: canvas scale, type sizes,
+   off-grid spacing, targets < 24 px, header height, axe serious/critical violations, console errors), then
+   `node tests/e2e/audit-compare.mjs <before> <after>`.
+2. Look at the captures as a first-time owner (« Jordan »): squint test (hierarchy still reads), one focal
+   point and one primary action per view, trunk test, at most 4 competing choices.
+3. Score Nielsen's 10 heuristics 0 to 4 (total /40) and list findings as `[P0|P1|P2|P3] Where / Why it hurts
+   the owner / Fix / Ref`. P0 blocks or confuses, P1 major friction, P2 polish, P3 nit.
+4. Walk the owner tasks and count clicks: change a title, replace an image, add a FAQ question, add a section
+   after another, change the menu, change the main colour, change a colour on mobile only, write a page
+   description, publish.
+
+Targets: canvas scale ≥ 0.85 at 1280 px, at most 6 type sizes, no target under 24 px, one header height, no
+serious axe violation, trunk test passed on every view.
 
 ## Keep tests and docs in sync
 
@@ -105,7 +168,9 @@ checks (`publish-checks.ts`) or `agent.ts` statically; Cloud Functions and Stora
   and `.of-editor.is-translating` (Puck renders the panel twice: select the `:visible` one),
   « Mettre en ligne », « Enregistré », « Rendez-vous », « Annuler le rendez-vous », button « Style »
   (`aria-expanded`), « Tous les champs de la
-  section », screens « Ordinateur » / « Mobile », « Fermer », and the classes `.of-drawer-item`,
+  section », screens « Ordinateur » / « Mobile » (editor bar) and « Tous les écrans » / « Mobile » (style
+  panel), « Fermer », rail button « Ajouter » (the library is closed when the editor opens: open it
+  before using `.of-drawer-item`), and the classes `.of-drawer-item`,
   `.of-selected`, `.of-panel`, `.of-style__crumbs`, `.of-media-grid__item`, `.of-key-created`. Renaming one
   means updating `tests/e2e/*.test.ts` and `sites/landing/visuals/admin.mjs`.
 - Check a change with screenshots in light and dark (emulators + Playwright, 1440×900 and 390×844), then
